@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+
+pandas
+openpyxl
+
+jinja2
+weasyprint
+
+httpx
+tenacity
+loguru
