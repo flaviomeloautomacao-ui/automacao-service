@@ -12,7 +12,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pandas as pd
 import pytest
-import pytest_asyncio
 
 from app.adapters.spreadsheet.parser import PandasSpreadsheetParser
 from app.adapters.spreadsheet.validator import BasicSpreadsheetValidator
@@ -67,9 +66,9 @@ def mock_llm() -> AsyncMock:
     """LLM fake que retorna seções narrativas fixas."""
     llm = AsyncMock()
     llm.generate_sections.return_value = {
-        "sumario": "Resumo executivo do laudo.",
-        "recomendacoes": "Instalar proteções nas prensas.",
-        "justificativas": "Conforme NR-12, item 12.38.",
+        "resumo": "Resumo executivo do laudo.",
+        "recomendacoes": ["Instalar proteções nas prensas."],
+        "justificativas": ["Conforme NR-12, item 12.38."],
     }
     return llm
 

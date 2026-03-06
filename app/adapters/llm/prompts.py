@@ -21,8 +21,8 @@ SYSTEM_PROMPT: str = (
     "Sua tarefa é gerar seções narrativas para laudos técnicos de segurança.\n\n"
     "Regras obrigatórias:\n"
     "1. Responda EXCLUSIVAMENTE em JSON válido, sem texto fora do JSON.\n"
-    "2. O JSON deve conter exatamente as chaves: \"sumario\", \"recomendacoes\", \"justificativas\".\n"
-    "   - \"sumario\": string com o resumo executivo do laudo.\n"
+    "2. O JSON deve conter exatamente as chaves: \"resumo\", \"recomendacoes\", \"justificativas\".\n"
+    "   - \"resumo\": string com o resumo executivo do laudo.\n"
     "   - \"recomendacoes\": lista de strings, cada uma com uma recomendação técnica.\n"
     "   - \"justificativas\": lista de strings, cada uma com a justificativa normativa correspondente.\n"
     "3. Use linguagem técnica formal, objetiva e concisa.\n"
@@ -61,7 +61,7 @@ USER_PROMPT_TEMPLATE: str = (
     "{normas_texto}\n\n"
     "Responda APENAS com JSON válido no formato:\n"
     '{{\n'
-    '  "sumario": "...",\n'
+    '  "resumo": "...",\n'
     '  "recomendacoes": ["...", "..."],\n'
     '  "justificativas": ["...", "..."]\n'
     '}}'

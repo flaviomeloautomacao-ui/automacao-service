@@ -228,7 +228,7 @@ class StoragePort(Protocol):
 class LLMPort(Protocol):
     """Interface com serviço de LLM (OpenAI, Anthropic, local, etc.)."""
 
-    async def generate_sections(self, context: dict[str, Any]) -> dict[str, str]:
+    async def generate_sections(self, context: dict[str, Any]) -> dict[str, Any]:
         """Gera seções textuais do laudo a partir do contexto fornecido.
 
         Args:

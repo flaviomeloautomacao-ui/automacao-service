@@ -101,6 +101,7 @@ class ProcessUploadUseCase:
         file_bytes: bytes,
         filename: str,
         content_type: str,
+        company_metadata: dict[str, Any] | None = None,
     ) -> dict[str, str]:
         """Executa o pipeline completo de processamento de upload.
 
@@ -108,6 +109,8 @@ class ProcessUploadUseCase:
             file_bytes: Conteúdo binário da planilha enviada.
             filename: Nome original do arquivo.
             content_type: MIME type do arquivo (ex.: ``application/vnd.openxmlformats-...``).
+            company_metadata: Dados opcionais da empresa (razao_social, cnpj, etc.)
+                que serão usados no template e no contexto LLM.
 
         Returns:
             Dicionário com:
@@ -137,10 +140,13 @@ class ProcessUploadUseCase:
         draft_id = await self._create_draft(upload_id, rows_dicts)
 
         # 5) Gera seções narrativas via LLM
-        llm_sections = await self._generate_llm_sections(rows_dicts)
+        llm_sections = await self._generate_llm_sections(rows_dicts, company_metadata)
+
+        # 5.5) Normaliza seções LLM (converte listas em HTML p/ template)
+        llm_sections_html = self._normalize_llm_sections(llm_sections)
 
         # 6 + 7) Renderiza HTML e gera PDF
-        pdf_bytes = self._render_pdf(rows_dicts, llm_sections)
+        pdf_bytes = self._render_pdf(rows_dicts, llm_sections_html, company_metadata)
 
         # 8 + 9) Armazena PDF e persiste metadados do relatório
         report_id, pdf_url = await self._store_report(
@@ -259,16 +265,18 @@ class ProcessUploadUseCase:
     async def _generate_llm_sections(
         self,
         rows_dicts: list[dict[str, Any]],
+        company_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Etapa 5 — gera seções narrativas via LLM.
 
         Returns:
-            Dicionário com seções geradas (``sumario``, ``recomendacoes``, etc.).
+            Dicionário com seções geradas (``resumo``, ``recomendacoes``, etc.).
 
         Raises:
             LLMError: Se a chamada ao LLM falhar.
         """
         context: dict[str, Any] = {
+            "company": company_metadata or {},
             "rows": rows_dicts,
             "total_rows": len(rows_dicts),
         }
@@ -278,10 +286,36 @@ class ProcessUploadUseCase:
         logger.info("Seções LLM geradas com sucesso")
         return sections
 
+    @staticmethod
+    def _normalize_llm_sections(sections: dict[str, Any]) -> dict[str, str]:
+        """Converte valores de lista retornados pelo LLM em strings HTML.
+
+        O template Jinja2 usa ``{{ section | safe }}`` e espera strings HTML.
+        O LLM retorna listas para ``recomendacoes`` e ``justificativas``,
+        que precisam ser convertidas em ``<ul>`` HTML.
+
+        Args:
+            sections: Dicionário cru retornado pelo LLM.
+
+        Returns:
+            Dicionário com todos os valores como strings HTML.
+        """
+        result: dict[str, str] = {}
+        for key, value in sections.items():
+            if isinstance(value, list):
+                items_html = "".join(f"<li>{item}</li>" for item in value)
+                result[key] = f"<ul>{items_html}</ul>"
+            elif value is not None:
+                result[key] = str(value)
+            else:
+                result[key] = ""
+        return result
+
     def _render_pdf(
         self,
         rows_dicts: list[dict[str, Any]],
         llm_sections: dict[str, Any],
+        company_metadata: dict[str, Any] | None = None,
     ) -> bytes:
         """Etapas 6 + 7 — renderiza template HTML e converte em PDF.
 
@@ -294,6 +328,8 @@ class ProcessUploadUseCase:
         metadata: dict[str, Any] = {
             "data_geracao": datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC"),
         }
+        if company_metadata:
+            metadata.update(company_metadata)
 
         logger.info("Renderizando HTML + PDF | total_linhas={}", len(rows_dicts))
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 def _utcnow() -> datetime:
     """Retorna datetime UTC atual (compatível com Pydantic default_factory)."""
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 
 def _new_uuid() -> str:

@@ -19,6 +19,7 @@ from app.domain.errors import ValidationError
 
 #: Campos obrigatórios que não podem ser strings vazias / somente espaços.
 REQUIRED_FIELDS: tuple[str, ...] = (
+    "area",
     "equipamento",
     "perigo",
     "causa",

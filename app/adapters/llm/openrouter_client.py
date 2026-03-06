@@ -57,7 +57,7 @@ class _RetryableHTTPError(Exception):
 
 _CHAT_COMPLETIONS_PATH: str = "/chat/completions"
 
-_REQUIRED_KEYS: set[str] = {"sumario", "recomendacoes", "justificativas"}
+_REQUIRED_KEYS: set[str] = {"resumo", "recomendacoes", "justificativas"}
 
 # Mascarar chave nos logs: exibir apenas últimos 4 caracteres
 _KEY_MASK_LEN: int = 4
@@ -128,7 +128,7 @@ class OpenRouterClient:
             context: Dicionário com ``company``, ``rows``, ``normas``, etc.
 
         Returns:
-            Dicionário com chaves ``sumario``, ``recomendacoes``, ``justificativas``.
+            Dicionário com chaves ``resumo``, ``recomendacoes``, ``justificativas``.
 
         Raises:
             LLMError: Se a chamada falhar após retries ou se o JSON for inválido
