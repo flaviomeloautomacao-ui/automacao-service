@@ -1,0 +1,261 @@
+/* ==========================================================================
+   styles.css — Estilos do laudo técnico (PDF via WeasyPrint)
+   ========================================================================== */
+
+/* ---------- Reset & Base ---------- */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ---------- Page Setup ---------- */
+
+@page {
+    size: A4;
+    margin: 25mm 20mm 30mm 20mm;
+
+    @bottom-center {
+        content: "Página " counter(page) " de " counter(pages);
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 8pt;
+        color: #666;
+    }
+
+    @bottom-right {
+        content: "Documento confidencial";
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 7pt;
+        color: #999;
+    }
+}
+
+@page :first {
+    @bottom-center { content: none; }
+    @bottom-right  { content: none; }
+}
+
+/* ---------- Typography ---------- */
+
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: #222;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #1a1a2e;
+    margin-top: 0.8em;
+    margin-bottom: 0.4em;
+    line-height: 1.2;
+}
+
+h1 { font-size: 22pt; }
+h2 { font-size: 16pt; border-bottom: 2px solid #16213e; padding-bottom: 4px; }
+h3 { font-size: 13pt; }
+h4 { font-size: 11pt; }
+
+p {
+    margin-bottom: 0.6em;
+    text-align: justify;
+}
+
+/* ---------- Cover page ---------- */
+
+.cover {
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100%;
+    text-align: center;
+}
+
+.cover h1 {
+    font-size: 28pt;
+    color: #0f3460;
+    margin-bottom: 0.3em;
+}
+
+.cover .subtitle {
+    font-size: 14pt;
+    color: #555;
+    margin-bottom: 2em;
+}
+
+.cover .company-info {
+    font-size: 11pt;
+    color: #333;
+    line-height: 1.8;
+    margin-top: 1em;
+}
+
+.cover .company-info strong {
+    color: #0f3460;
+}
+
+.cover .date-info {
+    margin-top: 3em;
+    font-size: 10pt;
+    color: #777;
+}
+
+/* ---------- Table of Contents ---------- */
+
+.toc {
+    page-break-after: always;
+}
+
+.toc h2 {
+    text-align: center;
+    border-bottom: none;
+    margin-bottom: 1em;
+}
+
+.toc ul {
+    list-style: none;
+    padding: 0;
+}
+
+.toc ul li {
+    padding: 4px 0;
+    border-bottom: 1px dotted #ccc;
+    font-size: 10pt;
+}
+
+.toc ul li .toc-number {
+    display: inline-block;
+    width: 2em;
+    font-weight: bold;
+    color: #0f3460;
+}
+
+/* ---------- Sections ---------- */
+
+.section {
+    page-break-before: always;
+}
+
+.section:first-of-type {
+    page-break-before: auto;
+}
+
+.section-number {
+    color: #0f3460;
+    margin-right: 0.3em;
+}
+
+/* ---------- Tables ---------- */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    font-size: 8.5pt;
+}
+
+table thead {
+    background-color: #0f3460;
+    color: #fff;
+}
+
+table thead th {
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+table tbody td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+}
+
+table tbody tr:nth-child(even) {
+    background-color: #f7f8fa;
+}
+
+table tbody tr:hover {
+    background-color: #eef1f6;
+}
+
+/* Risk level badges */
+.risk-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.risk-trivial      { background-color: #d4edda; color: #155724; }
+.risk-toleravel    { background-color: #d1ecf1; color: #0c5460; }
+.risk-moderado     { background-color: #fff3cd; color: #856404; }
+.risk-substancial  { background-color: #f8d7da; color: #721c24; }
+.risk-intoleravel  { background-color: #842029; color: #fff; }
+
+/* Priority badges */
+.priority-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 7.5pt;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.priority-baixa   { background-color: #e2e3e5; color: #383d41; }
+.priority-media   { background-color: #fff3cd; color: #856404; }
+.priority-alta    { background-color: #f8d7da; color: #721c24; }
+.priority-urgente { background-color: #842029; color: #fff; }
+
+/* ---------- LLM Sections ---------- */
+
+.llm-section {
+    margin: 1em 0;
+    padding: 0.8em 1em;
+    background-color: #fafbfc;
+    border-left: 4px solid #0f3460;
+    border-radius: 2px;
+}
+
+.llm-section h3 {
+    margin-top: 0;
+}
+
+.llm-section ul, .llm-section ol {
+    margin: 0.5em 0 0.5em 1.5em;
+}
+
+.llm-section li {
+    margin-bottom: 0.3em;
+}
+
+/* ---------- References ---------- */
+
+.references ul {
+    list-style: disc;
+    margin-left: 1.5em;
+}
+
+.references li {
+    margin-bottom: 0.4em;
+}
+
+/* ---------- Utilities ---------- */
+
+.text-center { text-align: center; }
+.text-right  { text-align: right; }
+.text-muted  { color: #888; }
+.mt-1 { margin-top: 0.5em; }
+.mt-2 { margin-top: 1em; }
+.mb-1 { margin-bottom: 0.5em; }
+.mb-2 { margin-bottom: 1em; }
+.page-break { page-break-before: always; }

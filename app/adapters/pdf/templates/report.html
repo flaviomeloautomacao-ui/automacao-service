@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Laudo Técnico — {{ metadata.razao_social | default("Empresa") }}</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+{# ====================================================================
+   CAPA
+   ==================================================================== #}
+<div class="cover">
+  <h1>Laudo Técnico de Análise de Riscos</h1>
+  <p class="subtitle">Avaliação de Máquinas e Equipamentos — NR-12</p>
+
+  <div class="company-info">
+    <p><strong>Empresa:</strong> {{ metadata.razao_social | default("—") }}</p>
+    {% if metadata.cnpj %}
+      <p><strong>CNPJ:</strong> {{ metadata.cnpj }}</p>
+    {% endif %}
+    {% if metadata.site %}
+      <p><strong>Unidade:</strong> {{ metadata.site }}</p>
+    {% endif %}
+    {% if metadata.endereco %}
+      <p><strong>Endereço:</strong> {{ metadata.endereco }}</p>
+    {% endif %}
+    {% if metadata.responsavel %}
+      <p><strong>Responsável Técnico:</strong> {{ metadata.responsavel }}</p>
+    {% endif %}
+  </div>
+
+  <div class="date-info">
+    {% if metadata.data_avaliacao %}
+      <p>Data da&nbsp;avaliação: {{ metadata.data_avaliacao }}</p>
+    {% endif %}
+    <p>Gerado em: {{ metadata.data_geracao | default("—") }}</p>
+  </div>
+</div>
+
+{# ====================================================================
+   SUMÁRIO
+   ==================================================================== #}
+<div class="toc">
+  <h2>Sumário</h2>
+  <ul>
+    <li><span class="toc-number">1.</span> Introdução</li>
+    <li><span class="toc-number">2.</span> Metodologia</li>
+    <li><span class="toc-number">3.</span> Inventário de Riscos</li>
+    <li><span class="toc-number">4.</span> Recomendações e Justificativas</li>
+    <li><span class="toc-number">5.</span> Resumo Executivo</li>
+    <li><span class="toc-number">6.</span> Referências Normativas</li>
+  </ul>
+</div>
+
+{# ====================================================================
+   1. INTRODUÇÃO
+   ==================================================================== #}
+<div class="section">
+  <h2><span class="section-number">1.</span> Introdução</h2>
+
+  {% if llm_sections.introducao %}
+    <div class="llm-section">
+      {{ llm_sections.introducao | safe }}
+    </div>
+  {% else %}
+    <p>
+      Este laudo apresenta a análise de riscos de máquinas e equipamentos
+      da empresa <strong>{{ metadata.razao_social | default("—") }}</strong>,
+      unidade <strong>{{ metadata.site | default("—") }}</strong>,
+      realizada conforme os requisitos da Norma Regulamentadora NR-12
+      e normas técnicas aplicáveis (ABNT NBR ISO 12100, entre outras).
+    </p>
+    <p>
+      O objetivo é identificar perigos, avaliar os riscos associados e
+      propor medidas de proteção que garantam a segurança dos trabalhadores
+      durante operação, manutenção e limpeza dos equipamentos inventariados.
+    </p>
+  {% endif %}
+</div>
+
+{# ====================================================================
+   2. METODOLOGIA
+   ==================================================================== #}
+<div class="section">
+  <h2><span class="section-number">2.</span> Metodologia</h2>
+
+  {% if llm_sections.metodologia %}
+    <div class="llm-section">
+      {{ llm_sections.metodologia | safe }}
+    </div>
+  {% else %}
+    <p>
+      A avaliação seguiu as etapas abaixo:
+    </p>
+    <ol>
+      <li>Inventário de máquinas e equipamentos no local avaliado.</li>
+      <li>Identificação de perigos conforme ABNT NBR ISO 12100:2013.</li>
+      <li>Classificação do nível de risco (trivial, tolerável, moderado, substancial, intolerável) com base na combinação de probabilidade e severidade.</li>
+      <li>Hierarquização das ações conforme prioridade (baixa, média, alta, urgente).</li>
+      <li>Elaboração de recomendações técnicas para eliminação ou redução dos riscos identificados.</li>
+    </ol>
+    <p>
+      Os critérios de probabilidade e severidade estão alinhados aos
+      padrões reconhecidos pela NR-12 e ISO 12100.
+    </p>
+  {% endif %}
+</div>
+
+{# ====================================================================
+   3. INVENTÁRIO DE RISCOS — TABELA PRINCIPAL
+   ==================================================================== #}
+<div class="section">
+  <h2><span class="section-number">3.</span> Inventário de Riscos</h2>
+
+  <p>
+    A tabela a seguir apresenta o inventário detalhado de perigos, riscos e
+    recomendações para cada máquina / equipamento avaliado.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Área</th>
+        <th>Equipamento</th>
+        <th>Perigo</th>
+        <th>Causa</th>
+        <th>Consequência</th>
+        <th>Risco</th>
+        <th>Prioridade</th>
+        <th>Norma</th>
+        <th>Recomendação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ row.area }}</td>
+        <td>{{ row.equipamento }}</td>
+        <td>{{ row.perigo }}</td>
+        <td>{{ row.causa }}</td>
+        <td>{{ row.consequencia }}</td>
+        <td>
+          <span class="risk-badge risk-{{ row.risco | lower | replace('á', 'a') | replace('é', 'e') }}">
+            {{ row.risco }}
+          </span>
+        </td>
+        <td>
+          {% if row.prioridade %}
+            <span class="priority-badge priority-{{ row.prioridade | lower | replace('é', 'e') }}">
+              {{ row.prioridade }}
+            </span>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>{{ row.norma_ref | default("—") }}</td>
+        <td>{{ row.recomendacao | default("—") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="text-muted mt-1">
+    Total de itens avaliados: <strong>{{ rows | length }}</strong>
+  </p>
+</div>
+
+{# ====================================================================
+   4. RECOMENDAÇÕES E JUSTIFICATIVAS (LLM)
+   ==================================================================== #}
+<div class="section">
+  <h2><span class="section-number">4.</span> Recomendações e Justificativas</h2>
+
+  {% if llm_sections.recomendacoes %}
+    <div class="llm-section">
+      <h3>Recomendações</h3>
+      {{ llm_sections.recomendacoes | safe }}
+    </div>
+  {% else %}
+    <p class="text-muted">Seção de recomendações não gerada pela LLM.</p>
+  {% endif %}
+
+  {% if llm_sections.justificativas %}
+    <div class="llm-section">
+      <h3>Justificativas Técnicas</h3>
+      {{ llm_sections.justificativas | safe }}
+    </div>
+  {% else %}
+    <p class="text-muted">Seção de justificativas não gerada pela LLM.</p>
+  {% endif %}
+</div>
+
+{# ====================================================================
+   5. RESUMO EXECUTIVO
+   ==================================================================== #}
+<div class="section">
+  <h2><span class="section-number">5.</span> Resumo Executivo</h2>
+
+  {% if llm_sections.resumo %}
+    <div class="llm-section">
+      {{ llm_sections.resumo | safe }}
+    </div>
+  {% else %}
+    <p>
+      A avaliação identificou <strong>{{ rows | length }}</strong> itens de risco
+      na unidade <strong>{{ metadata.site | default("—") }}</strong>.
+      As recomendações devem ser implementadas conforme a prioridade atribuída,
+      priorizando-se ações sobre riscos classificados como
+      <em>intolerável</em> e <em>substancial</em>.
+    </p>
+  {% endif %}
+</div>
+
+{# ====================================================================
+   6. REFERÊNCIAS NORMATIVAS
+   ==================================================================== #}
+<div class="section references">
+  <h2><span class="section-number">6.</span> Referências Normativas</h2>
+
+  {% if llm_sections.referencias %}
+    {{ llm_sections.referencias | safe }}
+  {% else %}
+    <ul>
+      <li>NR-12 — Segurança no Trabalho em Máquinas e Equipamentos (MTE).</li>
+      <li>ABNT NBR ISO 12100:2013 — Segurança de máquinas — Princípios gerais de projeto — Apreciação e redução de riscos.</li>
+      <li>ABNT NBR 14153:2013 — Segurança de máquinas — Partes de sistemas de comando relacionadas à segurança.</li>
+      <li>ABNT NBR ISO 13849-1:2019 — Segurança de máquinas — Partes de sistemas de comando relacionadas à segurança — Parte 1: Princípios gerais de projeto.</li>
+      <li>NR-10 — Segurança em Instalações e Serviços em Eletricidade.</li>
+    </ul>
+  {% endif %}
+</div>
+
+</body>
+</html>

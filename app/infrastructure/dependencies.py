@@ -28,6 +28,8 @@ if TYPE_CHECKING:
     from loguru import Logger
 
     from app.adapters.db.repository import ReportRepository
+    from app.adapters.llm.openrouter_client import OpenRouterClient
+    from app.adapters.pdf.renderer import WeasyPdfRenderer
     from app.adapters.storage.supabase_storage import SupabaseStorage
 
 
@@ -129,13 +131,31 @@ def get_storage() -> "SupabaseStorage":
     )
 
 
-def get_llm() -> Any | None:
-    """Placeholder — retorna o client de LLM (OpenRouter).
+def get_llm() -> "OpenRouterClient":
+    """Retorna o client OpenRouter (LLM) configurado.
 
-    Será implementado quando o adapter de LLM estiver pronto.
-    Por enquanto retorna ``None``.
+    Utiliza as configurações ``OPENROUTER_API_KEY``, ``OPENROUTER_BASE_URL``
+    e ``LLM_MODEL`` do Settings para construir o adaptador.
 
     Returns:
-        None: Ainda não implementado.
+        OpenRouterClient: Implementação concreta de ``LLMPort``.
     """
-    return None
+    from app.adapters.llm.openrouter_client import OpenRouterClient  # noqa: PLC0415
+
+    settings = get_settings()
+    return OpenRouterClient(
+        api_key=settings.OPENROUTER_API_KEY,
+        base_url=settings.OPENROUTER_BASE_URL,
+        model=settings.LLM_MODEL,
+    )
+
+
+def get_pdf_renderer() -> "WeasyPdfRenderer":
+    """Retorna o renderer de PDF (WeasyPrint + Jinja2).
+
+    Returns:
+        WeasyPdfRenderer: Implementação concreta de ``PdfRendererPort``.
+    """
+    from app.adapters.pdf.renderer import WeasyPdfRenderer  # noqa: PLC0415
+
+    return WeasyPdfRenderer()
