@@ -16,25 +16,48 @@ import pytest
 from app.adapters.spreadsheet.parser import PandasSpreadsheetParser
 from app.adapters.spreadsheet.validator import BasicSpreadsheetValidator
 from app.application.use_cases.process_upload import ProcessUploadUseCase
-from app.domain.entities import RiskLevel
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+# Colunas da planilha real
+_REAL_COLUMNS = [
+    "Equipamento",
+    "Descrição do equipamento",
+    "Riscos",
+    "Perigo",
+    "Causas Possíveis",
+    "Consequências",
+    "Categoria da Severidade",
+    "Categoria do Risco",
+    "Medidas Preventivas Existentes",
+    "Medidas Preventivas a Implementar",
+    "Observações",
+]
+
+
 def _build_csv_bytes() -> bytes:
-    """Cria bytes CSV mínimos válidos para o parser."""
-    df = pd.DataFrame({
-        "area": ["Produção"],
-        "equipamento": ["Prensa Hidráulica"],
-        "perigo": ["Esmagamento de membros"],
-        "causa": ["Falha na proteção"],
-        "consequencia": ["Amputação"],
-        "risco": ["moderado"],
-    })
+    """Cria bytes CSV mínimos válidos simulando o layout real da planilha."""
+    header = _REAL_COLUMNS
+    data = [
+        "Prensa Hidráulica",
+        "Prensa 150t",
+        "Mecânico",
+        "Esmagamento de membros",
+        "Falha na proteção",
+        "Amputação",
+        "IV",
+        "Alto",
+        "Barreira",
+        "Sensor",
+        None,
+    ]
+    rows: list[list] = [header, data]
+    df = pd.DataFrame(rows)
     buf = io.StringIO()
-    df.to_csv(buf, index=False)
+    df.to_csv(buf, index=False, header=False)
     return buf.getvalue().encode("utf-8")
 
 

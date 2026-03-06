@@ -101,6 +101,7 @@ class ProcessUploadUseCase:
         file_bytes: bytes,
         filename: str,
         content_type: str,
+        profile: str | None = None,
         company_metadata: dict[str, Any] | None = None,
     ) -> dict[str, str]:
         """Executa o pipeline completo de processamento de upload.
@@ -149,7 +150,7 @@ class ProcessUploadUseCase:
         pdf_bytes = self._render_pdf(rows_dicts, llm_sections_html, company_metadata)
 
         # 8 + 9) Armazena PDF e persiste metadados do relatório
-        report_id, pdf_url = await self._store_report(
+        report_id, pdf_url, pdf_path = await self._store_report(
             draft_id=draft_id,
             pdf_bytes=pdf_bytes,
         )
@@ -166,6 +167,7 @@ class ProcessUploadUseCase:
             "draft_id": draft_id,
             "report_id": report_id,
             "pdf_url": pdf_url,
+            "pdf_path": pdf_path,
         }
 
     # ------------------------------------------------------------------
@@ -369,11 +371,11 @@ class ProcessUploadUseCase:
         *,
         draft_id: str,
         pdf_bytes: bytes,
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str, str]:
         """Etapas 8 + 9 — armazena PDF e persiste metadados do relatório.
 
         Returns:
-            Tupla ``(report_id, pdf_url)``.
+            Tupla ``(report_id, pdf_url, pdf_path)``.
         """
         report_id = str(uuid.uuid4())
         version = 1
@@ -413,4 +415,4 @@ class ProcessUploadUseCase:
             draft_id,
         )
 
-        return created_id, pdf_url
+        return created_id, pdf_url, storage_path

@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     # ── Supabase ────────────────────────────────────────────────
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
-    SUPABASE_BUCKET: str = "documents"
+    SUPABASE_BUCKET: str = "reports"
 
     # ── LLM / OpenRouter ────────────────────────────────────────
     OPENROUTER_API_KEY: str = ""

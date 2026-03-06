@@ -122,42 +122,34 @@
     <thead>
       <tr>
         <th>#</th>
-        <th>Área</th>
         <th>Equipamento</th>
+        <th>Descrição</th>
+        <th>Riscos</th>
         <th>Perigo</th>
-        <th>Causa</th>
-        <th>Consequência</th>
-        <th>Risco</th>
-        <th>Prioridade</th>
-        <th>Norma</th>
-        <th>Recomendação</th>
+        <th>Causas</th>
+        <th>Consequências</th>
+        <th>Severidade</th>
+        <th>Cat. Risco</th>
+        <th>Medidas Existentes</th>
+        <th>Medidas a Implementar</th>
+        <th>Observações</th>
       </tr>
     </thead>
     <tbody>
       {% for row in rows %}
       <tr>
         <td>{{ loop.index }}</td>
-        <td>{{ row.area }}</td>
         <td>{{ row.equipamento }}</td>
+        <td>{{ row.descricao_equipamento | default("—") }}</td>
+        <td>{{ row.riscos | default("—") }}</td>
         <td>{{ row.perigo }}</td>
-        <td>{{ row.causa }}</td>
-        <td>{{ row.consequencia }}</td>
-        <td>
-          <span class="risk-badge risk-{{ row.risco | lower | replace('á', 'a') | replace('é', 'e') }}">
-            {{ row.risco }}
-          </span>
-        </td>
-        <td>
-          {% if row.prioridade %}
-            <span class="priority-badge priority-{{ row.prioridade | lower | replace('é', 'e') }}">
-              {{ row.prioridade }}
-            </span>
-          {% else %}
-            —
-          {% endif %}
-        </td>
-        <td>{{ row.norma_ref | default("—") }}</td>
-        <td>{{ row.recomendacao | default("—") }}</td>
+        <td>{{ row.causas }}</td>
+        <td>{{ row.consequencias }}</td>
+        <td>{{ row.categoria_severidade | default("—") }}</td>
+        <td>{{ row.categoria_risco | default("—") }}</td>
+        <td>{{ row.medidas_existentes | default("—") }}</td>
+        <td>{{ row.medidas_implementar | default("—") }}</td>
+        <td>{{ row.observacoes | default("—") }}</td>
       </tr>
       {% endfor %}
     </tbody>

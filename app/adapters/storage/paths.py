@@ -7,7 +7,7 @@ Padrões:
 
 * ``uploads/{upload_id}/{filename}``
 * ``uploads/{upload_id}/clone_{YYYYMMDD}_{filename}``
-* ``reports/{report_id}/report_v{version}.pdf``
+* ``{report_id}/report_v{version}.pdf``
 """
 
 from __future__ import annotations
@@ -64,11 +64,11 @@ def report_pdf_path(report_id: str, version: int = 1) -> str:
         version: número da versão do laudo.
 
     Returns:
-        Path no formato ``reports/{report_id}/report_v{version}.pdf``.
+        Path no formato ``{report_id}/report_v{version}.pdf``.
 
     Example::
 
         >>> report_pdf_path("def-456", version=2)
-        'reports/def-456/report_v2.pdf'
+        'def-456/report_v2.pdf'
     """
-    return f"reports/{report_id}/report_v{version}.pdf"
+    return f"{report_id}/report_v{version}.pdf"

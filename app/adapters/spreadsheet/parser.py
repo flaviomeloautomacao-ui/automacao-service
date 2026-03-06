@@ -1,7 +1,13 @@
 """Adaptador de parsing de planilhas usando pandas.
 
-Converte arquivos XLSX / CSV em listas de ``MachineRiskRow``, aplicando
-normalização de colunas, trimming de strings e mapeamento de aliases.
+Converte arquivos XLSX / CSV em listas de ``MachineRiskRow``, lidando
+com o layout real da planilha padrão de análise de risco:
+
+- Detecção automática do cabeçalho (linhas vazias antes do header).
+- Remoção de colunas totalmente vazias e da coluna auxiliar "Coluna1".
+- Mapeamento de nomes de coluna da planilha → campos normalizados.
+- Preservação de conteúdo multiline nas células.
+- Logging de debug em cada etapa do pipeline.
 """
 
 from __future__ import annotations
@@ -10,164 +16,56 @@ import io
 from typing import Any
 
 import pandas as pd
+from loguru import logger
 
-from app.domain.entities import MachineRiskRow, PriorityLevel, RiskLevel
+from app.domain.entities import MachineRiskRow
 from app.domain.errors import ValidationError
 
 
 # ---------------------------------------------------------------------------
-# Mapeamento de aliases → nome canônico de coluna
+# Mapeamento coluna-planilha → campo normalizado
 # ---------------------------------------------------------------------------
 
-COLUMN_ALIASES: dict[str, str] = {
-    # area
-    "area": "area",
-    "área": "area",
-    "setor": "area",
-    "sector": "area",
-    # equipamento
+COLUMN_MAP: dict[str, str] = {
     "equipamento": "equipamento",
-    "máquina": "equipamento",
-    "maquina": "equipamento",
-    "machine": "equipamento",
-    "equipment": "equipamento",
-    # perigo
+    "descrição do equipamento": "descricao_equipamento",
+    "descricao do equipamento": "descricao_equipamento",
+    "riscos": "riscos",
     "perigo": "perigo",
-    "hazard": "perigo",
-    "risco_desc": "perigo",
-    # causa
-    "causa": "causa",
-    "cause": "causa",
-    "causa_raiz": "causa",
-    # consequencia
-    "consequencia": "consequencia",
-    "consequência": "consequencia",
-    "consequence": "consequencia",
-    # risco
-    "risco": "risco",
-    "risk": "risco",
-    "nivel_risco": "risco",
-    "nível_risco": "risco",
-    "risk_level": "risco",
-    # probabilidade
-    "probabilidade": "probabilidade",
-    "probability": "probabilidade",
-    "prob": "probabilidade",
-    # severidade
-    "severidade": "severidade",
-    "severity": "severidade",
-    "sev": "severidade",
-    # norma_ref
-    "norma_ref": "norma_ref",
-    "norma": "norma_ref",
-    "referencia_normativa": "norma_ref",
-    "norm_ref": "norma_ref",
-    # recomendacao
-    "recomendacao": "recomendacao",
-    "recomendação": "recomendacao",
-    "recommendation": "recomendacao",
-    # prioridade
-    "prioridade": "prioridade",
-    "priority": "prioridade",
-    # foto_ref
-    "foto_ref": "foto_ref",
-    "foto": "foto_ref",
-    "photo": "foto_ref",
-    "evidencia": "foto_ref",
-    "evidência": "foto_ref",
-    # observacoes
-    "observacoes": "observacoes",
+    "causas possíveis": "causas",
+    "causas possiveis": "causas",
+    "causas": "causas",
+    "consequências": "consequencias",
+    "consequencias": "consequencias",
+    "categoria da severidade": "categoria_severidade",
+    "categoria da severidade ": "categoria_severidade",
+    "categoria do risco": "categoria_risco",
+    "categoria do risco ": "categoria_risco",
+    "medidas preventivas existentes": "medidas_existentes",
+    "medidas preventivas a implementar": "medidas_implementar",
     "observações": "observacoes",
-    "obs": "observacoes",
-    "observations": "observacoes",
-    "notes": "observacoes",
+    "observacoes": "observacoes",
 }
 
-# Campos obrigatórios em ``MachineRiskRow``.
-REQUIRED_COLUMNS: set[str] = {"area", "equipamento", "perigo", "causa", "consequencia", "risco"}
+#: Tokens usados para detectar a linha de cabeçalho.
+_HEADER_TOKENS: set[str] = {"equipamento", "riscos", "perigo", "consequências"}
 
-# Todas as colunas válidas aceitas pelo modelo.
+#: Campos obrigatórios que devem estar presentes como colunas.
+REQUIRED_COLUMNS: set[str] = {"equipamento", "perigo", "causas", "consequencias"}
+
+#: Todas as colunas aceitas pelo modelo ``MachineRiskRow``.
 ALL_COLUMNS: set[str] = set(MachineRiskRow.model_fields.keys())
-
-# Campos especiais que precisam de parse de Enum
-_RISK_LEVEL_MAP: dict[str, RiskLevel] = {v.value: v for v in RiskLevel}
-_PRIORITY_LEVEL_MAP: dict[str, PriorityLevel] = {v.value: v for v in PriorityLevel}
 
 
 # ---------------------------------------------------------------------------
 # Funções auxiliares
 # ---------------------------------------------------------------------------
 
-def _normalize_column_name(name: str) -> str:
-    """Normaliza o nome de coluna: lower, strip, remove acentos simples."""
-    return name.strip().lower()
-
-
-def _resolve_aliases(columns: list[str]) -> dict[str, str]:
-    """Retorna mapa {nome_original -> nome_canônico} para as colunas do DataFrame.
-
-    Raises:
-        ValidationError: se duas colunas originais mapeiam para o mesmo nome canônico.
-    """
-    mapping: dict[str, str] = {}
-    seen_canonical: dict[str, str] = {}  # canonical -> original
-
-    for col in columns:
-        normalized = _normalize_column_name(col)
-        canonical = COLUMN_ALIASES.get(normalized)
-        if canonical is None:
-            # Coluna desconhecida — será ignorada
-            continue
-
-        if canonical in seen_canonical:
-            raise ValidationError(
-                f"Colunas duplicadas mapeiam para '{canonical}': "
-                f"'{seen_canonical[canonical]}' e '{col}'"
-            )
-
-        seen_canonical[canonical] = col
-        mapping[col] = canonical
-
-    return mapping
-
-
-def _parse_risk_level(value: Any) -> RiskLevel:
-    """Converte texto livre para ``RiskLevel``."""
-    if isinstance(value, RiskLevel):
-        return value
-
-    text = str(value).strip().lower()
-    level = _RISK_LEVEL_MAP.get(text)
-    if level is None:
-        valid = ", ".join(sorted(_RISK_LEVEL_MAP.keys()))
-        raise ValidationError(
-            f"Nível de risco inválido: '{value}'. Valores aceitos: {valid}"
-        )
-    return level
-
-
-def _parse_priority_level(value: Any) -> PriorityLevel | None:
-    """Converte texto livre para ``PriorityLevel`` (ou None)."""
-    if value is None or (isinstance(value, float) and pd.isna(value)):
-        return None
-    if isinstance(value, PriorityLevel):
-        return value
-
-    text = str(value).strip().lower()
-    if not text:
-        return None
-
-    level = _PRIORITY_LEVEL_MAP.get(text)
-    if level is None:
-        valid = ", ".join(sorted(_PRIORITY_LEVEL_MAP.keys()))
-        raise ValidationError(
-            f"Prioridade inválida: '{value}'. Valores aceitos: {valid}"
-        )
-    return level
-
-
 def _cell_to_optional_str(value: Any) -> str | None:
-    """Converte valor de célula para string (ou None se vazio/NaN)."""
+    """Converte valor de célula para string (ou None se vazio/NaN).
+
+    Preserva conteúdo multiline.
+    """
     if value is None:
         return None
     if isinstance(value, float) and pd.isna(value):
@@ -186,6 +84,63 @@ def _cell_to_str(value: Any, field: str, row_index: int) -> str:
     return result
 
 
+def _is_empty_row(row: pd.Series) -> bool:
+    """Retorna True se todos os valores da linha forem nulos ou vazios."""
+    for v in row:
+        if v is None:
+            continue
+        if isinstance(v, float) and pd.isna(v):
+            continue
+        if isinstance(v, str) and not v.strip():
+            continue
+        return False
+    return True
+
+
+def _detect_header_row(df_raw: pd.DataFrame) -> int:
+    """Encontra o índice da linha que contém os tokens do cabeçalho.
+
+    Procura a primeira linha cujas células (convertidas para lower/strip)
+    contêm simultaneamente todos os tokens em ``_HEADER_TOKENS``.
+
+    Returns:
+        Índice (0-based) da linha de cabeçalho.
+
+    Raises:
+        ValidationError: se nenhuma linha válida for encontrada.
+    """
+    for row_idx in range(len(df_raw)):
+        cells = set()
+        for v in df_raw.iloc[row_idx]:
+            if isinstance(v, str):
+                cells.add(v.strip().lower())
+        if _HEADER_TOKENS.issubset(cells):
+            logger.debug("Cabeçalho detectado na linha {} (0-based)", row_idx)
+            return row_idx
+
+    raise ValidationError(
+        "Não foi possível detectar a linha de cabeçalho na planilha. "
+        "Esperava-se uma linha contendo simultaneamente: "
+        + ", ".join(sorted(_HEADER_TOKENS))
+    )
+
+
+def _normalize_columns(columns: list[str]) -> dict[str, str]:
+    """Retorna mapa {nome_original → campo_normalizado} a partir de ``COLUMN_MAP``.
+
+    Colunas que não batem no mapa são ignoradas (ex.: ``Coluna1``).
+    """
+    mapping: dict[str, str] = {}
+    for col in columns:
+        key = col.strip().lower()
+        canonical = COLUMN_MAP.get(key)
+        if canonical is not None:
+            mapping[col] = canonical
+        else:
+            logger.debug("Coluna ignorada (sem mapeamento): '{}'", col)
+    return mapping
+
+
 # ---------------------------------------------------------------------------
 # Parser
 # ---------------------------------------------------------------------------
@@ -194,6 +149,9 @@ class PandasSpreadsheetParser:
     """Parser de planilhas (XLSX / CSV) que retorna ``list[MachineRiskRow]``.
 
     Implementa ``SpreadsheetParserPort``.
+
+    Suporta o layout real da planilha padrão de análise de risco, incluindo
+    linhas vazias antes do cabeçalho, colunas auxiliares e conteúdo multiline.
 
     Uso::
 
@@ -215,8 +173,12 @@ class PandasSpreadsheetParser:
             ValidationError: se formato não suportado, colunas obrigatórias
                 faltando ou dados inválidos.
         """
-        df = self._read_dataframe(file_bytes, filename)
-        df = self._normalize_dataframe(df)
+        df_raw = self._read_raw(file_bytes, filename)
+        logger.debug("DataFrame bruto: shape={}", df_raw.shape)
+
+        df = self._detect_and_set_header(df_raw)
+        df = self._cleanup_columns(df)
+        df = self._normalize_and_filter(df)
         return self._convert_rows(df)
 
     # ------------------------------------------------------------------
@@ -224,14 +186,14 @@ class PandasSpreadsheetParser:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _read_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
-        """Lê os bytes como DataFrame de acordo com a extensão do arquivo."""
+    def _read_raw(file_bytes: bytes, filename: str) -> pd.DataFrame:
+        """Lê os bytes sem interpretar cabeçalho (``header=None``)."""
         lower = filename.strip().lower()
         buffer = io.BytesIO(file_bytes)
 
         if lower.endswith(".xlsx"):
             try:
-                return pd.read_excel(buffer, engine="openpyxl")
+                return pd.read_excel(buffer, engine="openpyxl", header=None)
             except Exception as exc:
                 raise ValidationError(
                     f"Falha ao ler arquivo Excel '{filename}': {exc}"
@@ -240,10 +202,10 @@ class PandasSpreadsheetParser:
         if lower.endswith(".csv"):
             try:
                 buffer_text = io.StringIO(file_bytes.decode("utf-8"))
-                return pd.read_csv(buffer_text)
+                return pd.read_csv(buffer_text, header=None)
             except UnicodeDecodeError:
                 buffer_text = io.StringIO(file_bytes.decode("latin-1"))
-                return pd.read_csv(buffer_text)
+                return pd.read_csv(buffer_text, header=None)
             except Exception as exc:
                 raise ValidationError(
                     f"Falha ao ler arquivo CSV '{filename}': {exc}"
@@ -255,18 +217,75 @@ class PandasSpreadsheetParser:
         )
 
     @staticmethod
-    def _normalize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-        """Normaliza colunas (aliases) e valores (trim / NaN → None)."""
+    def _detect_and_set_header(df_raw: pd.DataFrame) -> pd.DataFrame:
+        """Detecta a linha de cabeçalho e retorna DataFrame com dados abaixo dela."""
+        header_idx = _detect_header_row(df_raw)
+
+        # Usa a linha detectada como nomes de coluna
+        header_values = [
+            str(v).strip() if pd.notna(v) else f"__empty_{i}"
+            for i, v in enumerate(df_raw.iloc[header_idx])
+        ]
+        df = df_raw.iloc[header_idx + 1:].copy()
+        df.columns = header_values
+        df = df.reset_index(drop=True)
+
+        logger.debug(
+            "Colunas após detecção do cabeçalho: {}",
+            list(df.columns),
+        )
+        return df
+
+    @staticmethod
+    def _cleanup_columns(df: pd.DataFrame) -> pd.DataFrame:
+        """Remove colunas totalmente vazias, colunas auxiliares e a primeira coluna vazia.
+
+        Não remove colunas que possuem mapeamento conhecido em ``COLUMN_MAP``
+        (mesmo que estejam sem dados), pois a validação posterior tratará
+        campos obrigatórios vazios.
+        """
+        cols_to_drop: list[str] = []
+
+        for col in df.columns:
+            col_str = str(col).strip().lower()
+
+            # Coluna auxiliar "Coluna1"
+            if col_str == "coluna1":
+                cols_to_drop.append(col)
+                continue
+
+            # Colunas cujo nome é placeholder vazio
+            if col_str.startswith("__empty_"):
+                cols_to_drop.append(col)
+                continue
+
+            # Só remove por "dados vazios" se a coluna NÃO tiver mapeamento
+            if col_str not in COLUMN_MAP:
+                if df[col].dropna().astype(str).str.strip().replace("", pd.NA).dropna().empty:
+                    cols_to_drop.append(col)
+                    continue
+
+        if cols_to_drop:
+            logger.debug("Colunas removidas: {}", cols_to_drop)
+            df = df.drop(columns=cols_to_drop)
+
+        return df
+
+    @staticmethod
+    def _normalize_and_filter(df: pd.DataFrame) -> pd.DataFrame:
+        """Mapeia nomes de coluna, filtra apenas cols conhecidas e remove linhas vazias."""
         if df.empty:
             raise ValidationError("A planilha está vazia (sem linhas de dados).")
 
-        # Resolver aliases
-        alias_map = _resolve_aliases(list(df.columns.astype(str)))
-        df = df.rename(columns=alias_map)
+        # Mapear nomes
+        col_map = _normalize_columns(list(df.columns.astype(str)))
+        df = df.rename(columns=col_map)
 
         # Manter apenas colunas conhecidas
         known = [c for c in df.columns if c in ALL_COLUMNS]
         df = df[known]
+
+        logger.debug("Colunas normalizadas finais: {}", list(df.columns))
 
         # Verificar colunas obrigatórias
         present = set(df.columns)
@@ -276,15 +295,21 @@ class PandasSpreadsheetParser:
                 f"Colunas obrigatórias ausentes na planilha: {sorted(missing)}"
             )
 
-        # Trim em colunas de texto
-        for col in df.select_dtypes(include=["object", "string"]).columns:
-            df[col] = df[col].map(
-                lambda v: v.strip() if isinstance(v, str) else v
-            )
-
         # NaN → None
         df = df.where(pd.notna(df), None)
 
+        # Remover linhas completamente vazias
+        original_len = len(df)
+        df = df[~df.apply(_is_empty_row, axis=1)]
+        df = df.reset_index(drop=True)
+        removed = original_len - len(df)
+        if removed:
+            logger.debug("{} linha(s) vazia(s) removida(s)", removed)
+
+        if df.empty:
+            raise ValidationError("A planilha está vazia (sem linhas de dados após filtro).")
+
+        logger.debug("Total de linhas válidas: {}", len(df))
         return df
 
     @staticmethod
@@ -296,21 +321,37 @@ class PandasSpreadsheetParser:
             row_idx = int(idx)  # type: ignore[arg-type]
             try:
                 row = MachineRiskRow(
-                    area=_cell_to_str(record.get("area"), "area", row_idx),
-                    equipamento=_cell_to_str(record.get("equipamento"), "equipamento", row_idx),
-                    perigo=_cell_to_str(record.get("perigo"), "perigo", row_idx),
-                    causa=_cell_to_str(record.get("causa"), "causa", row_idx),
-                    consequencia=_cell_to_str(record.get("consequencia"), "consequencia", row_idx),
-                    risco=_parse_risk_level(
-                        _cell_to_str(record.get("risco"), "risco", row_idx)
+                    equipamento=_cell_to_str(
+                        record.get("equipamento"), "equipamento", row_idx
                     ),
-                    probabilidade=_cell_to_optional_str(record.get("probabilidade")),
-                    severidade=_cell_to_optional_str(record.get("severidade")),
-                    norma_ref=_cell_to_optional_str(record.get("norma_ref")),
-                    recomendacao=_cell_to_optional_str(record.get("recomendacao")),
-                    prioridade=_parse_priority_level(record.get("prioridade")),
-                    foto_ref=_cell_to_optional_str(record.get("foto_ref")),
-                    observacoes=_cell_to_optional_str(record.get("observacoes")),
+                    descricao_equipamento=_cell_to_optional_str(
+                        record.get("descricao_equipamento")
+                    ),
+                    riscos=_cell_to_optional_str(record.get("riscos")),
+                    perigo=_cell_to_str(
+                        record.get("perigo"), "perigo", row_idx
+                    ),
+                    causas=_cell_to_str(
+                        record.get("causas"), "causas", row_idx
+                    ),
+                    consequencias=_cell_to_str(
+                        record.get("consequencias"), "consequencias", row_idx
+                    ),
+                    categoria_severidade=_cell_to_optional_str(
+                        record.get("categoria_severidade")
+                    ),
+                    categoria_risco=_cell_to_optional_str(
+                        record.get("categoria_risco")
+                    ),
+                    medidas_existentes=_cell_to_optional_str(
+                        record.get("medidas_existentes")
+                    ),
+                    medidas_implementar=_cell_to_optional_str(
+                        record.get("medidas_implementar")
+                    ),
+                    observacoes=_cell_to_optional_str(
+                        record.get("observacoes")
+                    ),
                 )
             except ValidationError:
                 raise
@@ -321,4 +362,5 @@ class PandasSpreadsheetParser:
 
             rows.append(row)
 
+        logger.debug("Conversão finalizada: {} MachineRiskRow criadas", len(rows))
         return rows

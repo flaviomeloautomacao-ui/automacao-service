@@ -49,9 +49,12 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=422,
             content={
-                "error": "validation_error",
-                "message": str(exc),
-                "errors": exc.errors,
+                "data": None,
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": str(exc),
+                    "details": exc.errors,
+                },
             },
         )
 
@@ -66,8 +69,11 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=502,
             content={
-                "error": "storage_error",
-                "message": "Falha no serviço de armazenamento.",
+                "data": None,
+                "error": {
+                    "code": "STORAGE_ERROR",
+                    "message": "Falha no serviço de armazenamento.",
+                },
             },
         )
 
@@ -82,8 +88,11 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=500,
             content={
-                "error": "db_error",
-                "message": "Falha no banco de dados.",
+                "data": None,
+                "error": {
+                    "code": "DB_ERROR",
+                    "message": "Falha no banco de dados.",
+                },
             },
         )
 
@@ -98,8 +107,11 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=502,
             content={
-                "error": "llm_error",
-                "message": "Falha no serviço de geração de texto.",
+                "data": None,
+                "error": {
+                    "code": "LLM_ERROR",
+                    "message": "Falha no serviço de geração de texto.",
+                },
             },
         )
 
@@ -114,8 +126,11 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=500,
             content={
-                "error": "template_error",
-                "message": "Falha na geração do relatório.",
+                "data": None,
+                "error": {
+                    "code": "TEMPLATE_ERROR",
+                    "message": "Falha na geração do relatório.",
+                },
             },
         )
 
@@ -130,8 +145,11 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=500,
             content={
-                "error": "internal_error",
-                "message": "Erro interno do serviço.",
+                "data": None,
+                "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Erro interno do serviço.",
+                },
             },
         )
 

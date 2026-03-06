@@ -72,29 +72,28 @@ class MachineRiskRow(BaseModel):
     """Linha normalizada da planilha de riscos de máquinas / equipamentos.
 
     Cada instância representa **um** perigo identificado para um equipamento.
+    Campos mapeados a partir da planilha padrão de análise de risco.
     """
 
     # Identificação
-    area: str = Field(..., description="Área / setor onde o equipamento se encontra")
     equipamento: str = Field(..., description="Nome ou tag do equipamento")
+    descricao_equipamento: Optional[str] = Field(None, description="Descrição detalhada do equipamento")
 
     # Perigo e causas
+    riscos: Optional[str] = Field(None, description="Descrição geral dos riscos associados")
     perigo: str = Field(..., description="Descrição do perigo identificado")
-    causa: str = Field(..., description="Causa-raiz ou fator contribuinte")
-    consequencia: str = Field(..., description="Consequência potencial do perigo")
+    causas: str = Field(..., description="Causas possíveis do perigo")
+    consequencias: str = Field(..., description="Consequências potenciais do perigo")
 
     # Avaliação de risco
-    risco: RiskLevel = Field(..., description="Nível de risco avaliado")
-    probabilidade: Optional[str] = Field(None, description="Probabilidade de ocorrência (texto livre ou escala)")
-    severidade: Optional[str] = Field(None, description="Severidade do dano (texto livre ou escala)")
+    categoria_severidade: Optional[str] = Field(None, description="Categoria da severidade (texto livre ou escala)")
+    categoria_risco: Optional[str] = Field(None, description="Categoria do risco (texto livre ou escala)")
 
-    # Normas e recomendações
-    norma_ref: Optional[str] = Field(None, description="Referência normativa (ex.: NR-12, ISO 12100)")
-    recomendacao: Optional[str] = Field(None, description="Ação recomendada para mitigar o risco")
-    prioridade: Optional[PriorityLevel] = Field(None, description="Prioridade da recomendação")
+    # Medidas preventivas
+    medidas_existentes: Optional[str] = Field(None, description="Medidas preventivas já existentes")
+    medidas_implementar: Optional[str] = Field(None, description="Medidas preventivas a implementar")
 
     # Metadados opcionais
-    foto_ref: Optional[str] = Field(None, description="Referência à foto / evidência (path ou URL)")
     observacoes: Optional[str] = Field(None, description="Observações extras")
 
     model_config = {"frozen": True}

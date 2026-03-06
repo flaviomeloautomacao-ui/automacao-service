@@ -86,13 +86,16 @@ def build_user_prompt(context: dict) -> str:
     riscos_linhas: list[str] = []
     for i, row in enumerate(rows, start=1):
         linha = (
-            f"{i}. Área: {row.get('area', 'N/I')} | "
-            f"Equipamento: {row.get('equipamento', 'N/I')} | "
+            f"{i}. Equipamento: {row.get('equipamento', 'N/I')} | "
+            f"Descrição: {row.get('descricao_equipamento', 'N/I')} | "
+            f"Riscos: {row.get('riscos', 'N/I')} | "
             f"Perigo: {row.get('perigo', 'N/I')} | "
-            f"Causa: {row.get('causa', 'N/I')} | "
-            f"Consequência: {row.get('consequencia', 'N/I')} | "
-            f"Risco: {row.get('risco', 'N/I')} | "
-            f"Norma: {row.get('norma_ref', 'N/I')}"
+            f"Causas: {row.get('causas', 'N/I')} | "
+            f"Consequências: {row.get('consequencias', 'N/I')} | "
+            f"Severidade: {row.get('categoria_severidade', 'N/I')} | "
+            f"Cat. Risco: {row.get('categoria_risco', 'N/I')} | "
+            f"Medidas Existentes: {row.get('medidas_existentes', 'N/I')} | "
+            f"Medidas a Implementar: {row.get('medidas_implementar', 'N/I')}"
         )
         riscos_linhas.append(linha)
 

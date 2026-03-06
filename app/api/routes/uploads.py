@@ -5,7 +5,9 @@ Endpoints para receber e processar arquivos enviados pelo cliente.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, UploadFile
+from typing import Any
+
+from fastapi import APIRouter, Depends, Form, UploadFile
 
 from app.application.use_cases.process_upload import ProcessUploadUseCase
 from app.infrastructure.dependencies import get_logger, get_use_case
@@ -16,8 +18,9 @@ router = APIRouter()
 @router.post("")
 async def create_upload(
     file: UploadFile,
+    profile: str = Form(""),
     use_case: ProcessUploadUseCase = Depends(get_use_case),
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Recebe uma planilha, processa e gera o laudo em PDF.
 
     O endpoint lê os bytes do arquivo enviado, delega ao
@@ -49,6 +52,7 @@ async def create_upload(
         file_bytes=file_bytes,
         filename=filename,
         content_type=content_type,
+        profile=profile or None,
     )
 
-    return result
+    return {"data": result, "error": None}

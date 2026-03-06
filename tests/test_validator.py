@@ -3,7 +3,6 @@
 Cobre:
   1. Dados válidos — nenhum erro levantado.
   2. Campo obrigatório vazio — ValidationError com detalhes.
-  3. Valor de risco fora do conjunto permitido — ValidationError.
 """
 
 from __future__ import annotations
@@ -11,7 +10,7 @@ from __future__ import annotations
 import pytest
 
 from app.adapters.spreadsheet.validator import BasicSpreadsheetValidator
-from app.domain.entities import MachineRiskRow, RiskLevel
+from app.domain.entities import MachineRiskRow
 from app.domain.errors import ValidationError
 
 
@@ -28,12 +27,10 @@ def validator() -> BasicSpreadsheetValidator:
 def _make_row(**overrides: object) -> MachineRiskRow:
     """Cria uma ``MachineRiskRow`` mínima válida, aceitando sobrescritas."""
     defaults: dict[str, object] = {
-        "area": "Produção",
         "equipamento": "Prensa Hidráulica",
         "perigo": "Esmagamento de membros",
-        "causa": "Falha na proteção",
-        "consequencia": "Amputação",
-        "risco": RiskLevel.MODERADO,
+        "causas": "Falha na proteção",
+        "consequencias": "Amputação",
     }
     defaults.update(overrides)
     return MachineRiskRow(**defaults)  # type: ignore[arg-type]
@@ -54,19 +51,35 @@ class TestValidacaoOK:
     def test_varias_linhas_validas(self, validator: BasicSpreadsheetValidator) -> None:
         """Múltiplas linhas válidas."""
         rows = [
-            _make_row(area="Setor A", risco=RiskLevel.TRIVIAL),
-            _make_row(area="Setor B", risco=RiskLevel.INTOLERAVEL),
+            _make_row(equipamento="Prensa"),
+            _make_row(equipamento="Torno"),
         ]
         validator.validate(rows)
 
-    def test_norma_ref_valida(self, validator: BasicSpreadsheetValidator) -> None:
-        """``norma_ref`` com sigla reconhecida não gera erro."""
-        rows = [_make_row(norma_ref="ABNT NBR 14153")]
+    def test_campos_opcionais_ausentes(self, validator: BasicSpreadsheetValidator) -> None:
+        """Campos opcionais None não geram erro."""
+        rows = [_make_row(
+            descricao_equipamento=None,
+            riscos=None,
+            categoria_severidade=None,
+            categoria_risco=None,
+            medidas_existentes=None,
+            medidas_implementar=None,
+            observacoes=None,
+        )]
         validator.validate(rows)
 
-    def test_norma_ref_ausente(self, validator: BasicSpreadsheetValidator) -> None:
-        """``norma_ref`` None não gera erro."""
-        rows = [_make_row(norma_ref=None)]
+    def test_campos_opcionais_preenchidos(self, validator: BasicSpreadsheetValidator) -> None:
+        """Campos opcionais preenchidos não geram erro."""
+        rows = [_make_row(
+            descricao_equipamento="Prensa 150t",
+            riscos="Mecânico",
+            categoria_severidade="IV",
+            categoria_risco="Alto",
+            medidas_existentes="Barreira",
+            medidas_implementar="Sensor",
+            observacoes="OK",
+        )]
         validator.validate(rows)
 
 
@@ -85,8 +98,8 @@ class TestCampoObrigatorioVazio:
 
         err = exc_info.value
         assert len(err.errors) >= 1
-        assert err.errors[0]["field"] == "equipamento"
-        assert err.errors[0]["row_index"] == 0
+        assert err.errors[0]["column"] == "equipamento"
+        assert err.errors[0]["row"] == 1
 
     def test_perigo_somente_espacos(self, validator: BasicSpreadsheetValidator) -> None:
         """``perigo`` contendo apenas espaços é considerado vazio."""
@@ -94,50 +107,30 @@ class TestCampoObrigatorioVazio:
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(rows)
 
-        campos = [e["field"] for e in exc_info.value.errors]
+        campos = [e["column"] for e in exc_info.value.errors]
         assert "perigo" in campos
+
+    def test_causas_vazio(self, validator: BasicSpreadsheetValidator) -> None:
+        """``causas`` vazio deve gerar ValidationError."""
+        rows = [_make_row(causas="")]
+        with pytest.raises(ValidationError) as exc_info:
+            validator.validate(rows)
+
+        campos = [e["column"] for e in exc_info.value.errors]
+        assert "causas" in campos
+
+    def test_consequencias_vazio(self, validator: BasicSpreadsheetValidator) -> None:
+        """``consequencias`` vazio deve gerar ValidationError."""
+        rows = [_make_row(consequencias="")]
+        with pytest.raises(ValidationError) as exc_info:
+            validator.validate(rows)
+
+        campos = [e["column"] for e in exc_info.value.errors]
+        assert "consequencias" in campos
 
     def test_lista_vazia(self, validator: BasicSpreadsheetValidator) -> None:
         """Lista sem linhas deve gerar ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
             validator.validate([])
 
-        assert exc_info.value.errors[0]["field"] == "__all__"
-
-
-# ---------------------------------------------------------------------------
-# 3. Risco inválido (via construção manual para contornar enum)
-# ---------------------------------------------------------------------------
-
-class TestRiscoInvalido:
-    """Cenários onde o nível de risco informado não é aceito.
-
-    Como ``MachineRiskRow.risco`` é tipado como ``RiskLevel`` (enum), em
-    produção valores inválidos seriam barrados pelo Pydantic no parse.
-    Aqui testamos a lógica do validador usando um objeto que simula um
-    valor inesperado, garantindo que a camada de validação funciona
-    independentemente da camada de parsing.
-    """
-
-    def test_risco_invalido_via_mock(self, validator: BasicSpreadsheetValidator) -> None:
-        """Risco com valor inexistente no enum deve gerar erro."""
-        row = _make_row()
-        # Forçamos um valor inválido contornando a imutabilidade
-        object.__setattr__(row, "risco", "catastrófico")
-
-        with pytest.raises(ValidationError) as exc_info:
-            validator.validate([row])
-
-        erros_risco = [e for e in exc_info.value.errors if e["field"] == "risco"]
-        assert len(erros_risco) == 1
-        assert "catastrófico" in erros_risco[0]["message"]
-
-    def test_norma_ref_invalida(self, validator: BasicSpreadsheetValidator) -> None:
-        """``norma_ref`` sem sigla reconhecida deve gerar erro."""
-        rows = [_make_row(norma_ref="Alguma norma qualquer")]
-
-        with pytest.raises(ValidationError) as exc_info:
-            validator.validate(rows)
-
-        erros_norma = [e for e in exc_info.value.errors if e["field"] == "norma_ref"]
-        assert len(erros_norma) == 1
+        assert exc_info.value.errors[0]["column"] == "*"

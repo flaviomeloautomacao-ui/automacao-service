@@ -38,6 +38,6 @@ async def get_report(
     report = await repo.get_generated(report_id)
 
     if report is None:
-        raise HTTPException(status_code=404, detail="Relatório não encontrado.")
+        return {"data": None, "error": {"code": "NOT_FOUND", "message": "Relatório não encontrado."}}
 
-    return report
+    return {"data": report, "error": None}

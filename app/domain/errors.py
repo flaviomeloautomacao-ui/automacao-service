@@ -19,7 +19,7 @@ class ValidationError(DomainError):
     """Dados de entrada inválidos (planilha, campos obrigatórios, formatos).
 
     Attributes:
-        errors: lista opcional de dicts ``{row_index, field, message}``
+        errors: lista opcional de dicts ``{row, column, message}``
                 descrevendo cada violação encontrada.
     """
 
