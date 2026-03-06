@@ -18,3 +18,7 @@ weasyprint
 httpx
 tenacity
 loguru
+
+# Testes
+pytest
+pytest-asyncio
