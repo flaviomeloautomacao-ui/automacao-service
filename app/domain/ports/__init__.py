@@ -6,6 +6,7 @@ Definem contratos que os adaptadores secundários devem implementar
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Optional, Protocol, runtime_checkable
 
 from app.domain.entities import (
@@ -71,8 +72,16 @@ class ReportRepositoryPort(Protocol):
         content_type: str,
         size_bytes: int,
         storage_path: str,
+        expires_at: "datetime | None" = None,
     ) -> str:
         """Persiste um registro de upload e retorna o UUID.
+
+        Args:
+            filename: Nome original do arquivo.
+            content_type: MIME type.
+            size_bytes: Tamanho em bytes.
+            storage_path: Caminho no object-storage.
+            expires_at: Data/hora de expiração (UTC). ``None`` = sem expiração.
 
         Returns:
             UUID do upload como string.
@@ -107,8 +116,17 @@ class ReportRepositoryPort(Protocol):
         pdf_url: str | None = None,
         checksum: str,
         version: int = 1,
+        expires_at: "datetime | None" = None,
     ) -> str:
         """Persiste metadados do relatório gerado e retorna o UUID.
+
+        Args:
+            draft_id: UUID do draft de origem.
+            pdf_storage_path: Caminho no storage.
+            pdf_url: URL pública / assinada (opcional).
+            checksum: SHA-256 do PDF.
+            version: Versão do laudo.
+            expires_at: Data/hora de expiração (UTC). ``None`` = sem expiração.
 
         Returns:
             UUID do relatório gerado como string.
@@ -141,36 +159,63 @@ class ReportRepositoryPort(Protocol):
 
 @runtime_checkable
 class StoragePort(Protocol):
-    """Abstração de object-storage (S3, GCS, local, etc.)."""
+    """Abstração de object-storage (S3, GCS, Supabase Storage, etc.)."""
 
-    async def put(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> str:
-        """Armazena um objeto e retorna a key final.
+    async def put_bytes(
+        self,
+        bucket: str,
+        path: str,
+        data: bytes,
+        content_type: str = "application/octet-stream",
+        metadata: dict[str, str] | None = None,
+    ) -> str:
+        """Armazena bytes no storage e retorna o path final.
+
+        Args:
+            bucket: nome do bucket.
+            path: caminho/chave do objeto dentro do bucket.
+            data: conteúdo cru a armazenar.
+            content_type: MIME type do conteúdo.
+            metadata: metadados personalizados opcionais.
+
+        Returns:
+            Path do objeto armazenado.
 
         Raises:
             StorageError: em caso de falha de upload.
         """
         ...
 
-    async def get(self, key: str) -> bytes:
-        """Recupera o conteúdo de um objeto pelo key.
-
-        Raises:
-            StorageError: se o objeto não existir ou falhar a leitura.
-        """
-        ...
-
-    async def signed_url(self, key: str, expires_in: int = 3600) -> str:
+    async def get_signed_url(
+        self,
+        bucket: str,
+        path: str,
+        expires_seconds: int = 3600,
+    ) -> str:
         """Gera URL assinada (pré-autenticada) para download.
 
         Args:
-            key: identificador do objeto.
-            expires_in: validade da URL em segundos (padrão 1 h).
+            bucket: nome do bucket.
+            path: caminho/chave do objeto dentro do bucket.
+            expires_seconds: validade da URL em segundos (padrão 1 h).
 
         Returns:
             URL assinada como string.
 
         Raises:
             StorageError: se a geração falhar.
+        """
+        ...
+
+    async def delete(self, bucket: str, paths: list[str]) -> None:
+        """Remove um ou mais objetos do storage.
+
+        Args:
+            bucket: nome do bucket.
+            paths: lista de caminhos a remover.
+
+        Raises:
+            StorageError: em caso de falha de remoção.
         """
         ...
 

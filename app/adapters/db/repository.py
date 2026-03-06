@@ -7,6 +7,7 @@ e traduzem entidades de domínio ↔ modelos ORM.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any, Optional
 
 from sqlalchemy import select
@@ -41,6 +42,7 @@ class ReportRepository:
         content_type: str,
         size_bytes: int,
         storage_path: str,
+        expires_at: datetime | None = None,
     ) -> str:
         """Persiste um registro de upload e retorna o UUID gerado.
 
@@ -49,6 +51,7 @@ class ReportRepository:
             content_type: MIME type do arquivo.
             size_bytes: Tamanho em bytes.
             storage_path: Chave / caminho no object-storage.
+            expires_at: Data/hora de expiração (UTC). ``None`` = sem expiração.
 
         Returns:
             UUID do upload como string.
@@ -62,6 +65,7 @@ class ReportRepository:
                 content_type=content_type,
                 size_bytes=size_bytes,
                 storage_path=storage_path,
+                expires_at=expires_at,
             )
             self._session.add(upload)
             await self._session.flush()
@@ -117,6 +121,7 @@ class ReportRepository:
         pdf_url: str | None = None,
         checksum: str,
         version: int = 1,
+        expires_at: datetime | None = None,
     ) -> str:
         """Persiste metadados de um relatório gerado e retorna o UUID.
 
@@ -126,6 +131,7 @@ class ReportRepository:
             pdf_url: URL pública / assinada (opcional).
             checksum: SHA-256 do PDF.
             version: Versão do laudo (padrão 1).
+            expires_at: Data/hora de expiração (UTC). ``None`` = sem expiração.
 
         Returns:
             UUID do relatório gerado como string.
@@ -140,6 +146,7 @@ class ReportRepository:
                 pdf_url=pdf_url,
                 checksum=checksum,
                 version=version,
+                expires_at=expires_at,
             )
             self._session.add(report)
             await self._session.flush()

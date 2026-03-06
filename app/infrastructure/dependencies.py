@@ -15,7 +15,7 @@ Exemplo de uso em uma rota FastAPI::
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, AsyncGenerator
+from typing import TYPE_CHECKING, AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from loguru import Logger
 
     from app.adapters.db.repository import ReportRepository
+    from app.adapters.storage.supabase_storage import SupabaseStorage
 
 
 # ── Settings ────────────────────────────────────────────────────
@@ -110,16 +111,22 @@ async def get_repository(
         yield ReportRepository(sess)
 
 
-def get_storage() -> Any | None:
-    """Placeholder — retorna o client de storage (Supabase).
+def get_storage() -> "SupabaseStorage":
+    """Retorna o client de storage Supabase (singleton).
 
-    Será implementado quando o adapter de storage estiver pronto.
-    Por enquanto retorna ``None``.
+    Utiliza as configurações ``SUPABASE_URL`` e ``SUPABASE_SERVICE_ROLE_KEY``
+    do Settings para construir o adaptador.
 
     Returns:
-        None: Ainda não implementado.
+        SupabaseStorage: Implementação concreta de ``StoragePort``.
     """
-    return None
+    from app.adapters.storage.supabase_storage import SupabaseStorage  # noqa: PLC0415
+
+    settings = get_settings()
+    return SupabaseStorage(
+        supabase_url=settings.SUPABASE_URL,
+        service_role_key=settings.SUPABASE_SERVICE_ROLE_KEY,
+    )
 
 
 def get_llm() -> Any | None:

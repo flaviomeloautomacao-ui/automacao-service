@@ -62,6 +62,11 @@ class Upload(Base):
         server_default=func.now(),
         nullable=False,
     )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
+    )
 
     # relacionamento 1→N com report_drafts
     drafts: Mapped[list["ReportDraft"]] = relationship(
@@ -149,6 +154,11 @@ class GeneratedReport(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
     )
 
     # relacionamento
