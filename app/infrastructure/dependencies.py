@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, AsyncGenerator
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.config import Settings
@@ -30,7 +31,10 @@ if TYPE_CHECKING:
     from app.adapters.db.repository import ReportRepository
     from app.adapters.llm.openrouter_client import OpenRouterClient
     from app.adapters.pdf.renderer import WeasyPdfRenderer
+    from app.adapters.spreadsheet.parser import PandasSpreadsheetParser
+    from app.adapters.spreadsheet.validator import BasicSpreadsheetValidator
     from app.adapters.storage.supabase_storage import SupabaseStorage
+    from app.application.use_cases.process_upload import ProcessUploadUseCase
 
 
 # ── Settings ────────────────────────────────────────────────────
@@ -78,7 +82,7 @@ def get_logger() -> "Logger":
     return _logger
 
 
-# ── Placeholders (implementar quando adapters estiverem prontos) ─
+# ── Database Session ────────────────────────────────────────────
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -93,24 +97,54 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+# ── Repository ──────────────────────────────────────────────────
+
+
 async def get_repository(
-    session: AsyncSession = None,  # type: ignore[assignment]
-) -> AsyncGenerator["ReportRepository", None]:
+    session: AsyncSession = Depends(get_db),
+) -> "ReportRepository":
     """Fornece um ``ReportRepository`` vinculado à sessão da requisição.
 
-    Uso com FastAPI Depends::
+    Args:
+        session: Sessão async injetada via ``Depends(get_db)``.
 
-        @router.post("/uploads")
-        async def create(repo=Depends(get_repository)):
-            ...
-
-    Yields:
+    Returns:
         ReportRepository: repositório com sessão ativa.
     """
     from app.adapters.db.repository import ReportRepository  # noqa: PLC0415
 
-    async for sess in get_db():
-        yield ReportRepository(sess)
+    return ReportRepository(session)
+
+
+# ── Parser ──────────────────────────────────────────────────────
+
+
+def get_parser() -> "PandasSpreadsheetParser":
+    """Retorna o parser de planilhas (pandas + openpyxl).
+
+    Returns:
+        PandasSpreadsheetParser: Implementação concreta de ``SpreadsheetParserPort``.
+    """
+    from app.adapters.spreadsheet.parser import PandasSpreadsheetParser  # noqa: PLC0415
+
+    return PandasSpreadsheetParser()
+
+
+# ── Validator ───────────────────────────────────────────────────
+
+
+def get_validator() -> "BasicSpreadsheetValidator":
+    """Retorna o validador determinístico de planilhas.
+
+    Returns:
+        BasicSpreadsheetValidator: Implementação concreta de ``SpreadsheetValidatorPort``.
+    """
+    from app.adapters.spreadsheet.validator import BasicSpreadsheetValidator  # noqa: PLC0415
+
+    return BasicSpreadsheetValidator()
+
+
+# ── Storage ─────────────────────────────────────────────────────
 
 
 def get_storage() -> "SupabaseStorage":
@@ -118,6 +152,7 @@ def get_storage() -> "SupabaseStorage":
 
     Utiliza as configurações ``SUPABASE_URL`` e ``SUPABASE_SERVICE_ROLE_KEY``
     do Settings para construir o adaptador.
+    Segredos **não** são registrados em logs.
 
     Returns:
         SupabaseStorage: Implementação concreta de ``StoragePort``.
@@ -125,17 +160,23 @@ def get_storage() -> "SupabaseStorage":
     from app.adapters.storage.supabase_storage import SupabaseStorage  # noqa: PLC0415
 
     settings = get_settings()
+    logger = get_logger()
+    logger.debug("Inicializando SupabaseStorage | url={}", settings.SUPABASE_URL)
     return SupabaseStorage(
         supabase_url=settings.SUPABASE_URL,
         service_role_key=settings.SUPABASE_SERVICE_ROLE_KEY,
     )
 
 
+# ── LLM ─────────────────────────────────────────────────────────
+
+
 def get_llm() -> "OpenRouterClient":
     """Retorna o client OpenRouter (LLM) configurado.
 
     Utiliza as configurações ``OPENROUTER_API_KEY``, ``OPENROUTER_BASE_URL``
-    e ``LLM_MODEL`` do Settings para construir o adaptador.
+    e ``LLM_MODEL`` do Settings.
+    A API key **não** é registrada em logs.
 
     Returns:
         OpenRouterClient: Implementação concreta de ``LLMPort``.
@@ -150,6 +191,9 @@ def get_llm() -> "OpenRouterClient":
     )
 
 
+# ── PDF Renderer ────────────────────────────────────────────────
+
+
 def get_pdf_renderer() -> "WeasyPdfRenderer":
     """Retorna o renderer de PDF (WeasyPrint + Jinja2).
 
@@ -159,3 +203,31 @@ def get_pdf_renderer() -> "WeasyPdfRenderer":
     from app.adapters.pdf.renderer import WeasyPdfRenderer  # noqa: PLC0415
 
     return WeasyPdfRenderer()
+
+
+# ── Use Case ────────────────────────────────────────────────────
+
+
+async def get_use_case(
+    repo: "ReportRepository" = Depends(get_repository),
+) -> "ProcessUploadUseCase":
+    """Monta o ``ProcessUploadUseCase`` com todas as dependências injetadas.
+
+    Args:
+        repo: Repositório injetado via ``Depends(get_repository)``.
+
+    Returns:
+        ProcessUploadUseCase: caso de uso pronto para execução.
+    """
+    from app.application.use_cases.process_upload import ProcessUploadUseCase  # noqa: PLC0415
+
+    settings = get_settings()
+    return ProcessUploadUseCase(
+        repository=repo,
+        storage=get_storage(),
+        parser=get_parser(),
+        validator=get_validator(),
+        llm=get_llm(),
+        pdf_renderer=get_pdf_renderer(),
+        bucket=settings.SUPABASE_BUCKET,
+    )
