@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Laudo Técnico — {{ metadata.razao_social | default("Empresa") }}</title>
+  <title>{{ profile_config.titulo_relatorio | default("Relatório Técnico") | replace('\n',' — ') }} — {{ metadata.razao_social | default("Empresa") }}</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,30 +11,78 @@
    CAPA
    ==================================================================== #}
 <div class="cover">
-  <h1>Laudo Técnico de Análise de Riscos</h1>
-  <p class="subtitle">Avaliação de Máquinas e Equipamentos — NR-12</p>
+  <div class="cover-content">
+    {# Título do relatório (pode ter \n no config) #}
+    {% for line in (profile_config.titulo_relatorio | default("RELATÓRIO TÉCNICO")).split('\n') %}
+      {% if loop.first %}
+        <h1 class="cover-title">{{ line }}</h1>
+      {% else %}
+        <p class="cover-subtitle-main">{{ line }}</p>
+      {% endif %}
+    {% endfor %}
 
-  <div class="company-info">
-    <p><strong>Empresa:</strong> {{ metadata.razao_social | default("—") }}</p>
-    {% if metadata.cnpj %}
-      <p><strong>CNPJ:</strong> {{ metadata.cnpj }}</p>
-    {% endif %}
-    {% if metadata.site %}
-      <p><strong>Unidade:</strong> {{ metadata.site }}</p>
-    {% endif %}
-    {% if metadata.endereco %}
-      <p><strong>Endereço:</strong> {{ metadata.endereco }}</p>
-    {% endif %}
-    {% if metadata.responsavel %}
-      <p><strong>Responsável Técnico:</strong> {{ metadata.responsavel }}</p>
-    {% endif %}
-  </div>
+    <div class="cover-divider"></div>
 
-  <div class="date-info">
-    {% if metadata.data_avaliacao %}
-      <p>Data da&nbsp;avaliação: {{ metadata.data_avaliacao }}</p>
-    {% endif %}
-    <p>Gerado em: {{ metadata.data_geracao | default("—") }}</p>
+    <table class="cover-table">
+      <tbody>
+        <tr>
+          <td class="cover-label">Cliente:</td>
+          <td>{{ metadata.razao_social | default("—") }}</td>
+        </tr>
+        {% if metadata.cnpj %}
+        <tr>
+          <td class="cover-label">CNPJ:</td>
+          <td>{{ metadata.cnpj }}</td>
+        </tr>
+        {% endif %}
+        {% if metadata.site %}
+        <tr>
+          <td class="cover-label">Unidade:</td>
+          <td>{{ metadata.site }}</td>
+        </tr>
+        {% endif %}
+        {% if metadata.local_vistoriado %}
+        <tr>
+          <td class="cover-label">Local vistoriado:</td>
+          <td>{{ metadata.local_vistoriado }}</td>
+        </tr>
+        {% endif %}
+        {% if metadata.data_avaliacao %}
+        <tr>
+          <td class="cover-label">Data da vistoria:</td>
+          <td>{{ metadata.data_avaliacao }}</td>
+        </tr>
+        {% endif %}
+        {% if metadata.contrato %}
+        <tr>
+          <td class="cover-label">Contrato:</td>
+          <td>{{ metadata.contrato }}</td>
+        </tr>
+        {% endif %}
+        {% if metadata.elaboracao %}
+        <tr>
+          <td class="cover-label">Elaboração:</td>
+          <td>{{ metadata.elaboracao }}</td>
+        </tr>
+        {% endif %}
+        {% if metadata.responsavel %}
+        <tr>
+          <td class="cover-label">Responsável Técnico:</td>
+          <td>{{ metadata.responsavel }}</td>
+        </tr>
+        {% endif %}
+        {% if metadata.registro_profissional %}
+        <tr>
+          <td class="cover-label">Registro Profissional:</td>
+          <td>{{ metadata.registro_profissional }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <div class="cover-footer">
+      <p>Gerado em: {{ metadata.data_geracao | default("—") }}</p>
+    </div>
   </div>
 </div>
 
@@ -42,188 +90,429 @@
    SUMÁRIO
    ==================================================================== #}
 <div class="toc">
-  <h2>Sumário</h2>
-  <ul>
+  <h2 class="toc-title">SUMÁRIO</h2>
+
+  <ul class="toc-list">
     <li><span class="toc-number">1.</span> Introdução</li>
-    <li><span class="toc-number">2.</span> Metodologia</li>
-    <li><span class="toc-number">3.</span> Inventário de Riscos</li>
-    <li><span class="toc-number">4.</span> Recomendações e Justificativas</li>
-    <li><span class="toc-number">5.</span> Resumo Executivo</li>
+    {% if profile_config.materiais_section | default(false) %}
+    <li><span class="toc-number">2.</span> Caracterização dos Materiais</li>
+    <li><span class="toc-number">3.</span> Metodologia Aplicada à Avaliação</li>
+    <li><span class="toc-number">4.</span> Análise Técnica Individual — Equipamentos</li>
+    {% for eq in equipments %}
+    <li class="toc-sub"><span class="toc-number">4.{{ eq.index }}.</span> {{ eq.nome }}</li>
+    {% endfor %}
+    <li><span class="toc-number">5.</span> Conclusão Geral</li>
     <li><span class="toc-number">6.</span> Referências Normativas</li>
+    <li><span class="toc-number">7.</span> Encerramento</li>
+    {% else %}
+    <li><span class="toc-number">2.</span> Metodologia Aplicada à Avaliação</li>
+    <li><span class="toc-number">3.</span> Análise Técnica Individual — Equipamentos</li>
+    {% for eq in equipments %}
+    <li class="toc-sub"><span class="toc-number">3.{{ eq.index }}.</span> {{ eq.nome }}</li>
+    {% endfor %}
+    <li><span class="toc-number">4.</span> Conclusão Geral</li>
+    <li><span class="toc-number">5.</span> Referências Normativas</li>
+    <li><span class="toc-number">6.</span> Encerramento</li>
+    {% endif %}
   </ul>
 </div>
 
 {# ====================================================================
-   1. INTRODUÇÃO
+   Macro auxiliar: converte texto em parágrafos / listas HTML
+   ==================================================================== #}
+{% macro render_text(text) %}
+  {% if text %}
+    {% for para in text.split('\n\n') %}
+      {% set trimmed = para.strip() %}
+      {% if trimmed %}
+        {# Detectar se é uma lista (bullets ou numerada) #}
+        {% set lines = trimmed.split('\n') %}
+        {% set is_list = (lines[0].strip().startswith('• ') or lines[0].strip().startswith('- ') or lines[0].strip()[:2] in ['1.','2.','3.','4.','5.','6.','7.','8.','9.']) %}
+        {% if is_list %}
+          <ul class="text-list">
+          {% for line in lines %}
+            {% set clean = line.strip().lstrip('•-').lstrip('0123456789.').strip() %}
+            {% if clean %}
+              <li>{{ clean }}</li>
+            {% endif %}
+          {% endfor %}
+          </ul>
+        {% else %}
+          <p>{{ trimmed | replace('\n', '<br/>') }}</p>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endmacro %}
+
+{# ====================================================================
+   Macro: renderiza lista de items como <ul>
+   ==================================================================== #}
+{% macro render_bullet_list(items) %}
+  {% if items %}
+    <ul class="detail-list">
+    {% for item in items %}
+      {% if item %}
+        <li>{{ item }}</li>
+      {% endif %}
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">Não informado.</p>
+  {% endif %}
+{% endmacro %}
+
+{# ====================================================================
+   Variável de numeração de seções (depende se tem seção materiais)
+   ==================================================================== #}
+{% if profile_config.materiais_section | default(false) %}
+  {% set sec_intro = 1 %}
+  {% set sec_materiais = 2 %}
+  {% set sec_metodo = 3 %}
+  {% set sec_equip = 4 %}
+  {% set sec_conclusao = 5 %}
+  {% set sec_refs = 6 %}
+  {% set sec_encerramento = 7 %}
+{% else %}
+  {% set sec_intro = 1 %}
+  {% set sec_metodo = 2 %}
+  {% set sec_equip = 3 %}
+  {% set sec_conclusao = 4 %}
+  {% set sec_refs = 5 %}
+  {% set sec_encerramento = 6 %}
+{% endif %}
+
+
+{# ====================================================================
+   SEÇÃO: INTRODUÇÃO
    ==================================================================== #}
 <div class="section">
-  <h2><span class="section-number">1.</span> Introdução</h2>
+  <h2><span class="section-number">{{ sec_intro }}.</span> INTRODUÇÃO</h2>
 
   {% if llm_sections.introducao %}
-    <div class="llm-section">
-      {{ llm_sections.introducao | safe }}
+    <div class="llm-content">
+      {{ render_text(llm_sections.introducao) }}
     </div>
   {% else %}
     <p>
-      Este laudo apresenta a análise de riscos de máquinas e equipamentos
-      da empresa <strong>{{ metadata.razao_social | default("—") }}</strong>,
-      unidade <strong>{{ metadata.site | default("—") }}</strong>,
-      realizada conforme os requisitos da Norma Regulamentadora NR-12
-      e normas técnicas aplicáveis (ABNT NBR ISO 12100, entre outras).
+      Este relatório técnico tem como finalidade apresentar os resultados da
+      análise de perigos realizada na unidade da empresa
+      <strong>{{ metadata.razao_social | default("—") }}</strong>,
+      unidade <strong>{{ metadata.site | default("—") }}</strong>.
     </p>
     <p>
-      O objetivo é identificar perigos, avaliar os riscos associados e
-      propor medidas de proteção que garantam a segurança dos trabalhadores
-      durante operação, manutenção e limpeza dos equipamentos inventariados.
+      O objetivo é identificar pontos críticos com potencial de formação de
+      {{ profile_config.tipo_atmosfera | default("atmosferas perigosas") }},
+      avaliar os riscos associados e propor medidas de controle baseadas em
+      normas técnicas nacionais e internacionais, garantindo a segurança das
+      pessoas, a integridade dos ativos e a continuidade operacional da planta.
     </p>
   {% endif %}
 </div>
 
+
 {# ====================================================================
-   2. METODOLOGIA
+   SEÇÃO: CARACTERIZAÇÃO DOS MATERIAIS (somente se perfil exige)
+   ==================================================================== #}
+{% if profile_config.materiais_section | default(false) %}
+<div class="section">
+  <h2><span class="section-number">{{ sec_materiais }}.</span> CARACTERIZAÇÃO DOS MATERIAIS</h2>
+
+  {% if llm_sections.materiais %}
+    <div class="llm-content">
+      {{ render_text(llm_sections.materiais) }}
+    </div>
+  {% else %}
+    <p>
+      A caracterização dos materiais combustíveis / inflamáveis presentes na
+      unidade deve incluir propriedades típicas de explosividade ou
+      inflamabilidade, conforme ensaios laboratoriais ou dados de referência
+      da literatura técnica especializada.
+    </p>
+    <p class="text-muted">
+      <em>Seção a ser complementada com dados específicos do projeto.</em>
+    </p>
+  {% endif %}
+</div>
+{% endif %}
+
+
+{# ====================================================================
+   SEÇÃO: METODOLOGIA
    ==================================================================== #}
 <div class="section">
-  <h2><span class="section-number">2.</span> Metodologia</h2>
+  <h2><span class="section-number">{{ sec_metodo }}.</span> METODOLOGIA APLICADA À AVALIAÇÃO</h2>
 
   {% if llm_sections.metodologia %}
-    <div class="llm-section">
-      {{ llm_sections.metodologia | safe }}
+    <div class="llm-content">
+      {{ render_text(llm_sections.metodologia) }}
     </div>
   {% else %}
+    <h3>{{ sec_metodo }}.1 Visão Geral</h3>
     <p>
-      A avaliação seguiu as etapas abaixo:
+      A avaliação foi conduzida com base na metodologia de identificação de
+      perigos e avaliação de riscos, conforme estabelecido pelas normas
+      técnicas aplicáveis ao perfil
+      <strong>{{ profile_config.label | default("—") }}</strong>.
     </p>
+
+    <h3>{{ sec_metodo }}.2 Etapas Aplicadas</h3>
     <ol>
-      <li>Inventário de máquinas e equipamentos no local avaliado.</li>
-      <li>Identificação de perigos conforme ABNT NBR ISO 12100:2013.</li>
-      <li>Classificação do nível de risco (trivial, tolerável, moderado, substancial, intolerável) com base na combinação de probabilidade e severidade.</li>
-      <li>Hierarquização das ações conforme prioridade (baixa, média, alta, urgente).</li>
-      <li>Elaboração de recomendações técnicas para eliminação ou redução dos riscos identificados.</li>
+      <li>Levantamento dos materiais e substâncias presentes na planta.</li>
+      <li>Identificação das áreas críticas com potencial de formação de
+          {{ profile_config.tipo_atmosfera | default("atmosferas perigosas") }}.</li>
+      <li>Inspeção técnica em campo, com análise visual e funcional.</li>
+      <li>Avaliação de fontes de ignição potenciais.</li>
+      <li>Verificação dos sistemas de proteção existentes.</li>
+      <li>Avaliação de conformidade com normas aplicáveis.</li>
+      <li>Análise de risco por equipamento (severidade × probabilidade).</li>
+      <li>Geração de recomendações técnicas priorizadas.</li>
     </ol>
+
+    <h3>{{ sec_metodo }}.3 Critérios de Avaliação</h3>
     <p>
-      Os critérios de probabilidade e severidade estão alinhados aos
-      padrões reconhecidos pela NR-12 e ISO 12100.
+      Para cada equipamento, o risco foi avaliado considerando a
+      <strong>categoria de severidade</strong> (impactos em caso de evento) e a
+      <strong>categoria de probabilidade/risco</strong> (frequência de ocorrência),
+      com priorização conforme hierarquia de controle de riscos.
     </p>
   {% endif %}
 </div>
 
+
 {# ====================================================================
-   3. INVENTÁRIO DE RISCOS — TABELA PRINCIPAL
+   SEÇÃO: ANÁLISE TÉCNICA INDIVIDUAL — EQUIPAMENTOS
    ==================================================================== #}
 <div class="section">
-  <h2><span class="section-number">3.</span> Inventário de Riscos</h2>
+  <h2>
+    <span class="section-number">{{ sec_equip }}.</span>
+    ANÁLISE TÉCNICA INDIVIDUAL — EQUIPAMENTOS
+  </h2>
 
-  <p>
-    A tabela a seguir apresenta o inventário detalhado de perigos, riscos e
-    recomendações para cada máquina / equipamento avaliado.
+  {% for eq in equipments %}
+  <div class="equipment-block" {% if not loop.first %}style="page-break-before: always;"{% endif %}>
+
+    <h3 class="equipment-title">
+      <span class="section-number">{{ sec_equip }}.{{ eq.index }}</span>
+      {{ eq.nome | upper }}
+    </h3>
+
+    {# 4.x.1 Descrição da operação #}
+    <h4>{{ sec_equip }}.{{ eq.index }}.1 Descrição da operação</h4>
+    {% if eq.descricao %}
+      <p>{{ eq.descricao }}</p>
+    {% else %}
+      <p class="text-muted">Descrição não informada na planilha.</p>
+    {% endif %}
+
+    {# 4.x.2 Identificação dos perigos #}
+    <h4>{{ sec_equip }}.{{ eq.index }}.2 Identificação dos perigos</h4>
+    <p>Com base na planilha técnica e na inspeção realizada, foram identificados
+       os seguintes perigos relevantes:</p>
+    {{ render_bullet_list(eq.perigos) }}
+
+    {# 4.x.3 Causas possíveis #}
+    <h4>{{ sec_equip }}.{{ eq.index }}.3 Causas possíveis</h4>
+    {{ render_bullet_list(eq.causas) }}
+
+    {# 4.x.4 Consequências potenciais #}
+    <h4>{{ sec_equip }}.{{ eq.index }}.4 Consequências potenciais</h4>
+    {{ render_bullet_list(eq.consequencias) }}
+
+    {# 4.x.5 Classificação do risco #}
+    <h4>{{ sec_equip }}.{{ eq.index }}.5 Classificação do risco</h4>
+    <table class="risk-table">
+      <tbody>
+        <tr>
+          <td class="risk-label">Categoria de Severidade:</td>
+          <td>
+            <span class="risk-value">{{ eq.severidade | default("N/I") }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Categoria do Risco:</td>
+          <td>
+            <span class="risk-value">{{ eq.risco | default("N/I") }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    {# 4.x.6 Medidas preventivas existentes #}
+    <h4>{{ sec_equip }}.{{ eq.index }}.6 Medidas preventivas existentes</h4>
+    {{ render_bullet_list(eq.medidas_existentes) }}
+
+    {# 4.x.7 Recomendações técnicas #}
+    <h4>{{ sec_equip }}.{{ eq.index }}.7 Recomendações técnicas</h4>
+    {% if eq.medidas_implementar %}
+      <ol class="detail-list">
+      {% for item in eq.medidas_implementar %}
+        {% if item %}
+          <li>{{ item }}</li>
+        {% endif %}
+      {% endfor %}
+      </ol>
+    {% else %}
+      <p class="text-muted">Não informado.</p>
+    {% endif %}
+
+    {# 4.x.8 Justificativas técnicas / Observações #}
+    <h4>{{ sec_equip }}.{{ eq.index }}.8 Justificativas técnicas</h4>
+    {% if eq.observacoes %}
+      {{ render_bullet_list(eq.observacoes) }}
+    {% elif eq.riscos_desc %}
+      <p>Os riscos identificados ({{ eq.riscos_desc | join('; ') }}) justificam
+         as recomendações acima conforme as normas técnicas aplicáveis.</p>
+    {% else %}
+      <p>As recomendações acima são baseadas nos perigos identificados e nas
+         normas técnicas aplicáveis ao perfil de análise.</p>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+
+  <p class="summary-count">
+    Total de equipamentos avaliados: <strong>{{ equipments | length }}</strong>
   </p>
 
-  <table>
+</div>
+
+
+{# ====================================================================
+   SEÇÃO: CONCLUSÃO GERAL
+   ==================================================================== #}
+<div class="section">
+  <h2>
+    <span class="section-number">{{ sec_conclusao }}.</span>
+    CONCLUSÃO GERAL
+  </h2>
+
+  {% if llm_sections.conclusao %}
+    <div class="llm-content">
+      {{ render_text(llm_sections.conclusao) }}
+    </div>
+  {% else %}
+    <p>
+      A avaliação identificou <strong>{{ equipments | length }}</strong>
+      equipamentos com riscos associados na unidade
+      <strong>{{ metadata.site | default("—") }}</strong>.
+      As recomendações devem ser implementadas conforme a prioridade atribuída,
+      priorizando-se ações sobre riscos classificados com severidade e
+      probabilidade mais elevadas.
+    </p>
+    <p>
+      Reforça-se a urgência da adoção das recomendações propostas em cada item,
+      bem como a criação de um cronograma de implementação com responsabilidades
+      definidas, garantindo um ambiente mais seguro e em conformidade com as
+      normas vigentes.
+    </p>
+  {% endif %}
+</div>
+
+
+{# ====================================================================
+   SEÇÃO: REFERÊNCIAS NORMATIVAS
+   ==================================================================== #}
+<div class="section">
+  <h2>
+    <span class="section-number">{{ sec_refs }}.</span>
+    REFERÊNCIAS NORMATIVAS
+  </h2>
+
+  <ul class="references-list">
+    {% for norma in profile_config.normas_principais | default([]) %}
+      <li>{{ norma }}</li>
+    {% endfor %}
+  </ul>
+</div>
+
+
+{# ====================================================================
+   SEÇÃO: ENCERRAMENTO
+   ==================================================================== #}
+<div class="section encerramento">
+  <h2>
+    <span class="section-number">{{ sec_encerramento }}.</span>
+    ENCERRAMENTO
+  </h2>
+
+  <p>
+    Este relatório foi elaborado com base em visita técnica, coleta de dados
+    operacionais, classificação de áreas, normas técnicas nacionais e
+    internacionais, e melhores práticas de engenharia.
+  </p>
+
+  {% if metadata.elaboracao %}
+  <p>
+    A <strong>{{ metadata.elaboracao }}</strong> permanece à disposição para:
+  </p>
+  <ul>
+    <li>Suporte na implantação técnica das recomendações;</li>
+    <li>Treinamento de operadores e manutenção;</li>
+    <li>Projetos de engenharia de proteção;</li>
+    <li>Auditoria e atualização da análise.</li>
+  </ul>
+  {% endif %}
+
+  <div class="signature-block">
+    {% if metadata.endereco %}
+      <p>{{ metadata.endereco }}, {{ metadata.data_geracao | default("—") }}.</p>
+    {% endif %}
+
+    {% if metadata.responsavel %}
+    <div class="signature">
+      <div class="signature-line"></div>
+      <p class="signature-name">{{ metadata.responsavel }}</p>
+      {% if metadata.registro_profissional %}
+        <p class="signature-role">{{ metadata.registro_profissional }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+
+{# ====================================================================
+   INVENTÁRIO COMPLETO — TABELA RESUMO (Anexo)
+   ==================================================================== #}
+{% if rows %}
+<div class="section">
+  <h2>ANEXO — Inventário Completo de Riscos</h2>
+
+  <p>
+    Tabela consolidada com todos os itens de risco avaliados.
+  </p>
+
+  <table class="inventory-table">
     <thead>
       <tr>
         <th>#</th>
         <th>Equipamento</th>
-        <th>Descrição</th>
-        <th>Riscos</th>
         <th>Perigo</th>
-        <th>Causas</th>
-        <th>Consequências</th>
         <th>Severidade</th>
         <th>Cat. Risco</th>
-        <th>Medidas Existentes</th>
         <th>Medidas a Implementar</th>
-        <th>Observações</th>
       </tr>
     </thead>
     <tbody>
       {% for row in rows %}
       <tr>
         <td>{{ loop.index }}</td>
-        <td>{{ row.equipamento }}</td>
-        <td>{{ row.descricao_equipamento | default("—") }}</td>
-        <td>{{ row.riscos | default("—") }}</td>
-        <td>{{ row.perigo }}</td>
-        <td>{{ row.causas }}</td>
-        <td>{{ row.consequencias }}</td>
+        <td>{{ row.equipamento | default("—") }}</td>
+        <td>{{ row.perigo | default("—") }}</td>
         <td>{{ row.categoria_severidade | default("—") }}</td>
         <td>{{ row.categoria_risco | default("—") }}</td>
-        <td>{{ row.medidas_existentes | default("—") }}</td>
         <td>{{ row.medidas_implementar | default("—") }}</td>
-        <td>{{ row.observacoes | default("—") }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 
   <p class="text-muted mt-1">
-    Total de itens avaliados: <strong>{{ rows | length }}</strong>
+    Total de itens: <strong>{{ rows | length }}</strong>
   </p>
 </div>
-
-{# ====================================================================
-   4. RECOMENDAÇÕES E JUSTIFICATIVAS (LLM)
-   ==================================================================== #}
-<div class="section">
-  <h2><span class="section-number">4.</span> Recomendações e Justificativas</h2>
-
-  {% if llm_sections.recomendacoes %}
-    <div class="llm-section">
-      <h3>Recomendações</h3>
-      {{ llm_sections.recomendacoes | safe }}
-    </div>
-  {% else %}
-    <p class="text-muted">Seção de recomendações não gerada pela LLM.</p>
-  {% endif %}
-
-  {% if llm_sections.justificativas %}
-    <div class="llm-section">
-      <h3>Justificativas Técnicas</h3>
-      {{ llm_sections.justificativas | safe }}
-    </div>
-  {% else %}
-    <p class="text-muted">Seção de justificativas não gerada pela LLM.</p>
-  {% endif %}
-</div>
-
-{# ====================================================================
-   5. RESUMO EXECUTIVO
-   ==================================================================== #}
-<div class="section">
-  <h2><span class="section-number">5.</span> Resumo Executivo</h2>
-
-  {% if llm_sections.resumo %}
-    <div class="llm-section">
-      {{ llm_sections.resumo | safe }}
-    </div>
-  {% else %}
-    <p>
-      A avaliação identificou <strong>{{ rows | length }}</strong> itens de risco
-      na unidade <strong>{{ metadata.site | default("—") }}</strong>.
-      As recomendações devem ser implementadas conforme a prioridade atribuída,
-      priorizando-se ações sobre riscos classificados como
-      <em>intolerável</em> e <em>substancial</em>.
-    </p>
-  {% endif %}
-</div>
-
-{# ====================================================================
-   6. REFERÊNCIAS NORMATIVAS
-   ==================================================================== #}
-<div class="section references">
-  <h2><span class="section-number">6.</span> Referências Normativas</h2>
-
-  {% if llm_sections.referencias %}
-    {{ llm_sections.referencias | safe }}
-  {% else %}
-    <ul>
-      <li>NR-12 — Segurança no Trabalho em Máquinas e Equipamentos (MTE).</li>
-      <li>ABNT NBR ISO 12100:2013 — Segurança de máquinas — Princípios gerais de projeto — Apreciação e redução de riscos.</li>
-      <li>ABNT NBR 14153:2013 — Segurança de máquinas — Partes de sistemas de comando relacionadas à segurança.</li>
-      <li>ABNT NBR ISO 13849-1:2019 — Segurança de máquinas — Partes de sistemas de comando relacionadas à segurança — Parte 1: Princípios gerais de projeto.</li>
-      <li>NR-10 — Segurança em Instalações e Serviços em Eletricidade.</li>
-    </ul>
-  {% endif %}
-</div>
+{% endif %}
 
 </body>
 </html>

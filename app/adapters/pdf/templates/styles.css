@@ -1,6 +1,26 @@
 /* ==========================================================================
-   styles.css — Estilos do laudo técnico (PDF via WeasyPrint)
-   ========================================================================== */
+   styles.css — Estilos do relatório técnico (PDF via WeasyPrint)
+   ==========================================================================
+   ┌──────────────────────────────────────────────────────────────────────┐
+   │  COMO EDITAR O VISUAL DO PDF                                       │
+   │                                                                      │
+   │  Este arquivo controla 100% da aparência visual do relatório PDF.  │
+   │  Cada seção está comentada para facilitar a edição.                │
+   │                                                                      │
+   │  DICAS RÁPIDAS:                                                    │
+   │  • Alterar cores:  busque "color:" e "background-color:"          │
+   │  • Alterar fontes: busque "font-family:"                          │
+   │  • Alterar margens da página: edite @page → margin                │
+   │  • Alterar tamanho: edite @page → size (A4, Letter, etc.)        │
+   │  • Rodapé: edite @bottom-center e @bottom-right em @page         │
+   │  • Capa: classe .cover e suas sub-classes                         │
+   │  • Tabelas: classes table, .inventory-table, .risk-table          │
+   │  • Seções de equipamento: .equipment-block, .equipment-title      │
+   │  • Quebras de página: page-break-before / page-break-after        │
+   │                                                                      │
+   │  Para adicionar logo: coloque a imagem na pasta templates/ e      │
+   │  referencie no report.html com <img src="logo.png">               │
+   └──────────────────────────────────────────────────────────────────────┘ */
 
 /* ---------- Reset & Base ---------- */
 
@@ -11,6 +31,7 @@
 }
 
 /* ---------- Page Setup ---------- */
+/* Controla tamanho, margens e conteúdo do rodapé de TODAS as páginas. */
 
 @page {
     size: A4;
@@ -31,17 +52,19 @@
     }
 }
 
+/* Primeira página (capa): sem rodapé */
 @page :first {
     @bottom-center { content: none; }
     @bottom-right  { content: none; }
 }
+
 
 /* ---------- Typography ---------- */
 
 body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 10pt;
-    line-height: 1.5;
+    line-height: 1.55;
     color: #222;
 }
 
@@ -50,20 +73,25 @@ h1, h2, h3, h4, h5, h6 {
     color: #1a1a2e;
     margin-top: 0.8em;
     margin-bottom: 0.4em;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 h1 { font-size: 22pt; }
-h2 { font-size: 16pt; border-bottom: 2px solid #16213e; padding-bottom: 4px; }
-h3 { font-size: 13pt; }
-h4 { font-size: 11pt; }
+h2 { font-size: 15pt; border-bottom: 2px solid #0f3460; padding-bottom: 4px; margin-top: 1em; }
+h3 { font-size: 13pt; margin-top: 0.8em; }
+h4 { font-size: 10.5pt; margin-top: 0.6em; color: #333; }
 
 p {
     margin-bottom: 0.6em;
     text-align: justify;
 }
 
-/* ---------- Cover page ---------- */
+strong { color: #1a1a2e; }
+
+
+/* ==========================================================================
+   CAPA — Primeira página do relatório
+   ========================================================================== */
 
 .cover {
     page-break-after: always;
@@ -73,68 +101,112 @@ p {
     align-items: center;
     min-height: 100%;
     text-align: center;
+    padding: 2em 0;
 }
 
-.cover h1 {
-    font-size: 28pt;
+.cover-content {
+    width: 100%;
+    max-width: 500px;
+}
+
+.cover-title {
+    font-size: 24pt;
     color: #0f3460;
-    margin-bottom: 0.3em;
+    margin-bottom: 0.2em;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
 }
 
-.cover .subtitle {
-    font-size: 14pt;
-    color: #555;
-    margin-bottom: 2em;
-}
-
-.cover .company-info {
-    font-size: 11pt;
-    color: #333;
-    line-height: 1.8;
-    margin-top: 1em;
-}
-
-.cover .company-info strong {
+.cover-subtitle-main {
+    font-size: 16pt;
     color: #0f3460;
+    font-weight: 600;
+    margin-bottom: 0.5em;
 }
 
-.cover .date-info {
+.cover-divider {
+    width: 60%;
+    height: 3px;
+    background: linear-gradient(90deg, #0f3460, #e94560);
+    margin: 1.5em auto;
+    border-radius: 2px;
+}
+
+.cover-table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+    margin: 1em 0;
+    font-size: 10.5pt;
+}
+
+.cover-table td {
+    padding: 5px 8px;
+    vertical-align: top;
+    border: none;
+}
+
+.cover-label {
+    font-weight: 700;
+    color: #0f3460;
+    white-space: nowrap;
+    width: 40%;
+}
+
+.cover-footer {
     margin-top: 3em;
-    font-size: 10pt;
-    color: #777;
+    font-size: 9pt;
+    color: #888;
 }
 
-/* ---------- Table of Contents ---------- */
+
+/* ==========================================================================
+   SUMÁRIO (Table of Contents)
+   ========================================================================== */
 
 .toc {
     page-break-after: always;
 }
 
-.toc h2 {
+.toc-title {
     text-align: center;
     border-bottom: none;
     margin-bottom: 1em;
+    font-size: 16pt;
+    letter-spacing: 1px;
 }
 
-.toc ul {
+.toc-list {
     list-style: none;
     padding: 0;
 }
 
-.toc ul li {
-    padding: 4px 0;
+.toc-list > li {
+    padding: 5px 0;
     border-bottom: 1px dotted #ccc;
     font-size: 10pt;
+    font-weight: 600;
+    color: #222;
 }
 
-.toc ul li .toc-number {
+.toc-list > li.toc-sub {
+    padding-left: 2em;
+    font-weight: 400;
+    font-size: 9.5pt;
+    color: #444;
+}
+
+.toc-number {
     display: inline-block;
-    width: 2em;
-    font-weight: bold;
+    width: 3em;
+    font-weight: 700;
     color: #0f3460;
 }
 
-/* ---------- Sections ---------- */
+
+/* ==========================================================================
+   SEÇÕES DE CONTEÚDO
+   ========================================================================== */
 
 .section {
     page-break-before: always;
@@ -147,113 +219,206 @@ p {
 .section-number {
     color: #0f3460;
     margin-right: 0.3em;
+    font-weight: 700;
 }
 
-/* ---------- Tables ---------- */
+/* Conteúdo gerado pelo LLM */
+.llm-content {
+    margin: 0.5em 0;
+}
 
-table {
+.llm-content p {
+    margin-bottom: 0.6em;
+}
+
+.llm-content ul, .llm-content ol {
+    margin: 0.4em 0 0.4em 1.5em;
+}
+
+.llm-content li {
+    margin-bottom: 0.25em;
+}
+
+/* Listas de texto */
+.text-list {
+    list-style: disc;
+    margin: 0.4em 0 0.6em 1.5em;
+}
+
+.text-list li {
+    margin-bottom: 0.2em;
+}
+
+
+/* ==========================================================================
+   EQUIPAMENTOS — Blocos de análise individual
+   ========================================================================== */
+
+.equipment-block {
+    margin-top: 1.5em;
+}
+
+.equipment-title {
+    font-size: 13pt;
+    color: #0f3460;
+    border-bottom: 1.5px solid #0f3460;
+    padding-bottom: 3px;
+    margin-bottom: 0.5em;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Listas dentro da análise de equipamento */
+.detail-list {
+    margin: 0.3em 0 0.6em 1.5em;
+}
+
+.detail-list li {
+    margin-bottom: 0.25em;
+    line-height: 1.45;
+}
+
+ul.detail-list {
+    list-style: disc;
+}
+
+ol.detail-list {
+    list-style: decimal;
+}
+
+/* Tabela de classificação do risco (pequena, 2 linhas) */
+.risk-table {
+    width: auto;
+    border-collapse: collapse;
+    margin: 0.3em 0 0.6em 0;
+    font-size: 10pt;
+}
+
+.risk-table td {
+    padding: 4px 12px 4px 0;
+    border: none;
+    vertical-align: top;
+}
+
+.risk-label {
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+}
+
+.risk-value {
+    font-weight: 700;
+    color: #0f3460;
+}
+
+.summary-count {
+    margin-top: 1em;
+    font-size: 10pt;
+    color: #555;
+}
+
+
+/* ==========================================================================
+   TABELA DO INVENTÁRIO (Anexo)
+   ========================================================================== */
+
+table.inventory-table {
     width: 100%;
     border-collapse: collapse;
     margin: 1em 0;
-    font-size: 8.5pt;
+    font-size: 8pt;
 }
 
-table thead {
+.inventory-table thead {
     background-color: #0f3460;
     color: #fff;
 }
 
-table thead th {
-    padding: 6px 8px;
+.inventory-table thead th {
+    padding: 6px 6px;
     text-align: left;
     font-weight: 600;
     white-space: nowrap;
+    font-size: 8pt;
 }
 
-table tbody td {
-    padding: 5px 8px;
+.inventory-table tbody td {
+    padding: 4px 6px;
     border-bottom: 1px solid #ddd;
     vertical-align: top;
 }
 
-table tbody tr:nth-child(even) {
+.inventory-table tbody tr:nth-child(even) {
     background-color: #f7f8fa;
 }
 
-table tbody tr:hover {
-    background-color: #eef1f6;
-}
 
-/* Risk level badges */
-.risk-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 7.5pt;
-    font-weight: 700;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
+/* ==========================================================================
+   REFERÊNCIAS NORMATIVAS
+   ========================================================================== */
 
-.risk-trivial      { background-color: #d4edda; color: #155724; }
-.risk-toleravel    { background-color: #d1ecf1; color: #0c5460; }
-.risk-moderado     { background-color: #fff3cd; color: #856404; }
-.risk-substancial  { background-color: #f8d7da; color: #721c24; }
-.risk-intoleravel  { background-color: #842029; color: #fff; }
-
-/* Priority badges */
-.priority-badge {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 7.5pt;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.priority-baixa   { background-color: #e2e3e5; color: #383d41; }
-.priority-media   { background-color: #fff3cd; color: #856404; }
-.priority-alta    { background-color: #f8d7da; color: #721c24; }
-.priority-urgente { background-color: #842029; color: #fff; }
-
-/* ---------- LLM Sections ---------- */
-
-.llm-section {
-    margin: 1em 0;
-    padding: 0.8em 1em;
-    background-color: #fafbfc;
-    border-left: 4px solid #0f3460;
-    border-radius: 2px;
-}
-
-.llm-section h3 {
-    margin-top: 0;
-}
-
-.llm-section ul, .llm-section ol {
+.references-list {
+    list-style: disc;
     margin: 0.5em 0 0.5em 1.5em;
 }
 
-.llm-section li {
+.references-list li {
+    margin-bottom: 0.4em;
+    line-height: 1.4;
+}
+
+
+/* ==========================================================================
+   ENCERRAMENTO / ASSINATURA
+   ========================================================================== */
+
+.encerramento ul {
+    list-style: disc;
+    margin: 0.5em 0 0.5em 1.5em;
+}
+
+.encerramento li {
     margin-bottom: 0.3em;
 }
 
-/* ---------- References ---------- */
-
-.references ul {
-    list-style: disc;
-    margin-left: 1.5em;
+.signature-block {
+    margin-top: 4em;
+    text-align: center;
 }
 
-.references li {
-    margin-bottom: 0.4em;
+.signature {
+    display: inline-block;
+    text-align: center;
+    margin-top: 3em;
 }
 
-/* ---------- Utilities ---------- */
+.signature-line {
+    width: 250px;
+    border-bottom: 1px solid #333;
+    margin: 0 auto 0.5em auto;
+}
+
+.signature-name {
+    font-weight: 700;
+    font-size: 10pt;
+    color: #1a1a2e;
+    text-align: center;
+}
+
+.signature-role {
+    font-size: 9pt;
+    color: #555;
+    text-align: center;
+}
+
+
+/* ==========================================================================
+   UTILITÁRIOS
+   ========================================================================== */
 
 .text-center { text-align: center; }
 .text-right  { text-align: right; }
-.text-muted  { color: #888; }
+.text-muted  { color: #888; font-style: italic; }
 .mt-1 { margin-top: 0.5em; }
 .mt-2 { margin-top: 1em; }
 .mb-1 { margin-bottom: 0.5em; }

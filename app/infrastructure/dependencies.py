@@ -28,12 +28,14 @@ from app.infrastructure.logging import setup_logging
 if TYPE_CHECKING:
     from loguru import Logger
 
+    from app.adapters.db.job_repository import JobRepository
     from app.adapters.db.repository import ReportRepository
     from app.adapters.llm.openrouter_client import OpenRouterClient
     from app.adapters.pdf.renderer import WeasyPdfRenderer
     from app.adapters.spreadsheet.parser import PandasSpreadsheetParser
     from app.adapters.spreadsheet.validator import BasicSpreadsheetValidator
     from app.adapters.storage.supabase_storage import SupabaseStorage
+    from app.application.use_cases.process_job import ProcessJobUseCase
     from app.application.use_cases.process_upload import ProcessUploadUseCase
 
 
@@ -230,4 +232,50 @@ async def get_use_case(
         llm=get_llm(),
         pdf_renderer=get_pdf_renderer(),
         bucket=settings.SUPABASE_BUCKET,
+    )
+
+
+# ── Job Repository ──────────────────────────────────────────────
+
+
+async def get_job_repository(
+    session: AsyncSession = Depends(get_db),
+) -> "JobRepository":
+    """Fornece um ``JobRepository`` vinculado à sessão da requisição.
+
+    Args:
+        session: Sessão async injetada via ``Depends(get_db)``.
+
+    Returns:
+        JobRepository: repositório de jobs com sessão ativa.
+    """
+    from app.adapters.db.job_repository import JobRepository  # noqa: PLC0415
+
+    return JobRepository(session)
+
+
+# ── Process Job Use Case ────────────────────────────────────────
+
+
+async def get_process_job_use_case(
+    job_repo: "JobRepository" = Depends(get_job_repository),
+    upload_uc: "ProcessUploadUseCase" = Depends(get_use_case),
+) -> "ProcessJobUseCase":
+    """Monta o ``ProcessJobUseCase`` com dependências injetadas.
+
+    Combina o ``JobRepository`` (para reportar progresso) com o
+    ``ProcessUploadUseCase`` (para a lógica de pipeline).
+
+    Args:
+        job_repo: Repositório de jobs/steps.
+        upload_uc: Use case de processamento de upload.
+
+    Returns:
+        ProcessJobUseCase: caso de uso pronto para execução.
+    """
+    from app.application.use_cases.process_job import ProcessJobUseCase  # noqa: PLC0415
+
+    return ProcessJobUseCase(
+        job_repo=job_repo,
+        upload_use_case=upload_uc,
     )

@@ -9,7 +9,7 @@ from __future__ import annotations
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.api.routes import documents, health, uploads
+from app.api.routes import documents, health, process, uploads
 from app.domain.errors import (
     DBError,
     DomainError,
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     # ── Routers ─────────────────────────────────────────────────
     app.include_router(health.router)
     app.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
+    app.include_router(process.router, prefix="/process", tags=["process"])
     app.include_router(documents.router, prefix="/reports", tags=["reports"])
 
     # ── Exception Handlers ──────────────────────────────────────

@@ -28,6 +28,7 @@ from app.adapters.storage.paths import (
     report_pdf_path,
     upload_original_path,
 )
+from app.adapters.llm.prompts import get_profile_config
 from app.domain.errors import (
     DBError,
     LLMError,
@@ -44,6 +45,8 @@ from app.domain.ports import (
     StoragePort,
 )
 
+import re as _re
+
 
 def _sha256(data: bytes) -> str:
     """Calcula o hash SHA-256 de um bloco de bytes.
@@ -55,6 +58,98 @@ def _sha256(data: bytes) -> str:
         String hexadecimal do digest.
     """
     return hashlib.sha256(data).hexdigest()
+
+
+# ---------------------------------------------------------------------------
+# Helpers — agrupamento de equipamentos
+# ---------------------------------------------------------------------------
+
+_SPLIT_PATTERN = _re.compile(r"[;\n•]+")
+
+
+def _split_field(text: str | None) -> list[str]:
+    """Divide um campo de texto em itens individuais.
+
+    Separa por ``;``, ``\n`` ou ``•`` e remove vazios.
+    """
+    if not text:
+        return []
+    parts = _SPLIT_PATTERN.split(text)
+    return [p.strip().lstrip("- ").strip() for p in parts if p.strip()]
+
+
+def _append_unique(lst: list[str], items: list[str]) -> None:
+    """Adiciona itens que ainda não existem na lista."""
+    for item in items:
+        if item and item not in lst:
+            lst.append(item)
+
+
+def group_rows_by_equipment(rows_dicts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Agrupa linhas de risco por nome de equipamento.
+
+    Cada equipamento único recebe um dict com listas de perigos, causas,
+    consequências, medidas, etc. — pronto para o template Jinja2.
+
+    Args:
+        rows_dicts: Lista de dicts (``MachineRiskRow.model_dump()``).
+
+    Returns:
+        Lista de dicts, um por equipamento, na ordem de aparição.
+    """
+    from collections import OrderedDict
+
+    groups: OrderedDict[str, dict[str, Any]] = OrderedDict()
+
+    for row in rows_dicts:
+        name = (row.get("equipamento") or "Equipamento N/I").strip()
+        if name not in groups:
+            groups[name] = {
+                "nome": name,
+                "descricao": "",
+                "perigos": [],
+                "causas": [],
+                "consequencias": [],
+                "severidade": "",
+                "risco": "",
+                "medidas_existentes": [],
+                "medidas_implementar": [],
+                "observacoes": [],
+                "riscos_desc": [],
+            }
+
+        g = groups[name]
+
+        # Descrição: manter a mais longa (primeira não vazia)
+        desc = (row.get("descricao_equipamento") or "").strip()
+        if desc and (not g["descricao"] or len(desc) > len(g["descricao"])):
+            g["descricao"] = desc
+
+        # Severidade / risco: manter primeiro valor não vazio
+        sev = (row.get("categoria_severidade") or "").strip()
+        if sev and not g["severidade"]:
+            g["severidade"] = sev
+        risco = (row.get("categoria_risco") or "").strip()
+        if risco and not g["risco"]:
+            g["risco"] = risco
+
+        # Campos multivalorados — split e append
+        _append_unique(g["perigos"], _split_field(row.get("perigo")))
+        _append_unique(g["causas"], _split_field(row.get("causas")))
+        _append_unique(g["consequencias"], _split_field(row.get("consequencias")))
+        _append_unique(g["medidas_existentes"], _split_field(row.get("medidas_existentes")))
+        _append_unique(g["medidas_implementar"], _split_field(row.get("medidas_implementar")))
+        _append_unique(g["riscos_desc"], _split_field(row.get("riscos")))
+
+        obs = (row.get("observacoes") or "").strip()
+        if obs and obs not in g["observacoes"]:
+            g["observacoes"].append(obs)
+
+    result: list[dict[str, Any]] = []
+    for idx, (_, grp) in enumerate(groups.items(), 1):
+        grp["index"] = idx
+        result.append(grp)
+    return result
 
 
 class ProcessUploadUseCase:
@@ -140,14 +235,26 @@ class ProcessUploadUseCase:
         rows_dicts = [row.model_dump(mode="json") for row in rows]
         draft_id = await self._create_draft(upload_id, rows_dicts)
 
-        # 5) Gera seções narrativas via LLM
-        llm_sections = await self._generate_llm_sections(rows_dicts, company_metadata)
+        # 4.5) Agrupa equipamentos para análise individual
+        grouped_equipment = group_rows_by_equipment(rows_dicts)
+        logger.info(
+            "Equipamentos agrupados | total_equipamentos={}",
+            len(grouped_equipment),
+        )
 
-        # 5.5) Normaliza seções LLM (converte listas em HTML p/ template)
+        # 5) Gera seções narrativas via LLM
+        llm_sections = await self._generate_llm_sections(
+            rows_dicts, company_metadata, profile=profile, grouped_equipment=grouped_equipment,
+        )
+
+        # 5.5) Normaliza seções LLM (converte texto em HTML p/ template)
         llm_sections_html = self._normalize_llm_sections(llm_sections)
 
         # 6 + 7) Renderiza HTML e gera PDF
-        pdf_bytes = self._render_pdf(rows_dicts, llm_sections_html, company_metadata)
+        pdf_bytes = self._render_pdf(
+            rows_dicts, llm_sections_html, company_metadata,
+            profile=profile, grouped_equipment=grouped_equipment,
+        )
 
         # 8 + 9) Armazena PDF e persiste metadados do relatório
         report_id, pdf_url, pdf_path = await self._store_report(
@@ -268,11 +375,15 @@ class ProcessUploadUseCase:
         self,
         rows_dicts: list[dict[str, Any]],
         company_metadata: dict[str, Any] | None = None,
+        *,
+        profile: str | None = None,
+        grouped_equipment: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Etapa 5 — gera seções narrativas via LLM.
 
         Returns:
-            Dicionário com seções geradas (``resumo``, ``recomendacoes``, etc.).
+            Dicionário com seções geradas (``introducao``, ``metodologia``,
+            ``conclusao``, e opcionalmente ``materiais``).
 
         Raises:
             LLMError: Se a chamada ao LLM falhar.
@@ -281,32 +392,38 @@ class ProcessUploadUseCase:
             "company": company_metadata or {},
             "rows": rows_dicts,
             "total_rows": len(rows_dicts),
+            "profile": profile,
+            "grouped_equipment": grouped_equipment or [],
         }
 
-        logger.info("Gerando seções via LLM | linhas_de_risco={}", len(rows_dicts))
+        logger.info(
+            "Gerando seções via LLM | profile={} | linhas_de_risco={}",
+            profile or "default",
+            len(rows_dicts),
+        )
         sections = await self._llm.generate_sections(context)
         logger.info("Seções LLM geradas com sucesso")
         return sections
 
     @staticmethod
     def _normalize_llm_sections(sections: dict[str, Any]) -> dict[str, str]:
-        """Converte valores de lista retornados pelo LLM em strings HTML.
+        """Normaliza valores retornados pelo LLM para uso no template.
 
-        O template Jinja2 usa ``{{ section | safe }}`` e espera strings HTML.
-        O LLM retorna listas para ``recomendacoes`` e ``justificativas``,
-        que precisam ser convertidas em ``<ul>`` HTML.
+        O template Jinja2 usa ``render_text()`` que converte ``\n\n``
+        em parágrafos e bullets em listas.  Aqui apenas garantimos
+        que todos os valores sejam strings.
 
         Args:
             sections: Dicionário cru retornado pelo LLM.
 
         Returns:
-            Dicionário com todos os valores como strings HTML.
+            Dicionário com todos os valores como strings.
         """
         result: dict[str, str] = {}
         for key, value in sections.items():
             if isinstance(value, list):
-                items_html = "".join(f"<li>{item}</li>" for item in value)
-                result[key] = f"<ul>{items_html}</ul>"
+                # Converte listas legadas em texto com bullets
+                result[key] = "\n".join(f"• {item}" for item in value)
             elif value is not None:
                 result[key] = str(value)
             else:
@@ -318,6 +435,9 @@ class ProcessUploadUseCase:
         rows_dicts: list[dict[str, Any]],
         llm_sections: dict[str, Any],
         company_metadata: dict[str, Any] | None = None,
+        *,
+        profile: str | None = None,
+        grouped_equipment: list[dict[str, Any]] | None = None,
     ) -> bytes:
         """Etapas 6 + 7 — renderiza template HTML e converte em PDF.
 
@@ -327,23 +447,32 @@ class ProcessUploadUseCase:
         Raises:
             TemplateError: Se a renderização falhar.
         """
+        profile_config = get_profile_config(profile)
+
         metadata: dict[str, Any] = {
             "data_geracao": datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC"),
         }
         if company_metadata:
             metadata.update(company_metadata)
 
-        logger.info("Renderizando HTML + PDF | total_linhas={}", len(rows_dicts))
+        equipments = grouped_equipment or []
+
+        logger.info(
+            "Renderizando HTML + PDF | equipamentos={} | linhas={}",
+            len(equipments),
+            len(rows_dicts),
+        )
 
         # Importação local para uso do método render_html + render
         from app.adapters.pdf.renderer import WeasyPdfRenderer  # noqa: PLC0415
 
         if isinstance(self._pdf_renderer, WeasyPdfRenderer):
-            # Usa o método de conveniência que combina render_html + render
             pdf_bytes = self._pdf_renderer.render_report(
                 metadata=metadata,
                 rows=rows_dicts,
                 llm_sections=llm_sections,
+                equipments=equipments,
+                profile_config=profile_config,
             )
         else:
             # Fallback genérico via PdfRendererPort
@@ -360,6 +489,8 @@ class ProcessUploadUseCase:
                 metadata=metadata,
                 rows=rows_dicts,
                 llm_sections=llm_sections,
+                equipments=equipments,
+                profile_config=profile_config,
             )
             pdf_bytes = self._pdf_renderer.render(html)
 

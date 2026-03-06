@@ -50,6 +50,8 @@ class WeasyPdfRenderer:
         metadata: dict[str, Any],
         rows: list[dict[str, Any]],
         llm_sections: dict[str, str],
+        equipments: list[dict[str, Any]] | None = None,
+        profile_config: dict[str, Any] | None = None,
         template_name: str = "report.html",
     ) -> str:
         """Renderiza o template Jinja2 com os dados fornecidos.
@@ -57,7 +59,9 @@ class WeasyPdfRenderer:
         Args:
             metadata: Dados da empresa/unidade/responsável.
             rows: Lista de dicts representando ``MachineRiskRow``.
-            llm_sections: Seções geradas pela LLM (recomendações, justificativas, resumo).
+            llm_sections: Seções geradas pela LLM.
+            equipments: Lista de equipamentos agrupados (para análise individual).
+            profile_config: Configuração do perfil (título, normas, etc.).
             template_name: Nome do arquivo de template.
 
         Returns:
@@ -72,6 +76,8 @@ class WeasyPdfRenderer:
                 metadata=metadata,
                 rows=rows,
                 llm_sections=llm_sections,
+                equipments=equipments or [],
+                profile_config=profile_config or {},
             )
         except Exception as exc:
             raise TemplateError(
@@ -117,6 +123,8 @@ class WeasyPdfRenderer:
         metadata: dict[str, Any],
         rows: list[dict[str, Any]],
         llm_sections: dict[str, str],
+        equipments: list[dict[str, Any]] | None = None,
+        profile_config: dict[str, Any] | None = None,
         template_name: str = "report.html",
         assets: dict[str, bytes] | None = None,
     ) -> bytes:
@@ -128,6 +136,8 @@ class WeasyPdfRenderer:
             metadata: Dados da empresa/unidade/responsável.
             rows: Lista de dicts representando ``MachineRiskRow``.
             llm_sections: Seções geradas pela LLM.
+            equipments: Lista de equipamentos agrupados.
+            profile_config: Configuração do perfil.
             template_name: Nome do template Jinja2.
             assets: Assets opcionais.
 
@@ -138,6 +148,8 @@ class WeasyPdfRenderer:
             metadata=metadata,
             rows=rows,
             llm_sections=llm_sections,
+            equipments=equipments,
+            profile_config=profile_config,
             template_name=template_name,
         )
         return self.render(html, assets=assets)

@@ -19,6 +19,11 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from app.adapters.pdf.renderer import WeasyPdfRenderer  # noqa: E402
+from app.adapters.llm.prompts import get_profile_config  # noqa: E402
+from app.application.use_cases.process_upload import group_rows_by_equipment  # noqa: E402
+
+# Perfil usado no exemplo (altere para "gas" ou "vapors" para testar outros)
+_SAMPLE_PROFILE = "dust"
 
 
 def _build_metadata() -> dict:
@@ -28,7 +33,11 @@ def _build_metadata() -> dict:
         "cnpj": "12.345.678/0001-99",
         "site": "Planta Campinas — Unidade II",
         "endereco": "Rod. Anhanguera, km 112 — Campinas/SP",
-        "responsavel": "Eng. Carlos A. Ferreira — CREA-SP 123456",
+        "responsavel": "Eng. Carlos A. Ferreira",
+        "registro_profissional": "CREA-SP 123456",
+        "elaboracao": "Konis Safety Engenharia",
+        "local_vistoriado": "Galpão de Usinagem e Linha de Montagem",
+        "contrato": "CT-2026/001",
         "data_avaliacao": "15/01/2026",
         "data_geracao": datetime.now().strftime("%d/%m/%Y %H:%M"),
     }
@@ -147,48 +156,71 @@ def _build_rows() -> list[dict]:
 def _build_llm_sections() -> dict[str, str]:
     """Retorna seções simuladas como se tivessem sido geradas por LLM."""
     return {
-        "introducao": "",  # vazio → usa texto padrão do template
-        "metodologia": "",  # vazio → usa texto padrão do template
-        "recomendacoes": """
-<p>Com base na análise completa dos equipamentos inventariados, recomenda-se:</p>
-<ol>
-  <li><strong>Prioridade Urgente:</strong> Adequação imediata dos sistemas de proteção do Torno CNC TN-400,
-      da Prensa Hidráulica PH-150 e implementação do plano de inspeção da Ponte Rolante PR-10t.
-      Esses itens apresentam risco <em>intolerável</em> com potencial de lesões fatais ou amputações.</li>
-  <li><strong>Prioridade Alta:</strong> Instalação de proteções na Fresadora Universal FU-3,
-      na Guilhotina Hidráulica GH-3000 e adequação da exaustão da Cabine de Pintura CP-02.</li>
-  <li><strong>Prioridade Média:</strong> Proteção dos pontos de convergência da Esteira Transportadora ET-01.</li>
-  <li><strong>Prioridade Baixa:</strong> Substituição da Parafusadeira Pneumática PP-12 por modelo com isolamento anti-vibração.</li>
-</ol>
-<p>Recomenda-se cronograma de implementação não superior a <strong>90 dias</strong> para itens urgentes e
-   <strong>180 dias</strong> para itens de alta prioridade.</p>
-""",
-        "justificativas": """
-<p>As justificativas técnicas para as recomendações apresentadas baseiam-se nos seguintes fundamentos:</p>
-<ul>
-  <li>A NR-12 (Portaria MTE nº 916/2019) estabelece que máquinas e equipamentos devem possuir proteções
-      que impeçam o acesso a zonas de perigo durante operação normal.</li>
-  <li>A ABNT NBR ISO 12100:2013 define a hierarquia de medidas de proteção:
-      eliminação do perigo → proteções / dispositivos de segurança → informação ao usuário.</li>
-  <li>O critério de classificação de riscos utilizado (probabilidade × severidade) está alinhado
-      à metodologia HRN (<em>Hazard Rating Number</em>), amplamente aceita para máquinas industriais.</li>
-  <li>Equipamentos com acionamento bimanual devem atender a ABNT NBR 14152 (tipo IIIC) para prensas e similares,
-      com monitoração por relé de segurança categoria 4.</li>
-</ul>
-""",
-        "resumo": """
-<p>Foram avaliados <strong>8 equipamentos</strong> distribuídos em 5 áreas da planta Campinas — Unidade II.
-   A análise identificou:</p>
-<ul>
-  <li><strong>3 itens com risco intolerável</strong> — exigem ação imediata.</li>
-  <li><strong>3 itens com risco substancial</strong> — ação em até 180 dias.</li>
-  <li><strong>1 item com risco moderado</strong> — ação programada.</li>
-  <li><strong>1 item com risco tolerável</strong> — melhoria contínua.</li>
-</ul>
-<p>As recomendações priorizam a preservação da integridade física dos trabalhadores,
-   o atendimento à legislação vigente (NR-12, NR-11, NR-20) e a redução dos passivos legais da organização.</p>
-""",
-        "referencias": "",  # vazio → usa lista padrão do template
+        "introducao": (
+            "Este relatório técnico tem como finalidade apresentar os resultados "
+            "da Análise de Perigos por Poeira Combustível (DHA — Dust Hazard Analysis) "
+            "realizada nas dependências da empresa Indústria Metalmec Ltda., "
+            "unidade Planta Campinas — Unidade II, conforme vistoria realizada em 15/01/2026.\n\n"
+            "O objetivo principal é identificar os cenários de risco associados à "
+            "presença de poeiras combustíveis, avaliar a severidade e a probabilidade "
+            "de ocorrência de eventos adversos (incêndio e explosão) e propor medidas "
+            "de prevenção e mitigação baseadas nas normas NFPA 652, NFPA 654, "
+            "NFPA 68, NFPA 69 e na série ABNT NBR IEC 60079.\n\n"
+            "A análise abrange o Galpão de Usinagem e a Linha de Montagem, com foco "
+            "em 8 equipamentos inventariados no levantamento de campo."
+        ),
+        "materiais": (
+            "A unidade avaliada processa materiais metálicos (aço carbono, alumínio "
+            "e ligas) que geram poeiras durante operações de usinagem, corte e "
+            "acabamento superficial.\n\n"
+            "De acordo com a literatura técnica (dados de referência NFPA 652), "
+            "poeiras metálicas apresentam as seguintes propriedades típicas de "
+            "explosividade:\n\n"
+            "• Alumínio: Kst = 300–700 bar·m/s; Pmax = 11–13 bar; MIE < 10 mJ\n"
+            "• Ferro / Aço: Kst = 50–100 bar·m/s; Pmax = 5–7 bar; MIE > 100 mJ\n"
+            "• Ligas de magnésio: Kst = 400–800 bar·m/s; Pmax = 15–17 bar; MIE < 5 mJ\n\n"
+            "Nota: os valores acima são dados de referência da literatura e devem "
+            "ser confirmados por ensaios laboratoriais específicos para os materiais "
+            "presentes na planta.\n\n"
+            "As poeiras de alumínio e ligas leves representam o maior risco de "
+            "explosão (Classe ST-2 a ST-3), enquanto poeiras ferrosas possuem "
+            "menor sensibilidade mas ainda requerem controle adequado de fontes "
+            "de ignição e acúmulo."
+        ),
+        "metodologia": (
+            "A avaliação foi conduzida com base na metodologia de identificação de "
+            "perigos e avaliação de riscos estabelecida pela NFPA 652:2022, conforme "
+            "as seguintes etapas:\n\n"
+            "1. Levantamento dos materiais e substâncias processados na unidade\n"
+            "2. Identificação das áreas críticas com potencial de formação de "
+            "atmosferas explosivas por poeira combustível\n"
+            "3. Inspeção técnica em campo, avaliando condições de housekeeping, "
+            "fontes de ignição e sistemas de contenção\n"
+            "4. Avaliação dos sistemas de proteção e detecção existentes\n"
+            "5. Classificação do risco por equipamento (severidade × probabilidade)\n"
+            "6. Geração de recomendações técnicas priorizadas por nível de risco\n\n"
+            "Para cada equipamento, a severidade foi classificada em 4 categorias "
+            "(I — Baixa a IV — Catastrófica) e o risco combinado em 5 faixas "
+            "(Trivial, Tolerável, Moderado, Substancial, Intolerável), conforme "
+            "matriz de risco adaptada da NFPA 652 e ABNT NBR IEC 60079-10-2."
+        ),
+        "conclusao": (
+            "Com base na análise realizada em 8 equipamentos da Planta Campinas — "
+            "Unidade II, conclui-se que:\n\n"
+            "• 2 equipamentos apresentam risco INTOLERÁVEL e requerem intervenção "
+            "imediata (Torno CNC TN-400 e Prensa Hidráulica PH-150)\n"
+            "• 3 equipamentos apresentam risco SUBSTANCIAL e devem ser tratados "
+            "em até 180 dias\n"
+            "• 1 equipamento apresenta risco MODERADO com ação programada\n"
+            "• 2 equipamentos apresentam risco TOLERÁVEL requerendo melhoria contínua\n\n"
+            "Recomenda-se a implementação imediata das medidas indicadas para os "
+            "itens de risco intolerável, seguida de um cronograma de adequação "
+            "para os demais itens, com prazo máximo de 90 dias para riscos "
+            "substanciais e 180 dias para moderados.\n\n"
+            "A empresa deve manter programa de inspeção contínua e revisão "
+            "periódica desta análise, conforme NFPA 652 (mínimo a cada 3 anos "
+            "ou quando houver mudanças significativas nas operações)."
+        ),
     }
 
 
@@ -204,11 +236,20 @@ def main() -> None:
     rows = _build_rows()
     llm_sections = _build_llm_sections()
 
+    # Agrupar equipamentos para análise individual
+    equipments = group_rows_by_equipment(rows)
+    profile_config = get_profile_config(_SAMPLE_PROFILE)
+
+    print(f"Perfil: {profile_config['label']}")
+    print(f"Equipamentos agrupados: {len(equipments)}")
+
     print("Renderizando HTML…")
     html = renderer.render_html(
         metadata=metadata,
         rows=rows,
         llm_sections=llm_sections,
+        equipments=equipments,
+        profile_config=profile_config,
     )
 
     print("Gerando PDF…")

@@ -36,8 +36,8 @@ from tenacity import (
 )
 
 from app.adapters.llm.prompts import (
-    SYSTEM_PROMPT,
-    SYSTEM_PROMPT_RETRY,
+    build_system_prompt,
+    build_system_prompt_retry,
     build_user_prompt,
 )
 from app.domain.errors import LLMError
@@ -57,7 +57,9 @@ class _RetryableHTTPError(Exception):
 
 _CHAT_COMPLETIONS_PATH: str = "/chat/completions"
 
-_REQUIRED_KEYS: set[str] = {"resumo", "recomendacoes", "justificativas"}
+# Chaves obrigatórias no JSON retornado pelo LLM.
+# "materiais" é opcional (depende do perfil).
+_REQUIRED_KEYS: set[str] = {"introducao", "metodologia", "conclusao"}
 
 # Mascarar chave nos logs: exibir apenas últimos 4 caracteres
 _KEY_MASK_LEN: int = 4
@@ -119,32 +121,37 @@ class OpenRouterClient:
         """Gera seções narrativas do laudo a partir do contexto.
 
         Fluxo:
-        1. Monta prompts (system + user) via ``prompts.py``.
+        1. Monta prompts (system + user) via ``prompts.py``, usando o perfil.
         2. Chama OpenRouter ``/chat/completions`` com retry.
         3. Tenta parsear JSON da resposta.
         4. Se JSON inválido, faz 1 retry com system prompt reforçado.
 
         Args:
-            context: Dicionário com ``company``, ``rows``, ``normas``, etc.
+            context: Dicionário com ``company``, ``rows``, ``profile``,
+                     ``grouped_equipment``, etc.
 
         Returns:
-            Dicionário com chaves ``resumo``, ``recomendacoes``, ``justificativas``.
+            Dicionário com chaves ``introducao``, ``metodologia``, ``conclusao``
+            e opcionalmente ``materiais``.
 
         Raises:
             LLMError: Se a chamada falhar após retries ou se o JSON for inválido
                       mesmo após retry de formato.
         """
+        profile = context.get("profile")
         user_prompt = build_user_prompt(context)
+        system_prompt = build_system_prompt(profile)
 
         logger.info(
-            "Gerando seções do laudo | model={} | linhas_de_risco={}",
+            "Gerando seções do laudo | model={} | profile={} | linhas_de_risco={}",
             self._model,
+            profile or "default",
             len(context.get("rows", [])),
         )
 
         # --- Primeira tentativa ---
         raw_content = await self._call_chat(
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=system_prompt,
             user_prompt=user_prompt,
         )
 
@@ -157,8 +164,9 @@ class OpenRouterClient:
             "Resposta do LLM não é JSON válido. Reenviando com prompt reforçado."
         )
 
+        retry_system = build_system_prompt_retry(profile)
         raw_content_retry = await self._call_chat(
-            system_prompt=SYSTEM_PROMPT_RETRY,
+            system_prompt=retry_system,
             user_prompt=user_prompt,
         )
 

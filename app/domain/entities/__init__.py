@@ -104,14 +104,22 @@ class MachineRiskRow(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CompanyMetadata(BaseModel):
-    """Dados da empresa / site avaliado."""
+    """Dados da empresa / site avaliado.
 
-    razao_social: str = Field(..., description="Razão social da empresa")
+    Estes campos aparecem na capa e no contexto do relatório.
+    Campos opcionais são omitidos da capa quando ``None``.
+    """
+
+    razao_social: str = Field(..., description="Razão social / Nome do cliente")
     cnpj: Optional[str] = Field(None, description="CNPJ")
     site: Optional[str] = Field(None, description="Unidade / planta avaliada")
     endereco: Optional[str] = Field(None, description="Endereço da unidade")
-    responsavel: Optional[str] = Field(None, description="Responsável técnico")
-    data_avaliacao: Optional[datetime] = Field(None, description="Data da avaliação em campo")
+    responsavel: Optional[str] = Field(None, description="Nome do responsável técnico")
+    registro_profissional: Optional[str] = Field(None, description="CREA / registro profissional")
+    elaboracao: Optional[str] = Field(None, description="Empresa que elaborou o relatório")
+    local_vistoriado: Optional[str] = Field(None, description="Local / setor vistoriado")
+    contrato: Optional[str] = Field(None, description="Número do contrato")
+    data_avaliacao: Optional[datetime] = Field(None, description="Data da avaliação / vistoria")
 
     model_config = {"frozen": True}
 
