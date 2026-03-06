@@ -16,7 +16,22 @@ class DomainError(Exception):
 
 
 class ValidationError(DomainError):
-    """Dados de entrada inválidos (planilha, campos obrigatórios, formatos)."""
+    """Dados de entrada inválidos (planilha, campos obrigatórios, formatos).
+
+    Attributes:
+        errors: lista opcional de dicts ``{row_index, field, message}``
+                descrevendo cada violação encontrada.
+    """
+
+    def __init__(
+        self,
+        message: str = "",
+        *,
+        detail: str | None = None,
+        errors: list[dict[str, object]] | None = None,
+    ) -> None:
+        super().__init__(message, detail=detail)
+        self.errors: list[dict[str, object]] = errors or []
 
 
 class DBError(DomainError):
