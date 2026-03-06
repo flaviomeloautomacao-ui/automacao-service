@@ -9,9 +9,7 @@ from __future__ import annotations
 from typing import Any, Optional, Protocol, runtime_checkable
 
 from app.domain.entities import (
-    GeneratedReport,
     MachineRiskRow,
-    ReportDraft,
 )
 
 
@@ -64,31 +62,63 @@ class SpreadsheetValidatorPort(Protocol):
 
 @runtime_checkable
 class ReportRepositoryPort(Protocol):
-    """Persistência de rascunhos e relatórios gerados."""
+    """Persistência de uploads, rascunhos e relatórios gerados."""
 
-    async def save_draft(self, draft: ReportDraft) -> str:
-        """Persiste um rascunho e retorna o ID.
+    async def create_upload(
+        self,
+        *,
+        filename: str,
+        content_type: str,
+        size_bytes: int,
+        storage_path: str,
+    ) -> str:
+        """Persiste um registro de upload e retorna o UUID.
 
         Returns:
-            O ``draft.id`` persistido.
+            UUID do upload como string.
 
         Raises:
             DBError: em caso de falha de persistência.
         """
         ...
 
-    async def save_generated(self, report: GeneratedReport) -> str:
-        """Persiste metadados do relatório gerado.
+    async def create_draft(
+        self,
+        *,
+        upload_id: str,
+        metadata: dict[str, Any] | None = None,
+        rows_json: list[dict[str, Any]] | None = None,
+    ) -> str:
+        """Persiste um rascunho de laudo e retorna o UUID.
 
         Returns:
-            O ``report.report_id`` persistido.
+            UUID do draft como string.
 
         Raises:
             DBError: em caso de falha de persistência.
         """
         ...
 
-    async def get_draft(self, draft_id: str) -> Optional[ReportDraft]:
+    async def create_generated(
+        self,
+        *,
+        draft_id: str,
+        pdf_storage_path: str,
+        pdf_url: str | None = None,
+        checksum: str,
+        version: int = 1,
+    ) -> str:
+        """Persiste metadados do relatório gerado e retorna o UUID.
+
+        Returns:
+            UUID do relatório gerado como string.
+
+        Raises:
+            DBError: em caso de falha de persistência.
+        """
+        ...
+
+    async def get_draft(self, draft_id: str) -> Optional[dict[str, Any]]:
         """Recupera rascunho pelo ID (ou ``None`` se inexistente).
 
         Raises:
@@ -96,7 +126,7 @@ class ReportRepositoryPort(Protocol):
         """
         ...
 
-    async def get_generated(self, report_id: str) -> Optional[GeneratedReport]:
+    async def get_generated(self, report_id: str) -> Optional[dict[str, Any]]:
         """Recupera relatório gerado pelo ID (ou ``None`` se inexistente).
 
         Raises:

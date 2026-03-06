@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
 
     # ── Banco de dados ──────────────────────────────────────────
-    DATABASE_URL: str = "sqlite+aiosqlite:///./local.db"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/automacao"
 
     # ── Supabase ────────────────────────────────────────────────
     SUPABASE_URL: str = ""

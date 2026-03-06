@@ -15,14 +15,19 @@ Exemplo de uso em uma rota FastAPI::
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.config import Settings
 from app.infrastructure.config import get_settings as _get_settings
+from app.infrastructure.db import get_session as _get_session
 from app.infrastructure.logging import setup_logging
 
 if TYPE_CHECKING:
     from loguru import Logger
+
+    from app.adapters.db.repository import ReportRepository
 
 
 # ── Settings ────────────────────────────────────────────────────
@@ -73,16 +78,36 @@ def get_logger() -> "Logger":
 # ── Placeholders (implementar quando adapters estiverem prontos) ─
 
 
-def get_db() -> Any | None:
-    """Placeholder — retorna a sessão/conexão com o banco de dados.
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Fornece uma ``AsyncSession`` por requisição via FastAPI Depends.
 
-    Será implementado quando o adapter de banco de dados estiver pronto.
-    Por enquanto retorna ``None``.
+    Delegates to ``app.infrastructure.db.get_session``.
 
-    Returns:
-        None: Ainda não implementado.
+    Yields:
+        AsyncSession: sessão pronta para uso.
     """
-    return None
+    async for session in _get_session():
+        yield session
+
+
+async def get_repository(
+    session: AsyncSession = None,  # type: ignore[assignment]
+) -> AsyncGenerator["ReportRepository", None]:
+    """Fornece um ``ReportRepository`` vinculado à sessão da requisição.
+
+    Uso com FastAPI Depends::
+
+        @router.post("/uploads")
+        async def create(repo=Depends(get_repository)):
+            ...
+
+    Yields:
+        ReportRepository: repositório com sessão ativa.
+    """
+    from app.adapters.db.repository import ReportRepository  # noqa: PLC0415
+
+    async for sess in get_db():
+        yield ReportRepository(sess)
 
 
 def get_storage() -> Any | None:

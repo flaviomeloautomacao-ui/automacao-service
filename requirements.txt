@@ -4,6 +4,10 @@ pydantic
 pydantic-settings
 python-dotenv
 
+# Banco de dados (Postgres async)
+sqlalchemy[asyncio]>=2.0
+asyncpg
+
 pandas
 openpyxl
 
