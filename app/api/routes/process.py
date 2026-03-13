@@ -1,10 +1,13 @@
 """Rota de processamento assíncrono de jobs.
 
-Endpoint ``POST /process`` recebe job_id + arquivo e dispara o
+Endpoint ``POST /process`` recebe ``{ job_id }`` e dispara o
 pipeline em background via FastAPI BackgroundTasks.
 
-O Next.js chama esta rota de forma fire-and-forget após criar o job.
-O Python processa em segundo plano e atualiza o banco diretamente.
+O Next.js chama esta rota de forma fire-and-forget após o
+usuário completar a etapa de complementação.
+
+O Python busca os dados (planilha, metadados do relatório,
+equipamentos e imagens) diretamente do banco de dados.
 O front-end faz polling a cada 3s para exibir progresso.
 """
 
@@ -12,7 +15,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends
+from pydantic import BaseModel
 
 from app.infrastructure.dependencies import get_logger, get_process_job_use_case
 from app.application.use_cases.process_job import ProcessJobUseCase
@@ -20,13 +24,15 @@ from app.application.use_cases.process_job import ProcessJobUseCase
 router = APIRouter()
 
 
+class ProcessRequest(BaseModel):
+    """Corpo da requisição POST /process."""
+
+    job_id: str
+
+
 async def _process_in_background(
     use_case: ProcessJobUseCase,
     job_id: str,
-    file_bytes: bytes,
-    filename: str,
-    content_type: str,
-    profile: str | None,
 ) -> None:
     """Wrapper para execução em background.
 
@@ -35,17 +41,11 @@ async def _process_in_background(
     logger = get_logger()
     try:
         logger.info("Background | Iniciando processamento do job {}", job_id)
-        result = await use_case.execute(
-            job_id=job_id,
-            file_bytes=file_bytes,
-            filename=filename,
-            content_type=content_type,
-            profile=profile,
-        )
+        result = await use_case.execute(job_id=job_id)
         logger.info(
-            "Background | Job {} concluído com sucesso | report_id={}",
+            "Background | Job {} concluído com sucesso | pdf_path={}",
             job_id,
-            result.get("report_id"),
+            result.get("pdf_path"),
         )
     except Exception as exc:
         # O use case já marca o job como error no banco.
@@ -59,10 +59,8 @@ async def _process_in_background(
 
 @router.post("")
 async def process_job(
+    body: ProcessRequest,
     background_tasks: BackgroundTasks,
-    file: UploadFile,
-    job_id: str = Form(""),
-    profile: str = Form(""),
     use_case: ProcessJobUseCase = Depends(get_process_job_use_case),
 ) -> dict[str, Any]:
     """Recebe um job para processamento assíncrono.
@@ -70,11 +68,14 @@ async def process_job(
     O endpoint retorna imediatamente com status ``accepted``.
     O processamento real acontece em background.
 
+    O Python busca todos os dados necessários do banco:
+    - ``spreadsheet_rows`` (linhas da planilha)
+    - ``reports`` (metadados de capa / company_metadata)
+    - ``report_equipments`` + ``equipment_images`` (complementação)
+
     Args:
+        body: JSON com ``job_id``.
         background_tasks: Gerenciador de tarefas em background do FastAPI.
-        file: Arquivo da planilha (multipart/form-data).
-        job_id: UUID do job criado pelo Next.js.
-        profile: Perfil de risco (dust, gas, vapors).
         use_case: Caso de uso injetado via Depends.
 
     Returns:
@@ -82,34 +83,21 @@ async def process_job(
     """
     logger = get_logger()
 
-    if not job_id:
+    if not body.job_id:
         return {
             "data": None,
             "error": {"code": "MISSING_JOB_ID", "message": "job_id é obrigatório."},
         }
 
-    file_bytes = await file.read()
-    filename = file.filename or "upload.xlsx"
-    content_type = file.content_type or "application/octet-stream"
-
-    logger.info(
-        "POST /process | job_id={} | filename={} | size={} bytes",
-        job_id,
-        filename,
-        len(file_bytes),
-    )
+    logger.info("POST /process | job_id={}", body.job_id)
 
     background_tasks.add_task(
         _process_in_background,
         use_case=use_case,
-        job_id=job_id,
-        file_bytes=file_bytes,
-        filename=filename,
-        content_type=content_type,
-        profile=profile or None,
+        job_id=body.job_id,
     )
 
     return {
-        "data": {"job_id": job_id, "status": "accepted"},
+        "data": {"status": "accepted", "job_id": body.job_id},
         "error": None,
     }

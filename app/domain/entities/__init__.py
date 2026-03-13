@@ -124,6 +124,313 @@ class CompanyMetadata(BaseModel):
     model_config = {"frozen": True}
 
 
+class RiskClassification(BaseModel):
+    """Classificação de risco consolidada de um equipamento.
+
+    Representa os valores mais críticos (highest) entre todas as linhas
+    de risco da planilha para um mesmo equipamento.
+    """
+
+    categoria_severidade: str = Field(
+        ..., description="Severidade mais alta — ex.: 'Alta', 'Muito Alta'"
+    )
+    categoria_risco: str = Field(
+        ..., description="Risco mais alto — ex.: 'Alto', 'Muito Alto'"
+    )
+
+    model_config = {"frozen": True}
+
+
+class EquipmentContext(BaseModel):
+    """Contexto estruturado e normalizado de um único equipamento.
+
+    Produzido pelo ``EquipmentContextBuilder`` após agrupar as linhas
+    da planilha por equipamento. Cada instância contém **todos** os
+    dados determinísticos necessários para:
+
+    - Renderizar as sub-seções 4.N.1–4.N.7 do template PDF
+    - Alimentar o LLM na geração per-equipment (Stage 5B)
+    - Montar a tabela de recomendações consolidadas
+
+    Este objeto é **somente-leitura** após construção.
+
+    Campos correspondem ao contrato definido em
+    ``docs/equipment_llm_contract.md``, seção 2 (Input Schema).
+    """
+
+    # ── Identificação ─────────────────────────────────────────────
+    index: int = Field(..., ge=1, description="Índice sequencial (1-based)")
+    equipment_name: str = Field(..., min_length=1, description="Nome/tag do equipamento")
+    descricao_da_operacao: str = Field(
+        default="Não informado",
+        description="Descrição funcional do equipamento",
+    )
+
+    # ── Análise de perigos (determinísticos da planilha) ──────────
+    identificacao_dos_perigos: list[str] = Field(
+        ..., min_length=1, description="Perigos identificados (≥ 1)"
+    )
+    causas_possiveis: list[str] = Field(
+        ..., min_length=1, description="Causas possíveis (≥ 1)"
+    )
+    consequencias_potenciais: list[str] = Field(
+        ..., min_length=1, description="Consequências potenciais (≥ 1)"
+    )
+
+    # ── Classificação do risco ────────────────────────────────────
+    classificacao_do_risco: RiskClassification = Field(
+        ..., description="Severidade e risco consolidados (highest)"
+    )
+
+    # ── Medidas existentes e seed de recomendações ────────────────
+    medidas_preventivas_existentes: list[str] = Field(
+        default_factory=list,
+        description="Medidas já implementadas (pode ser vazio)",
+    )
+    medidas_a_implementar: list[str] = Field(
+        default_factory=list,
+        description="Seed de recomendações do analista (pode ser vazio)",
+    )
+
+    # ── Campos auxiliares (usados no template, não no LLM) ────────
+    observacoes: list[str] = Field(
+        default_factory=list,
+        description="Observações da planilha",
+    )
+    riscos_descricao: list[str] = Field(
+        default_factory=list,
+        description="Descrições gerais de risco (coluna 'Riscos')",
+    )
+
+    # ── Contagem de linhas-fonte ──────────────────────────────────
+    row_count: int = Field(
+        ..., ge=1,
+        description="Quantidade de linhas da planilha agregadas neste equipamento",
+    )
+
+    model_config = {"frozen": True}
+
+    def to_template_dict(self) -> dict:
+        """Convert to a dict compatible with the Jinja2 template format.
+
+        Returns a dict with keys matching what the legacy
+        ``group_rows_by_equipment()`` used to produce.
+        """
+        return {
+            "index": self.index,
+            "nome": self.equipment_name,
+            "descricao": self.descricao_da_operacao,
+            "perigos": list(self.identificacao_dos_perigos),
+            "causas": list(self.causas_possiveis),
+            "consequencias": list(self.consequencias_potenciais),
+            "severidade": self.classificacao_do_risco.categoria_severidade,
+            "risco": self.classificacao_do_risco.categoria_risco,
+            "medidas_existentes": list(self.medidas_preventivas_existentes),
+            "medidas_implementar": list(self.medidas_a_implementar),
+            "observacoes": list(self.observacoes),
+            "riscos_desc": list(self.riscos_descricao),
+            "row_count": self.row_count,
+            # These will be filled by _enrich_equipments and _attach_equipment_narratives
+            "local_instalacao": "",
+            "funcao_operacional": "",
+            "observacoes_extras": "",
+            "images": [],
+            "recomendacoes_tecnicas": [],
+            "justificativas_tecnicas": [],
+            "narrative_source": "none",
+        }
+
+
+# ---------------------------------------------------------------------------
+# EquipmentLLMInput — payload exato enviado ao LLM
+# ---------------------------------------------------------------------------
+
+class EquipmentLLMInput(BaseModel):
+    """Payload estruturado enviado ao LLM para um único equipamento.
+
+    Contrato: ``docs/equipment_llm_contract.md``, §2.1.
+
+    Este objeto é o *último ponto de contato* antes da chamada LLM.
+    Todas as validações de input (IV-01…IV-09) e limites de tamanho
+    (§5.1) já devem estar aplicados quando ele é construído.
+
+    Imutável após criação.
+    """
+
+    # ── Identificação ─────────────────────────────────────────────
+    equipment_name: str = Field(
+        ..., min_length=1, max_length=200,
+        description="Nome/tag do equipamento",
+    )
+    descricao_da_operacao: str = Field(
+        ..., max_length=500,
+        description="Descrição funcional — fallback 'Não informado'",
+    )
+
+    # ── Análise de perigos ────────────────────────────────────────
+    identificacao_dos_perigos: list[str] = Field(
+        ..., min_length=1, max_length=15,
+        description="Perigos identificados (≥ 1, ≤ 15)",
+    )
+    causas_possiveis: list[str] = Field(
+        ..., min_length=1, max_length=15,
+        description="Causas possíveis (≥ 1, ≤ 15)",
+    )
+    consequencias_potenciais: list[str] = Field(
+        ..., min_length=1, max_length=15,
+        description="Consequências potenciais (≥ 1, ≤ 15)",
+    )
+
+    # ── Classificação do risco ────────────────────────────────────
+    classificacao_do_risco: RiskClassification = Field(
+        ..., description="Severidade e risco consolidados (highest)",
+    )
+
+    # ── Medidas ───────────────────────────────────────────────────
+    medidas_preventivas_existentes: list[str] = Field(
+        default_factory=list, max_length=15,
+        description="Medidas já implementadas (pode ser [])",
+    )
+    medidas_a_implementar: list[str] = Field(
+        default_factory=list, max_length=15,
+        description="Seed de recomendações do analista (pode ser [])",
+    )
+
+    # ── Normas aplicáveis (do profile config) ─────────────────────
+    normas_aplicaveis: list[str] = Field(
+        ..., min_length=1, max_length=15,
+        description="Normas do perfil de análise",
+    )
+
+    # ── Contexto externo opcional (RAG / retrieval futuro) ────────
+    normative_context: list["NormativeExcerpt"] = Field(
+        default_factory=list,
+        max_length=10,
+        description=(
+            "Trechos normativos recuperados por RAG/retrieval, relevantes "
+            "para este equipamento. Populado por adaptadores futuros "
+            "(e.g. ABNT vector store). Quando vazio, o prompt não inclui "
+            "bloco de contexto normativo."
+        ),
+    )
+    literature_context: list["LiteratureExcerpt"] = Field(
+        default_factory=list,
+        max_length=10,
+        description=(
+            "Trechos de literatura técnica recuperados por RAG/retrieval. "
+            "Populado por adaptadores futuros (e.g. corpus técnico). "
+            "Quando vazio, o prompt não inclui bloco de literatura."
+        ),
+    )
+
+    model_config = {"frozen": True}
+
+
+# ---------------------------------------------------------------------------
+# External context excerpts (RAG / retrieval — future)
+# ---------------------------------------------------------------------------
+
+
+class NormativeExcerpt(BaseModel):
+    """Trecho de norma técnica recuperado por RAG ou busca vetorial.
+
+    Representa um fragmento relevante de uma norma ABNT, NFPA, IEC etc.
+    que foi selecionado automaticamente como contexto adicional para a
+    geração per-equipment.
+
+    Campos:
+        source: Identificador da norma (e.g. ``"NFPA 652:2022"``).
+        section: Seção ou cláusula específica (e.g. ``"8.2.1"``).
+            Opcional — pode ser ``None`` se o trecho não tem seção.
+        text: Texto integral ou resumido do trecho normativo.
+        relevance_score: Score de relevância retornado pelo retriever
+            (0.0–1.0). Opcional — usado para ordenação/filtragem.
+    """
+
+    source: str = Field(..., min_length=1, max_length=200, description="Norma de origem")
+    section: Optional[str] = Field(None, max_length=50, description="Seção/cláusula")
+    text: str = Field(..., min_length=1, max_length=2000, description="Texto do trecho")
+    relevance_score: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Score de relevância (0–1)"
+    )
+
+    model_config = {"frozen": True}
+
+
+class LiteratureExcerpt(BaseModel):
+    """Trecho de literatura técnica recuperado por RAG ou busca vetorial.
+
+    Representa um fragmento de publicação técnica, artigo, manual ou
+    guia de boas práticas selecionado como contexto adicional.
+
+    Campos:
+        source: Título ou referência bibliográfica da publicação.
+        text: Texto integral ou resumido do trecho.
+        relevance_score: Score de relevância (0.0–1.0). Opcional.
+    """
+
+    source: str = Field(..., min_length=1, max_length=300, description="Publicação de origem")
+    text: str = Field(..., min_length=1, max_length=2000, description="Texto do trecho")
+    relevance_score: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Score de relevância (0–1)"
+    )
+
+    model_config = {"frozen": True}
+
+
+# ---------------------------------------------------------------------------
+# EquipmentLLMOutput — resposta estruturada do LLM per-equipment
+# ---------------------------------------------------------------------------
+
+
+class RecomendacaoTecnica(BaseModel):
+    """Uma recomendação técnica numerada com referência normativa.
+
+    Contrato: ``docs/equipment_llm_contract.md``, §3.1.
+    """
+
+    numero: int = Field(..., ge=1, description="Número sequencial (1-based)")
+    texto: str = Field(..., min_length=1, description="Texto da recomendação")
+    norma_referencia: str = Field(
+        ..., min_length=1, description="Norma que fundamenta a recomendação"
+    )
+
+    model_config = {"frozen": True}
+
+
+class JustificativaTecnica(BaseModel):
+    """Uma justificativa técnica numerada, correspondente a uma recomendação.
+
+    Contrato: ``docs/equipment_llm_contract.md``, §3.1.
+    """
+
+    numero: int = Field(..., ge=1, description="Número correspondente à recomendação")
+    texto: str = Field(..., min_length=1, description="Texto da justificativa")
+
+    model_config = {"frozen": True}
+
+
+class EquipmentLLMOutput(BaseModel):
+    """Saída estruturada do LLM para um único equipamento.
+
+    Contrato: ``docs/equipment_llm_contract.md``, §3.
+
+    Contém recomendações técnicas numeradas e justificativas técnicas
+    correspondentes, com correspondência 1:1 por ``numero``.
+    """
+
+    recomendacoes_tecnicas: list[RecomendacaoTecnica] = Field(
+        ..., min_length=2, max_length=10,
+        description="Recomendações técnicas (2–10 itens)",
+    )
+    justificativas_tecnicas: list[JustificativaTecnica] = Field(
+        ..., min_length=2, max_length=10,
+        description="Justificativas técnicas (mesmo tamanho que recomendacoes)",
+    )
+
+    model_config = {"frozen": True}
+
+
 class Attachment(BaseModel):
     """Referência a um anexo (foto, documento complementar, etc.)."""
 
@@ -176,6 +483,14 @@ __all__ = [
     "RiskLevel",
     "PriorityLevel",
     "MachineRiskRow",
+    "RiskClassification",
+    "EquipmentContext",
+    "EquipmentLLMInput",
+    "NormativeExcerpt",
+    "LiteratureExcerpt",
+    "RecomendacaoTecnica",
+    "JustificativaTecnica",
+    "EquipmentLLMOutput",
     "CompanyMetadata",
     "Attachment",
     "ReportDraft",

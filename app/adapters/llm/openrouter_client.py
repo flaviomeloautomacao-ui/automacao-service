@@ -179,6 +179,31 @@ class OpenRouterClient:
             detail=raw_content_retry[:500],
         )
 
+    async def call_chat(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+    ) -> str:
+        """Chamada pública ao LLM — interface para uso per-equipment.
+
+        Expõe ``_call_chat`` com assinatura posicional compatível com
+        ``LLMCallFn = Callable[[str, str], Awaitable[str]]``.
+
+        Args:
+            system_prompt: Prompt de sistema.
+            user_prompt: Prompt do usuário.
+
+        Returns:
+            Conteúdo textual cru da resposta do LLM.
+
+        Raises:
+            LLMError: Em caso de falha HTTP / timeout.
+        """
+        return await self._call_chat(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+        )
+
     # ------------------------------------------------------------------
     # Chamada HTTP com retry (tenacity)
     # ------------------------------------------------------------------
@@ -319,25 +344,10 @@ class OpenRouterClient:
         Returns:
             Dicionário validado ou ``None`` se falhar.
         """
-        cleaned = raw.strip()
+        from app.domain.services.json_utils import parse_llm_json
 
-        # Remover blocos ``` caso o modelo envolva em markdown
-        if cleaned.startswith("```"):
-            # remover primeira e última linha de ```
-            lines = cleaned.split("\n")
-            # Encontrar primeira e última ocorrência de ```
-            start = 1 if lines[0].startswith("```") else 0
-            end = len(lines) - 1 if lines[-1].strip() == "```" else len(lines)
-            cleaned = "\n".join(lines[start:end]).strip()
-
-        try:
-            data = json.loads(cleaned)
-        except (json.JSONDecodeError, ValueError):
-            logger.warning("Falha ao parsear JSON da resposta LLM.")
-            return None
-
-        if not isinstance(data, dict):
-            logger.warning("Resposta LLM não é um objeto JSON (dict).")
+        data = parse_llm_json(raw)
+        if data is None:
             return None
 
         missing = _REQUIRED_KEYS - set(data.keys())

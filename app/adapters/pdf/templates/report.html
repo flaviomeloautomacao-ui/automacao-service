@@ -297,12 +297,43 @@
       {{ eq.nome | upper }}
     </h3>
 
+    {# Dados complementares (local, função) #}
+    {% if eq.local_instalacao or eq.funcao_operacional %}
+    <table class="cover-table" style="margin-bottom: 0.8em;">
+      <tbody>
+        {% if eq.local_instalacao %}
+        <tr>
+          <td class="cover-label">Local de instalação:</td>
+          <td>{{ eq.local_instalacao }}</td>
+        </tr>
+        {% endif %}
+        {% if eq.funcao_operacional %}
+        <tr>
+          <td class="cover-label">Função operacional:</td>
+          <td>{{ eq.funcao_operacional }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+    {% endif %}
+
     {# 4.x.1 Descrição da operação #}
     <h4>{{ sec_equip }}.{{ eq.index }}.1 Descrição da operação</h4>
     {% if eq.descricao %}
       <p>{{ eq.descricao }}</p>
     {% else %}
       <p class="text-muted">Descrição não informada na planilha.</p>
+    {% endif %}
+
+    {# Imagens do equipamento (Cloudinary) — abaixo da descrição #}
+    {% if eq.images %}
+    <div class="equipment-images" style="margin-top: 1em; margin-bottom: 1em;">
+      {% for img in eq.images %}
+        <img src="{{ img.secure_url }}"
+             alt="Foto do equipamento {{ eq.nome }}"
+             style="display: block; max-width: 500px; width: 100%; height: auto; margin-bottom: 10px;" />
+      {% endfor %}
+    </div>
     {% endif %}
 
     {# 4.x.2 Identificação dos perigos #}
@@ -344,7 +375,19 @@
 
     {# 4.x.7 Recomendações técnicas #}
     <h4>{{ sec_equip }}.{{ eq.index }}.7 Recomendações técnicas</h4>
-    {% if eq.medidas_implementar %}
+    {% if eq.recomendacoes_tecnicas %}
+      <ol class="detail-list">
+      {% for rec in eq.recomendacoes_tecnicas %}
+        <li value="{{ rec.numero }}">
+          {{ rec.texto }}
+          {% if rec.norma_referencia %}
+            <br/><span class="norma-ref"><em>Ref.: {{ rec.norma_referencia }}</em></span>
+          {% endif %}
+        </li>
+      {% endfor %}
+      </ol>
+    {% elif eq.medidas_implementar %}
+      {# Fallback: medidas da planilha quando LLM não gerou recomendações #}
       <ol class="detail-list">
       {% for item in eq.medidas_implementar %}
         {% if item %}
@@ -356,9 +399,15 @@
       <p class="text-muted">Não informado.</p>
     {% endif %}
 
-    {# 4.x.8 Justificativas técnicas / Observações #}
+    {# 4.x.8 Justificativas técnicas #}
     <h4>{{ sec_equip }}.{{ eq.index }}.8 Justificativas técnicas</h4>
-    {% if eq.observacoes %}
+    {% if eq.justificativas_tecnicas %}
+      <ol class="detail-list">
+      {% for jst in eq.justificativas_tecnicas %}
+        <li value="{{ jst.numero }}">{{ jst.texto | e | replace('\n\n', '</p><p>') | safe }}</li>
+      {% endfor %}
+      </ol>
+    {% elif eq.observacoes %}
       {{ render_bullet_list(eq.observacoes) }}
     {% elif eq.riscos_desc %}
       <p>Os riscos identificados ({{ eq.riscos_desc | join('; ') }}) justificam
@@ -366,6 +415,12 @@
     {% else %}
       <p>As recomendações acima são baseadas nos perigos identificados e nas
          normas técnicas aplicáveis ao perfil de análise.</p>
+    {% endif %}
+
+    {# 4.x.9 Observações extras (complementação) #}
+    {% if eq.observacoes_extras %}
+    <h4>{{ sec_equip }}.{{ eq.index }}.9 Observações complementares</h4>
+    <p>{{ eq.observacoes_extras }}</p>
     {% endif %}
 
   </div>

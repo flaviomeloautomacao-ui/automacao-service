@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     LLM_MODEL: str = "openai/gpt-4o"
 
+    # ── Dev / Teste ─────────────────────────────────────────────
+    DEVLLM: bool = False
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

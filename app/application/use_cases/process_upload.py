@@ -47,6 +47,8 @@ from app.domain.ports import (
 
 import re as _re
 
+from app.domain.services.text_utils import split_field as _split_field, append_unique as _append_unique
+
 
 def _sha256(data: bytes) -> str:
     """Calcula o hash SHA-256 de um bloco de bytes.
@@ -63,26 +65,6 @@ def _sha256(data: bytes) -> str:
 # ---------------------------------------------------------------------------
 # Helpers — agrupamento de equipamentos
 # ---------------------------------------------------------------------------
-
-_SPLIT_PATTERN = _re.compile(r"[;\n•]+")
-
-
-def _split_field(text: str | None) -> list[str]:
-    """Divide um campo de texto em itens individuais.
-
-    Separa por ``;``, ``\n`` ou ``•`` e remove vazios.
-    """
-    if not text:
-        return []
-    parts = _SPLIT_PATTERN.split(text)
-    return [p.strip().lstrip("- ").strip() for p in parts if p.strip()]
-
-
-def _append_unique(lst: list[str], items: list[str]) -> None:
-    """Adiciona itens que ainda não existem na lista."""
-    for item in items:
-        if item and item not in lst:
-            lst.append(item)
 
 
 def group_rows_by_equipment(rows_dicts: list[dict[str, Any]]) -> list[dict[str, Any]]:

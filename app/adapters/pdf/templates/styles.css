@@ -286,6 +286,14 @@ ol.detail-list {
     list-style: decimal;
 }
 
+/* Referência normativa dentro de recomendação */
+.norma-ref {
+    display: inline-block;
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 0.15em;
+}
+
 /* Tabela de classificação do risco (pequena, 2 linhas) */
 .risk-table {
     width: auto;

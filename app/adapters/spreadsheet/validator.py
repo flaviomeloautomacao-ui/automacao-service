@@ -22,6 +22,8 @@ REQUIRED_FIELDS: tuple[str, ...] = (
     "perigo",
     "causas",
     "consequencias",
+    "categoria_severidade",
+    "categoria_risco",
 )
 
 

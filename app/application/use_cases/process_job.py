@@ -3,9 +3,12 @@
 Orquestra o pipeline de geração de laudo reportando cada etapa
 diretamente no banco via ``JobRepository``.
 
+O pipeline busca TODOS os dados do banco (planilha, metadados do
+relatório, equipamentos e imagens) — não recebe mais arquivo.
+
 Etapas do pipeline (mapeadas às steps criadas pelo Next.js):
   1. upload_storage  — já concluída pelo Next.js
-  2. data_processing — parse + validação + draft
+  2. data_processing — leitura + validação + agrupamento de dados do banco
   3. llm_analysis    — geração de seções narrativas via LLM
   4. pdf_rendering   — renderização HTML → PDF
   5. report_storage  — armazenamento do PDF + metadados
@@ -16,7 +19,6 @@ e exibe progresso em tempo real.
 
 from __future__ import annotations
 
-import hashlib
 import traceback
 import uuid
 from datetime import datetime, timezone
@@ -25,12 +27,18 @@ from typing import Any
 from loguru import logger
 
 from app.adapters.db.job_repository import JobRepository
-from app.adapters.storage.paths import report_pdf_path, upload_original_path
+from app.adapters.storage.paths import report_pdf_path
 from app.application.use_cases.process_upload import (
     ProcessUploadUseCase,
-    group_rows_by_equipment,
 )
 from app.domain.errors import DomainError
+from app.domain.services.equipment_context_builder import build_equipment_contexts
+from app.domain.services.equipment_prompt_context import (
+    build_all_equipment_prompt_contexts,
+)
+from app.domain.services.equipment_narrative_generator import (
+    generate_all_equipment_narratives,
+)
 
 
 class ProcessJobUseCase:
@@ -56,24 +64,37 @@ class ProcessJobUseCase:
     async def execute(
         self,
         job_id: str,
-        file_bytes: bytes,
-        filename: str,
-        content_type: str,
-        profile: str | None = None,
     ) -> dict[str, str]:
         """Executa o pipeline completo com reportagem de progresso.
 
+        Busca todos os dados do banco de dados:
+        - ``spreadsheet_rows`` → rows da planilha
+        - ``reports`` → company_metadata (dados de capa)
+        - ``report_equipments`` + ``equipment_images`` → equipamentos enriquecidos
+
         Args:
             job_id: UUID do job (criado pelo Next.js).
-            file_bytes: Conteúdo binário da planilha.
-            filename: Nome original do arquivo.
-            content_type: MIME type.
-            profile: Perfil de risco (dust, gas, vapors).
 
         Returns:
-            Dicionário com upload_id, draft_id, report_id, pdf_url, pdf_path.
+            Dicionário com report_id, pdf_url, pdf_path.
         """
         try:
+            # ── Buscar dados do job ───────────────────────────────
+            job = await self._job_repo.get_job(job_id)
+            if job is None:
+                raise DomainError(f"Job {job_id} não encontrado")
+
+            profile = job.get("profile")
+
+            # Validate profile is one of the expected values
+            valid_profiles = {"dust", "gas", "vapors"}
+            if not profile or profile not in valid_profiles:
+                logger.warning(
+                    "Job {} | Perfil inv\u00e1lido ou ausente: '{}' \u2014 usando 'dust' como default",
+                    job_id, profile,
+                )
+                profile = "dust"
+
             # ── Iniciar processamento ─────────────────────────────
             await self._job_repo.update_job(
                 job_id,
@@ -88,41 +109,75 @@ class ProcessJobUseCase:
             await self._job_repo.update_job(
                 job_id,
                 progress=15,
-                current_step="Processando dados da planilha…",
+                current_step="Lendo dados da planilha…",
             )
 
-            # 2a) Armazena arquivo cru no storage (sem tabela legada)
-            upload_ref = str(uuid.uuid4())
-            storage_path = upload_original_path(upload_ref, filename)
-            await self._uc._storage.put_bytes(
-                self._uc._bucket,
-                storage_path,
-                file_bytes,
-                content_type=content_type,
+            # 2a) Busca rows da planilha do banco
+            rows_dicts = await self._job_repo.get_spreadsheet_rows(job_id)
+            logger.info(
+                "Job {} | Rows carregados do banco | total={}",
+                job_id,
+                len(rows_dicts),
             )
-            logger.info("Job {} | Arquivo armazenado | path={}", job_id, storage_path)
 
             await self._job_repo.update_job(job_id, progress=20)
 
-            # 2b) Parse da planilha
-            rows = self._uc._parse_spreadsheet(file_bytes, filename)
+            # 2b) Busca metadados do relatório (company_metadata)
+            company_metadata = await self._job_repo.get_report_metadata(job_id)
+            logger.info(
+                "Job {} | Report metadata carregado | has_data={}",
+                job_id,
+                company_metadata is not None,
+            )
 
             await self._job_repo.update_job(
                 job_id,
                 progress=22,
-                current_step="Validando dados…",
+                current_step="Carregando dados de equipamentos…",
             )
 
-            # 2c) Validação determinística
-            self._uc._validate_rows(rows)
+            # 2c) Busca equipamentos com imagens
+            report_equipments = await self._job_repo.get_report_equipments_with_images(
+                job_id
+            )
+            logger.info(
+                "Job {} | Equipamentos carregados | total={}",
+                job_id,
+                len(report_equipments),
+            )
 
             await self._job_repo.update_job(job_id, progress=25)
 
-            # 2d) Prepara dados (sem tabela legada de drafts)
-            rows_dicts = [row.model_dump(mode="json") for row in rows]
+            # 2d) Constrói contextos estruturados por equipamento
+            #     (fonte única de agrupamento para LLM e template)
+            equipment_contexts = build_equipment_contexts(rows_dicts)
+            logger.info(
+                "Job {} | EquipmentContexts construídos | total={}",
+                job_id,
+                len(equipment_contexts),
+            )
 
-            # 2e) Agrupa equipamentos
-            grouped_equipment = group_rows_by_equipment(rows_dicts)
+            # 2d.1) Converte contextos para formato dict do template Jinja2
+            grouped_equipment = [ctx.to_template_dict() for ctx in equipment_contexts]
+
+            # 2e) Enriquece equipamentos agrupados com dados de complementação
+            grouped_equipment = self._enrich_equipments(
+                grouped_equipment, report_equipments
+            )
+
+            # 2f) Constrói payloads LLM per-equipment (validados + bounded)
+            from app.adapters.llm.prompts import get_profile_config  # noqa: PLC0415
+
+            profile_cfg = get_profile_config(profile)
+            equipment_llm_inputs = build_all_equipment_prompt_contexts(
+                equipment_contexts,
+                normas_aplicaveis=profile_cfg["normas_principais"],
+            )
+            logger.info(
+                "Job {} | EquipmentLLMInputs construídos | total={}",
+                job_id,
+                len(equipment_llm_inputs),
+            )
 
             await self._job_repo.complete_step(job_id, "data_processing")
             await self._job_repo.update_job(
@@ -142,17 +197,68 @@ class ProcessJobUseCase:
             await self._job_repo.update_job(
                 job_id,
                 progress=35,
-                current_step="Gerando recomendações via IA…",
+                current_step="Gerando seções globais via IA…",
             )
 
+            # 3a) Seções globais (introdução, metodologia, conclusão)
             llm_sections = await self._uc._generate_llm_sections(
                 rows_dicts,
-                None,  # company_metadata
+                company_metadata,
                 profile=profile,
                 grouped_equipment=grouped_equipment,
             )
 
             llm_sections_html = self._uc._normalize_llm_sections(llm_sections)
+
+            await self._job_repo.update_job(
+                job_id,
+                progress=50,
+                current_step="Gerando recomendações por equipamento…",
+            )
+
+            # 3b) Per-equipment generation (recomendações + justificativas)
+            async def _on_equipment_progress(completed: int, total: int) -> None:
+                # Map equipment progress to 50-70 range
+                pct = 50 + int((completed / max(total, 1)) * 20)
+                await self._job_repo.update_job(
+                    job_id,
+                    progress=pct,
+                    current_step=f"Equipamento {completed}/{total}…",
+                )
+
+            from app.adapters.llm.openrouter_client import OpenRouterClient  # noqa: PLC0415
+
+            llm_client = self._uc._llm
+            if isinstance(llm_client, OpenRouterClient):
+                llm_call_fn = llm_client.call_chat
+            else:
+                # Fallback: wrap generate_sections (shouldn't happen in prod)
+                async def llm_call_fn(system: str, user: str) -> str:  # type: ignore[misc]
+                    import json as _json  # noqa: PLC0415
+                    ctx = {"rows": rows_dicts, "profile": profile}
+                    result = await llm_client.generate_sections(ctx)
+                    return _json.dumps(result)
+
+            equipment_generation_results = await generate_all_equipment_narratives(
+                llm_inputs=equipment_llm_inputs,
+                llm_call=llm_call_fn,
+                max_concurrency=1,
+                on_progress=_on_equipment_progress,
+                profile=profile,
+            )
+
+            # 3c) Attach results to grouped_equipment for template rendering
+            grouped_equipment = self._attach_equipment_narratives(
+                grouped_equipment,
+                equipment_generation_results,
+            )
+
+            logger.info(
+                "Job {} | Per-equipment geração concluída | total={} | fallbacks={}",
+                job_id,
+                len(equipment_generation_results),
+                sum(1 for r in equipment_generation_results if r.source == "fallback"),
+            )
 
             await self._job_repo.complete_step(job_id, "llm_analysis")
             await self._job_repo.update_job(
@@ -174,7 +280,7 @@ class ProcessJobUseCase:
             pdf_bytes = self._uc._render_pdf(
                 rows_dicts,
                 llm_sections_html,
-                None,  # company_metadata
+                company_metadata,
                 profile=profile,
                 grouped_equipment=grouped_equipment,
             )
@@ -186,7 +292,11 @@ class ProcessJobUseCase:
                 current_step="PDF gerado com sucesso",
             )
 
-            logger.info("Job {} | pdf_rendering concluído | {} bytes", job_id, len(pdf_bytes))
+            logger.info(
+                "Job {} | pdf_rendering concluído | {} bytes",
+                job_id,
+                len(pdf_bytes),
+            )
 
             # ── Step 5: report_storage ────────────────────────────
             await self._job_repo.start_step(job_id, "report_storage")
@@ -211,7 +321,9 @@ class ProcessJobUseCase:
             )
             logger.info(
                 "Job {} | PDF armazenado | report_id={} | path={}",
-                job_id, report_id, pdf_path,
+                job_id,
+                report_id,
+                pdf_path,
             )
 
             await self._job_repo.complete_step(job_id, "report_storage")
@@ -261,6 +373,95 @@ class ProcessJobUseCase:
     # Helpers
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _enrich_equipments(
+        grouped_equipment: list[dict[str, Any]],
+        report_equipments: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Enriquece equipamentos agrupados com dados de complementação.
+
+        Mescla dados de ``report_equipments`` (complementação do usuário)
+        nos equipamentos agrupados pela planilha. A ligação é feita por
+        nome de equipamento (case-insensitive + strip).
+
+        Adiciona aos equipamentos agrupados:
+        - ``local_instalacao``, ``funcao_operacional``, ``observacoes_extras``
+        - ``images``: lista de dicts com URLs de imagens do Cloudinary
+
+        Args:
+            grouped_equipment: Equipamentos agrupados das rows da planilha.
+            report_equipments: Equipamentos do relatório com imagens.
+
+        Returns:
+            Lista de equipamentos enriquecidos.
+        """
+        # Cria mapa de lookup por nome (case-insensitive)
+        report_map: dict[str, dict[str, Any]] = {}
+        for req in report_equipments:
+            key = (req.get("equipment_name") or "").strip().lower()
+            if key:
+                report_map[key] = req
+
+        for eq in grouped_equipment:
+            key = (eq.get("nome") or "").strip().lower()
+            complement = report_map.get(key)
+            if complement:
+                eq["local_instalacao"] = complement.get("local_instalacao") or ""
+                eq["funcao_operacional"] = complement.get("funcao_operacional") or ""
+                eq["observacoes_extras"] = complement.get("observacoes_extras") or ""
+                eq["images"] = complement.get("images", [])
+            else:
+                eq["local_instalacao"] = ""
+                eq["funcao_operacional"] = ""
+                eq["observacoes_extras"] = ""
+                eq["images"] = []
+
+        return grouped_equipment
+
+    @staticmethod
+    def _attach_equipment_narratives(
+        grouped_equipment: list[dict[str, Any]],
+        generation_results: list,
+    ) -> list[dict[str, Any]]:
+        """Anexa narrativas geradas pelo LLM aos equipamentos agrupados.
+
+        Liga por nome de equipamento (case-insensitive). Cada equipamento
+        recebe as chaves ``recomendacoes_tecnicas`` e ``justificativas_tecnicas``
+        como listas de dicts prontas para o template Jinja2.
+
+        Args:
+            grouped_equipment: Equipamentos agrupados (mutáveis).
+            generation_results: Lista de ``EquipmentGenerationResult``.
+
+        Returns:
+            Lista de equipamentos com narrativas anexadas.
+        """
+        # Mapa de lookup por nome (case-insensitive)
+        result_map: dict[str, Any] = {}
+        for gen_result in generation_results:
+            key = gen_result.equipment_name.strip().lower()
+            result_map[key] = gen_result
+
+        for eq in grouped_equipment:
+            key = (eq.get("nome") or "").strip().lower()
+            gen_result = result_map.get(key)
+
+            if gen_result is not None:
+                output = gen_result.output
+                eq["recomendacoes_tecnicas"] = [
+                    r.model_dump() for r in output.recomendacoes_tecnicas
+                ]
+                eq["justificativas_tecnicas"] = [
+                    j.model_dump() for j in output.justificativas_tecnicas
+                ]
+                eq["narrative_source"] = gen_result.source
+            else:
+                eq["recomendacoes_tecnicas"] = []
+                eq["justificativas_tecnicas"] = []
+                eq["narrative_source"] = "none"
+
+        return grouped_equipment
+
     async def _fail_job(
         self,
         job_id: str,
@@ -276,12 +477,19 @@ class ProcessJobUseCase:
         from app.infrastructure.db import get_session as _get_session  # noqa: PLC0415
 
         try:
-            async for session in _get_session():
+            session_gen = _get_session()
+            session = await session_gen.__anext__()
+            try:
                 fresh_repo = JobRepository(session)
                 if step_name:
                     await fresh_repo.fail_step(job_id, step_name, error_message)
                 await fresh_repo.mark_job_failed(job_id, error_code, error_message)
-                break
+            finally:
+                # Ensure generator cleanup runs (commit/rollback)
+                try:
+                    await session_gen.__anext__()
+                except StopAsyncIteration:
+                    pass
         except Exception as inner_exc:
             logger.error(
                 "Job {} | Falha ao marcar job como error: {}",
@@ -298,12 +506,19 @@ class ProcessJobUseCase:
         from app.infrastructure.db import get_session as _get_session  # noqa: PLC0415
 
         try:
-            async for session in _get_session():
+            session_gen = _get_session()
+            session = await session_gen.__anext__()
+            try:
                 fresh_repo = JobRepository(session)
                 steps = await fresh_repo.get_steps(job_id)
                 for step in steps:
                     if step["status"] == "processing":
                         return step["name"]
                 return None
+            finally:
+                try:
+                    await session_gen.__anext__()
+                except StopAsyncIteration:
+                    pass
         except Exception:
             return None
