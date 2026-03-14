@@ -278,8 +278,8 @@ async def generate_all_equipment_narratives(
         return []
 
     # ── DEVLLM: gera LLM apenas para o 1º equipamento ────────
-    import os  # noqa: PLC0415
-    devllm = os.getenv("DEVLLM", "false").lower() in ("true", "1", "yes")
+    from app.infrastructure.config import get_settings  # noqa: PLC0415
+    devllm = get_settings().DEVLLM
     if devllm:
         logger.warning(
             "DEVLLM=true | Apenas o 1º equipamento usará LLM, "

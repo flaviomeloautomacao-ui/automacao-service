@@ -1,0 +1,2841 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>RELATÓRIO TÉCNICO — DHA (Dust Hazard Analysis) — Bunge Alimentos S.A.</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+
+<div class="running-header">
+  <img src="konis_logo.png" alt="Konis" />
+  <span class="running-header-title">
+    RELATÓRIO TÉCNICO — DHA (Dust Hazard Analysis)
+  </span>
+  <span class="running-header-rev">
+    REL-DHA-BUNGE-SFS-2026
+     — Rev. 00
+  </span>
+</div>
+
+
+
+<div class="cover">
+  <div class="cover-logo">
+    <img src="konis_logo.png" alt="Konis Safety Engenharia" />
+  </div>
+
+  <div class="cover-content">
+    
+    
+      
+        <h1 class="cover-title">RELATÓRIO TÉCNICO</h1>
+      
+    
+      
+        <p class="cover-subtitle-main">DHA (Dust Hazard Analysis)</p>
+      
+    
+
+    
+      <p class="cover-subtitle">Análise de Perigos por Poeira Combustível</p>
+    
+
+    <div class="cover-divider"></div>
+
+    
+    <p class="cover-doc-code">
+      REL-DHA-BUNGE-SFS-2026
+       — Revisão 00
+    </p>
+    
+
+    <table class="cover-table">
+      <tbody>
+        <tr>
+          <td class="cover-label">Cliente:</td>
+          <td>Bunge Alimentos S.A.</td>
+        </tr>
+        
+        <tr>
+          <td class="cover-label">CNPJ:</td>
+          <td>84.046.101/0093-40</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="cover-label">Unidade:</td>
+          <td>Unidade São Francisco do Sul — SC</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="cover-label">Local vistoriado:</td>
+          <td>Planta de Processamento de Grãos e Silos</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="cover-label">Data da vistoria:</td>
+          <td>10/02/2026</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="cover-label">Contrato:</td>
+          <td>CT-2026/042</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="cover-label">Elaboração:</td>
+          <td>Konis Safety Engenharia</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="cover-label">Responsável Técnico:</td>
+          <td>Eng. Roberto M. Nascimento</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="cover-label">Registro Profissional:</td>
+          <td>CREA-SC 098765/D</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="cover-label">ART:</td>
+          <td>SC20260001234567</td>
+        </tr>
+        
+      </tbody>
+    </table>
+
+    <div class="cover-footer">
+      <p>Gerado em: 13/03/2026 19:44</p>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="apresentacao-section">
+
+  <h2 style="border-bottom: none; text-align: center; font-size: 14pt; letter-spacing: 0.5px; line-height: 1.35;">
+    KONIS EX — APRESENTAÇÃO TÉCNICA E<br/>IMPORTÂNCIA DOS SERVIÇOS
+  </h2>
+
+  <p>
+    A <strong>KONIS EX DO BRASIL</strong> é uma empresa de consultoria e engenharia
+    especializada em segurança de processos aplicada a atmosferas explosivas, com atuação
+    focada na prevenção e mitigação de eventos de incêndio e explosão associados a poeiras
+    combustíveis e gases/vapores inflamáveis. Seus serviços são desenvolvidos com base em
+    metodologias de identificação de perigos, avaliação de riscos e definição de medidas
+    técnicas e organizacionais de controle, visando reduzir a probabilidade de ocorrência de
+    eventos e limitar suas consequências, assegurando conformidade normativa e melhoria
+    contínua do desempenho de segurança.
+  </p>
+
+  
+  <h3 class="apresentacao-h3">1. ESCOPO DE SERVIÇOS TÉCNICOS</h3>
+
+  <p>
+    A KONIS presta serviços técnicos integrados, abrangendo, conforme aplicável ao
+    processo e aos materiais manuseados:
+  </p>
+
+  <h4 class="apresentacao-h4">1.1 DUST HAZARD ANALYSIS (DHA) — POEIRAS COMBUSTÍVEIS</h4>
+  <p>
+    Elaboração de DHA por área e por equipamento, com identificação de cenários de risco,
+    fontes de ignição, condições de formação de nuvem de poeira, potencial de propagação e
+    recomendações de controle. O DHA contempla, quando aplicável:
+  </p>
+  <ul class="detail-list">
+    <li>Caracterização do perigo (propriedades de explosividade e combustibilidade do pó, quando disponíveis);</li>
+    <li>Avaliação qualitativa/semiquantitativa de risco (probabilidade × severidade);</li>
+    <li>Definição de recomendações de prevenção (redução de emissões fugitivas, housekeeping, controle de fontes de ignição, medidas de manutenção e operação);</li>
+    <li>Definição de requisitos de mitigação (proteção contra explosão) quando tecnicamente aplicável.</li>
+  </ul>
+
+  <h4 class="apresentacao-h4">1.2 CLASSIFICAÇÃO DE ÁREAS — ATMOSFERAS EXPLOSIVAS (GASES/VAPORES E POEIRAS)</h4>
+  <p>
+    Desenvolvimento de estudos e documentos de classificação de áreas, incluindo
+    critérios de liberação, grau e disponibilidade de ventilação, extensão de zonas e diretrizes
+    para seleção de equipamentos. Entregáveis típicos:
+  </p>
+  <ul class="detail-list">
+    <li>Relatório técnico de classificação;</li>
+    <li>Planilhas/tabelas de classificação;</li>
+    <li>Recomendações para adequação de equipamentos e instalações.</li>
+  </ul>
+
+  <h4 class="apresentacao-h4">1.3 ESPECIFICAÇÃO E DIMENSIONAMENTO DE SISTEMAS DE PROTEÇÃO CONTRA EXPLOSÃO</h4>
+  <p>
+    Definição técnica de medidas de mitigação para equipamentos e sistemas de
+    processo, conforme viabilidade de aplicação e características de processo/volume,
+    incluindo:
+  </p>
+  <ul class="detail-list">
+    <li>Alívio de explosão (painéis/ventos e, quando aplicável, soluções sem chama);</li>
+    <li>Isolamento de explosão (válvulas, barreiras e dispositivos de isolamento mecânico/ativo);</li>
+    <li>Supressão de explosão (quando aplicável);</li>
+    <li>Avaliação de interfaces com dutos e efeitos de propagação;</li>
+    <li>Recomendações de instalação, intertravamentos e requisitos de manutenção/inspeção.</li>
+  </ul>
+
+  <h4 class="apresentacao-h4">1.4 PREVENÇÃO: CONTROLE DE FONTES DE IGNIÇÃO, ASPIRAÇÃO E BOAS PRÁTICAS OPERACIONAIS</h4>
+  <p>Recomendações e suporte técnico para:</p>
+  <ul class="detail-list">
+    <li>Controle de ignição (superaquecimento, atrito, faíscas mecânicas, eletricidade estática, falhas elétricas, trabalhos a quente);</li>
+    <li>Melhorias de aspiração/ventilação local exaustora e controle de poeira;</li>
+    <li>Adequações de housekeeping, procedimentos e manutenção preventiva/preditiva;</li>
+    <li>Requisitos de aterramento, equipotencialização e seleção de materiais quando aplicável.</li>
+  </ul>
+
+  
+  <h3 class="apresentacao-h3">2. IMPORTÂNCIA E CONTRIBUIÇÃO PARA A SEGURANÇA E CONFORMIDADE</h3>
+
+  <p>
+    Os serviços da KONIS EX são essenciais para transformar riscos inerentes ao
+    processo em critérios de engenharia, estabelecendo uma base técnica para tomada de
+    decisão e priorização de medidas. Em termos práticos, os estudos e recomendações
+    proporcionam:
+  </p>
+  <ul class="detail-list">
+    <li>Redução da probabilidade de formação de atmosferas explosivas e de ocorrência de ignições;</li>
+    <li>Mitigação das consequências de eventos, protegendo pessoas, ativos e continuidade operacional;</li>
+    <li>Suporte à conformidade normativa e requisitos de seguradoras, auditorias e governança HSE;</li>
+    <li>Padronização de critérios técnicos para especificação de equipamentos, melhorias e retrofits;</li>
+    <li>Aumento da confiabilidade operacional e redução de perdas por paradas e incidentes.</li>
+  </ul>
+
+  
+  <h3 class="apresentacao-h3">3. RESULTADO ESPERADO</h3>
+
+  <p>
+    Como resultado, a KONIS EX entrega documentação técnica rastreável (relatórios,
+    planilhas, recomendações e especificações) e um conjunto de ações priorizadas que
+    orientam o cliente na implementação de medidas de prevenção e proteção, promovendo
+    um ambiente industrial mais seguro, robusto e aderente às melhores práticas de engenharia.
+  </p>
+
+</div>
+
+
+
+<div class="toc">
+  <h2 class="toc-title">SUMÁRIO</h2>
+
+  <ul class="toc-list">
+    <li><span class="toc-number">1.</span> Introdução</li>
+    <li class="toc-sub"><span class="toc-number">1.1.</span> Objetivo</li>
+
+    
+    <li><span class="toc-number">2.</span> Caracterização dos Materiais Combustíveis</li>
+    <li class="toc-sub"><span class="toc-number">2.1.</span> Materiais Presentes na Unidade</li>
+    <li class="toc-sub"><span class="toc-number">2.2.</span> Propriedades Típicas de Explosividade</li>
+    <li class="toc-sub"><span class="toc-number">2.3.</span> Considerações Técnicas</li>
+    <li class="toc-sub"><span class="toc-number">2.4.</span> Conclusão Técnica</li>
+    <li><span class="toc-number">3.</span> Metodologia Aplicada à Avaliação</li>
+    <li class="toc-sub"><span class="toc-number">3.1.</span> Visão Geral do Método</li>
+    <li class="toc-sub"><span class="toc-number">3.2.</span> Critérios de Severidade</li>
+    <li class="toc-sub"><span class="toc-number">3.3.</span> Critérios de Probabilidade</li>
+    <li class="toc-sub"><span class="toc-number">3.4.</span> Matriz de Risco</li>
+    <li class="toc-sub"><span class="toc-number">3.5.</span> Etapas da Avaliação</li>
+    <li><span class="toc-number">4.</span> Análise Técnica Individual — Equipamentos</li>
+    
+    <li class="toc-sub"><span class="toc-number">4.1.</span> Elevador de Canecas EC-01</li>
+    
+    <li class="toc-sub"><span class="toc-number">4.2.</span> Transportador Redler TR-03</li>
+    
+    <li class="toc-sub"><span class="toc-number">4.3.</span> Silo de Armazenamento SA-12</li>
+    
+    <li class="toc-sub"><span class="toc-number">4.4.</span> Filtro de Mangas FM-05</li>
+    
+    <li class="toc-sub"><span class="toc-number">4.5.</span> Moinho de Martelos MM-02</li>
+    
+    <li class="toc-sub"><span class="toc-number">4.6.</span> Rosca Transportadora RT-07</li>
+    
+    <li><span class="toc-number">5.</span> Recomendações Consolidadas</li>
+    <li><span class="toc-number">6.</span> Classificação de Risco Geral</li>
+    <li><span class="toc-number">7.</span> Conclusão Geral</li>
+    <li><span class="toc-number">8.</span> Referências Normativas</li>
+    <li><span class="toc-number">9.</span> Encerramento</li>
+    <li><span class="toc-number">A.</span> Anexo — Inventário Completo de Riscos</li>
+    
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+
+
+<div class="section">
+  <h2><span class="section-number">1.</span> INTRODUÇÃO</h2>
+
+  <h3>1.1 Objetivo</h3>
+  
+    <div class="llm-content">
+      
+  
+    
+      
+      
+        
+        
+        
+        
+          <p>Este relatório técnico apresenta os resultados da Análise de Perigos por Poeira Combustível (DHA — Dust Hazard Analysis) realizada nas dependências da empresa Bunge Alimentos S.A., unidade São Francisco do Sul — SC, conforme vistoria técnica realizada em 10/02/2026.</p>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <p>O objetivo principal é identificar cenários de risco associados à presença de poeiras combustíveis de origem agrícola (soja e milho) nos processos de recebimento, armazenamento, transporte e moagem de grãos, avaliar a severidade e a probabilidade de ocorrência de eventos adversos (incêndio e explosão) e propor medidas de controle fundamentadas nas normas NFPA 652, NFPA 61, NFPA 68, NFPA 69 e na série ABNT NBR IEC 60079.</p>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <p>A análise abrange a Planta de Processamento de Grãos e Silos, compreendendo 6 equipamentos inventariados no levantamento de campo, desde o recebimento até o ensaque do produto final.</p>
+        
+      
+    
+  
+
+    </div>
+  
+</div>
+
+
+
+
+<div class="section">
+  <h2><span class="section-number">2.</span> CARACTERIZAÇÃO DOS MATERIAIS COMBUSTÍVEIS</h2>
+
+  
+    
+    <h3>2.1 Materiais Presentes na Unidade</h3>
+    <div class="llm-content">
+      
+  
+    
+      
+      
+        
+        
+        
+        
+          <p>Durante a vistoria técnica realizada na unidade da Bunge — São Francisco do Sul, foi identificado o manuseio e armazenamento dos seguintes produtos com potencial de gerar poeiras combustíveis:</p>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <ul class="text-list">
+          
+            
+            
+              <li>Soja em grão</li>
+            
+          
+            
+            
+              <li>Milho em grão</li>
+            
+          
+            
+            
+              <li>Farelo de soja</li>
+            
+          
+          </ul>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <p>Estes materiais, quando transformados em partículas finas em suspensão, possuem características combustíveis reconhecidas pelas normas internacionais e literatura científica especializada. A presença dessas poeiras em ambientes fechados, combinada com fontes de ignição, pode resultar em incêndios ou explosões.</p>
+        
+      
+    
+  
+
+    </div>
+
+    
+    <h3>2.2 Propriedades Típicas de Explosividade (Dados de Referência)</h3>
+    
+      <p>Abaixo, apresentam-se os parâmetros típicos de explosividade dos materiais, extraídos de bases técnicas reconhecidas (Eckhoff, 2003; NFPA 652; relatórios de ensaios laboratoriais de indústrias similares).</p>
+    
+
+    
+    <table class="criteria-table">
+      <thead>
+        <tr>
+          <th>Propriedade</th>
+          
+            <th>Soja (poeira)</th>
+          
+            <th>Milho (poeira)</th>
+          
+            <th>Farelo de soja</th>
+          
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td><strong>Kst (bar·m/s)</strong></td>
+          
+            <td>125 – 160</td>
+          
+            <td>110 – 150</td>
+          
+            <td>150 – 200</td>
+          
+        </tr>
+        
+        <tr>
+          <td><strong>Pmax (bar)</strong></td>
+          
+            <td>7,5 – 9,0</td>
+          
+            <td>6,5 – 8,5</td>
+          
+            <td>7,5 – 9,0</td>
+          
+        </tr>
+        
+        <tr>
+          <td><strong>Classe de explosividade (St)</strong></td>
+          
+            <td>St1</td>
+          
+            <td>St1</td>
+          
+            <td>St1</td>
+          
+        </tr>
+        
+        <tr>
+          <td><strong>MIT (nuvem) (°C)</strong></td>
+          
+            <td>400 – 460</td>
+          
+            <td>470 – 500</td>
+          
+            <td>420 – 450</td>
+          
+        </tr>
+        
+        <tr>
+          <td><strong>MIT (camada) (°C)</strong></td>
+          
+            <td>260 – 290</td>
+          
+            <td>270 – 300</td>
+          
+            <td>250 – 280</td>
+          
+        </tr>
+        
+        <tr>
+          <td><strong>MIE (mínima energia de ignição)</strong></td>
+          
+            <td>30 – 70 mJ</td>
+          
+            <td>50 – 100 mJ</td>
+          
+            <td>40 – 80 mJ</td>
+          
+        </tr>
+        
+        <tr>
+          <td><strong>Tamanho de partícula crítico</strong></td>
+          
+            <td>&lt; 500 μm</td>
+          
+            <td>&lt; 420 μm</td>
+          
+            <td>&lt; 420 μm</td>
+          
+        </tr>
+        
+      </tbody>
+    </table>
+    
+
+    
+    <h3>2.3 Considerações Técnicas</h3>
+    
+    <ul class="detail-list">
+      
+        <li>Os valores de Kst e Pmax confirmam que os materiais analisados pertencem à Classe St1, caracterizada por poeiras com potencial moderado de explosão, mas que ainda assim requerem controle rigoroso.</li>
+      
+        <li>A energia mínima de ignição (MIE) desses materiais está dentro da faixa crítica que permite ignição por fontes eletrostáticas, faíscas mecânicas ou elétricas, superfícies quentes e atrito.</li>
+      
+        <li>As temperaturas mínimas de ignição (MIT) da camada são significativamente menores que da nuvem, o que exige cuidados com acúmulo de poeira em superfícies aquecidas.</li>
+      
+    </ul>
+    
+
+    
+    <h3>2.4 Conclusão Técnica</h3>
+    <div class="llm-content">
+      
+  
+    
+      
+      
+        
+        
+        
+        
+          <p>Com base nas propriedades listadas, confirma-se que as poeiras de soja, milho e farelo de soja devem ser classificadas como materiais combustíveis, com potencial de formar atmosferas explosivas em condições de operação normal ou anormal da planta.</p>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <p>A recomendação normativa, conforme NFPA 652:2022, é que todas as áreas onde tais materiais são manuseados, transportados ou armazenados estejam sujeitas à análise de riscos (DHA), com base técnica e documentação formal.</p>
+        
+      
+    
+  
+
+    </div>
+
+  
+</div>
+
+
+
+
+<div class="section">
+  <h2><span class="section-number">3.</span> METODOLOGIA APLICADA À AVALIAÇÃO</h2>
+
+  <h3>3.1 Visão Geral do Método</h3>
+  
+    <div class="llm-content">
+      
+  
+    
+      
+      
+        
+        
+        
+        
+          <p>A avaliação foi conduzida com base na metodologia de Análise de Perigos por Poeira Combustível (DHA) estabelecida pela NFPA 652:2024, conforme as seguintes etapas:</p>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <ul class="text-list">
+          
+            
+            
+              <li>Levantamento dos materiais e substâncias processados na unidade, com identificação das propriedades de explosividade</li>
+            
+          
+            
+            
+              <li>Identificação das áreas e equipamentos com potencial de formação de atmosferas explosivas por poeira combustível</li>
+            
+          
+            
+            
+              <li>Inspeção técnica em campo, avaliando condições de housekeeping, fontes de ignição, sistemas de contenção e práticas operacionais</li>
+            
+          
+            
+            
+              <li>Avaliação dos sistemas de proteção, detecção e supressão existentes</li>
+            
+          
+            
+            
+              <li>Classificação do risco por equipamento, utilizando matriz de severidade (I–IV) × probabilidade, resultando em 5 faixas de risco: Trivial, Tolerável, Moderado, Substancial e Intolerável</li>
+            
+          
+            
+            
+              <li>Geração de recomendações técnicas priorizadas por nível de risco, fundamentadas nas normas NFPA e ABNT aplicáveis</li>
+            
+          
+          </ul>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <p>A visita técnica foi realizada em 10/02/2026 com duração de 8 horas, percorrendo todas as áreas do processo produtivo. A classificação de risco seguiu os critérios da NFPA 652 adaptados para a metodologia da Konis Safety Engenharia.</p>
+        
+      
+    
+  
+
+    </div>
+  
+
+  
+  <h3>3.2 Critérios de Severidade</h3>
+  <p>A tabela abaixo apresenta os critérios utilizados para classificação da severidade dos cenários de risco identificados:</p>
+
+  <table class="criteria-table">
+    <thead>
+      <tr>
+        <th style="width: 20%;">Nível</th>
+        <th style="width: 10%;">Valor</th>
+        <th>Descrição</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="level-cell" style="background-color: #28a745;">Desprezível</span></td>
+        <td style="text-align: center;">I</td>
+        <td>Sem impacto significativo à segurança, saúde ou meio ambiente. Danos materiais insignificantes.</td>
+      </tr>
+      <tr>
+        <td><span class="level-cell" style="background-color: #8bc34a;">Baixa</span></td>
+        <td style="text-align: center;">II</td>
+        <td>Danos leves e reversíveis. Lesões menores sem afastamento. Danos materiais de baixo custo.</td>
+      </tr>
+      <tr>
+        <td><span class="level-cell" style="background-color: #ffc107; color: #333;">Média</span></td>
+        <td style="text-align: center;">III</td>
+        <td>Danos moderados, parcialmente reversíveis. Lesões com afastamento temporário. Danos significativos aos equipamentos.</td>
+      </tr>
+      <tr>
+        <td><span class="level-cell" style="background-color: #fd7e14;">Alta</span></td>
+        <td style="text-align: center;">IV</td>
+        <td>Danos graves e irreversíveis. Lesões incapacitantes permanentes. Destruição parcial de instalações.</td>
+      </tr>
+      <tr>
+        <td><span class="level-cell" style="background-color: #dc3545;">Catastrófica</span></td>
+        <td style="text-align: center;">V</td>
+        <td>Catastrófico — múltiplas fatalidades possíveis. Destruição total de instalações. Impacto ambiental severo.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h3>3.3 Critérios de Probabilidade</h3>
+  <p>A tabela abaixo apresenta os critérios utilizados para classificação da probabilidade de ocorrência:</p>
+
+  <table class="criteria-table">
+    <thead>
+      <tr>
+        <th style="width: 20%;">Nível</th>
+        <th style="width: 10%;">Valor</th>
+        <th>Descrição</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Remota</td>
+        <td style="text-align: center;">1</td>
+        <td>Improvável durante a vida útil da instalação. Sem registro histórico na indústria.</td>
+      </tr>
+      <tr>
+        <td>Baixa</td>
+        <td style="text-align: center;">2</td>
+        <td>Ocorrência possível, porém sem registro na instalação. Registros esporádicos na indústria.</td>
+      </tr>
+      <tr>
+        <td>Média</td>
+        <td style="text-align: center;">3</td>
+        <td>Já registrado na indústria ou em instalações similares. Possível ocorrência ao longo da vida útil.</td>
+      </tr>
+      <tr>
+        <td>Alta</td>
+        <td style="text-align: center;">4</td>
+        <td>Ocorrência ocasional no site ou em instalações da empresa. Esperado ocorrer mais de uma vez.</td>
+      </tr>
+      <tr>
+        <td>Muito Alta</td>
+        <td style="text-align: center;">5</td>
+        <td>Frequente ou contínuo. Ocorrência esperada em curto prazo nas condições atuais de operação.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h3>3.4 Matriz de Risco</h3>
+  <p>O nível de risco é determinado pelo cruzamento da severidade com a probabilidade, conforme a matriz abaixo:</p>
+
+  <table class="risk-matrix">
+    <thead>
+      <tr>
+        <th>Probabilidade ↓ \ Severidade →</th>
+        <th>I — Desprezível</th>
+        <th>II — Baixa</th>
+        <th>III — Média</th>
+        <th>IV — Alta</th>
+        <th>V — Catastrófica</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>5 — Muito Alta</th>
+        <td class="risk-medium">Moderado</td>
+        <td class="risk-high">Substancial</td>
+        <td class="risk-high">Substancial</td>
+        <td class="risk-very-high">Intolerável</td>
+        <td class="risk-critical">Intolerável</td>
+      </tr>
+      <tr>
+        <th>4 — Alta</th>
+        <td class="risk-medium">Moderado</td>
+        <td class="risk-medium">Moderado</td>
+        <td class="risk-high">Substancial</td>
+        <td class="risk-high">Substancial</td>
+        <td class="risk-very-high">Intolerável</td>
+      </tr>
+      <tr>
+        <th>3 — Média</th>
+        <td class="risk-low">Tolerável</td>
+        <td class="risk-medium">Moderado</td>
+        <td class="risk-medium">Moderado</td>
+        <td class="risk-high">Substancial</td>
+        <td class="risk-high">Substancial</td>
+      </tr>
+      <tr>
+        <th>2 — Baixa</th>
+        <td class="risk-low">Tolerável</td>
+        <td class="risk-low">Tolerável</td>
+        <td class="risk-medium">Moderado</td>
+        <td class="risk-medium">Moderado</td>
+        <td class="risk-high">Substancial</td>
+      </tr>
+      <tr>
+        <th>1 — Remota</th>
+        <td class="risk-low">Trivial</td>
+        <td class="risk-low">Tolerável</td>
+        <td class="risk-low">Tolerável</td>
+        <td class="risk-medium">Moderado</td>
+        <td class="risk-medium">Moderado</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h3>3.5 Etapas da Avaliação</h3>
+  <p>A avaliação seguiu as seguintes etapas:</p>
+  <ol class="detail-list">
+    <li>Levantamento dos materiais e substâncias presentes na planta, com identificação das propriedades de risco.</li>
+    <li>Identificação das áreas e equipamentos com potencial de formação de
+        atmosferas explosivas por poeira combustível.</li>
+    <li>Inspeção técnica em campo, avaliando condições de housekeeping, fontes de ignição, sistemas de contenção e práticas operacionais.</li>
+    <li>Avaliação dos sistemas de proteção, detecção e supressão existentes.</li>
+    <li>Classificação do risco por equipamento utilizando a matriz de severidade × probabilidade apresentada acima.</li>
+    <li>Geração de recomendações técnicas priorizadas por nível de risco, fundamentadas nas normas aplicáveis.</li>
+    <li>Elaboração do relatório técnico com inventário completo de riscos.</li>
+  </ol>
+</div>
+
+
+
+<div class="section">
+  <h2>
+    <span class="section-number">4.</span>
+    ANÁLISE TÉCNICA INDIVIDUAL — EQUIPAMENTOS
+  </h2>
+
+  
+  <div class="equipment-block" >
+
+    <h3 class="equipment-title">
+      <span class="section-number">4.1</span>
+      ELEVADOR DE CANECAS EC-01
+    </h3>
+
+    
+    
+    <table class="equipment-info-table">
+      <tbody>
+        
+        <tr>
+          <td class="eq-label">Local de instalação:</td>
+          <td>Torre de recebimento — Setor Grãos</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="eq-label">Função operacional:</td>
+          <td>Transporte vertical de grãos do fosso de recebimento ao distribuidor de silos</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    
+
+    
+    <h4>4.1.1 Descrição da operação</h4>
+    
+      <p>Elevador de canecas para transporte vertical de grãos (soja/milho) — capacidade 120 t/h</p>
+    
+
+    
+    
+
+    
+    
+    <h4>4.1.2 Identificação dos perigos</h4>
+    <p>Com base na planilha técnica e na inspeção realizada, foram identificados
+       os seguintes perigos relevantes:</p>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Acúmulo de poeira combustível no interior do elevador (pé e cabeça)</li>
+      
+    
+      
+        <li>Atrito correia/tambor gerando fonte de ignição</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.1.3 Causas possíveis</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Falha no sistema de aspiração; desgaste das canecas; atrito correia/tambor</li>
+      
+    
+      
+        <li>Desalinhamento de correia sem sensor de detecção</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.1.4 Consequências potenciais</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Explosão primária com propagação para equipamentos conectados</li>
+      
+    
+      
+        <li>Incêndio interno com danos estruturais e risco de propagação</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.1.5 Classificação do risco</h4>
+    <table class="risk-table">
+      <tbody>
+        <tr>
+          <td class="risk-label">Categoria de Severidade:</td>
+          <td>
+            <span class="risk-value">IV — Catastrófica</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Categoria do Risco:</td>
+          <td>
+            
+            
+              <span class="risk-badge" style="background-color: #dc3545;">Intolerável</span>
+            
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    
+    <h4>4.1.6 Medidas preventivas existentes</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Sistema de aspiração centralizado operante</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.1.7 Recomendações técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">
+          Instalar sensores de desalinhamento de correia (tipo chave de desvio) no tambor de retorno e no tambor de acionamento, com intertravamento configurado para parada automática do motor em caso de desvio superior a 15 mm.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 652, seção 8.3</em></span>
+          
+        </li>
+      
+        <li value="2">
+          Implementar sistema de monitoramento contínuo de temperatura nos mancais do pé e da cabeça do elevador, com alarme em 70 °C e shutdown em 85 °C, integrado ao sistema supervisório da planta.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 61, seção 6.8</em></span>
+          
+        </li>
+      
+        <li value="3">
+          Instalar portas de inspeção com trinco à prova de explosão na cabeça e no pé do elevador, possibilitando inspeção visual periódica sem desmontagem completa, conforme periodicidade quinzenal.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 654, seção 7.1</em></span>
+          
+        </li>
+      
+        <li value="4">
+          Implementar válvula de alívio de explosão (explosion vent) dimensionada conforme o volume interno do elevador em sua cabeça, com área de alívio calculada por meio da equação de Bartknecht e direcionada para área segura.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 68, seção 7.2</em></span>
+          
+        </li>
+      
+      </ol>
+    
+
+    
+    <h4>4.1.8 Justificativas técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">O desalinhamento da correia constitui uma das principais fontes de ignição em elevadores de canecas, conforme reconhecido pela NFPA 652. O atrito entre a correia desalinhada e o tambor gera calor superficial suficiente para ignitar poeira combustível depositada, especialmente em equipamentos com operação contínua.&lt;/p&gt;&lt;p&gt;Considerando que o equipamento está classificado com severidade IV (Catastrófica) e risco Intolerável, a ausência de monitoramento automatizado de desalinhamento representa uma vulnerabilidade crítica que requer intervenção imediata.</li>
+      
+        <li value="2">O aquecimento de mancais em elevadores de canecas é um precursor reconhecido de eventos de incêndio e explosão. A NFPA 61 estabelece requisitos específicos para monitoramento de temperatura em equipamentos de transporte de grãos.&lt;/p&gt;&lt;p&gt;Dada a classificação de risco Intolerável e a consequência potencial de explosão primária com propagação, o monitoramento contínuo com shutdown automático é uma barreira preventiva essencial para interromper a cadeia de eventos antes da ignição.</li>
+      
+        <li value="3">A inspeção periódica do interior do elevador permite identificar acúmulos anormais de poeira, desgaste de canecas e condições precursoras de incêndio. A NFPA 654 recomenda inspeção visual regular em equipamentos com potencial de acúmulo de poeiras combustíveis.&lt;/p&gt;&lt;p&gt;A implementação de portas de inspeção adequadas viabiliza esta prática sem necessidade de parada prolongada, reduzindo o tempo de exposição dos trabalhadores e aumentando a frequência de verificação.</li>
+      
+        <li value="4">A cabeça do elevador constitui o ponto de maior concentração de poeira em suspensão e, portanto, o volume com maior probabilidade de atingir condições explosivas. A NFPA 68 fornece metodologia consagrada para dimensionamento de dispositivos de alívio de explosão.&lt;/p&gt;&lt;p&gt;Considerando as consequências catastróficas (propagação para equipamentos conectados), a válvula de alívio atua como última barreira de proteção, limitando a sobrepressão interna e direcionando a energia da explosão para área segura.</li>
+      
+      </ol>
+    
+
+    
+    
+
+  </div>
+  
+  <div class="equipment-block" style="page-break-before: always;">
+
+    <h3 class="equipment-title">
+      <span class="section-number">4.2</span>
+      TRANSPORTADOR REDLER TR-03
+    </h3>
+
+    
+    
+    <table class="equipment-info-table">
+      <tbody>
+        
+        <tr>
+          <td class="eq-label">Local de instalação:</td>
+          <td>Interligação Extração — Armazém de Farelo</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="eq-label">Função operacional:</td>
+          <td>Transporte horizontal de farelo de soja entre o setor de extração e o armazém</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    
+
+    
+    <h4>4.2.1 Descrição da operação</h4>
+    
+      <p>Transportador tipo redler horizontal para farelo de soja — 80 t/h</p>
+    
+
+    
+    
+
+    
+    
+    <h4>4.2.2 Identificação dos perigos</h4>
+    <p>Com base na planilha técnica e na inspeção realizada, foram identificados
+       os seguintes perigos relevantes:</p>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Geração de poeira em suspensão nos pontos de transferência</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.2.3 Causas possíveis</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Vedação insuficiente nas juntas; acúmulo em superfícies internas</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.2.4 Consequências potenciais</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Explosão confinada no interior do transportador</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.2.5 Classificação do risco</h4>
+    <table class="risk-table">
+      <tbody>
+        <tr>
+          <td class="risk-label">Categoria de Severidade:</td>
+          <td>
+            <span class="risk-value">III — Alta</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Categoria do Risco:</td>
+          <td>
+            
+            
+              <span class="risk-badge" style="background-color: #fd7e14;">Substancial</span>
+            
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    
+    <h4>4.2.6 Medidas preventivas existentes</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Vedação com borracha nos pontos de carga</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.2.7 Recomendações técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">
+          Substituir as vedações atuais (borracha convencional) por vedação tipo labirinto pressurizado nos pontos de carga e descarga, garantindo estanqueidade contra emissão fugitiva de poeira para o ambiente externo.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 654, seção 7.4</em></span>
+          
+        </li>
+      
+        <li value="2">
+          Instalar bocais de aspiração localizada nos dois pontos de transferência (entrada e saída), conectados ao sistema de despoeiramento central, com velocidade de captura mínima de 1,0 m/s na face do bocal.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 652, seção 8.1</em></span>
+          
+        </li>
+      
+        <li value="3">
+          Implementar procedimento de inspeção e limpeza interna semestral do transportador, com registro fotográfico das condições de acúmulo e desgaste das correntes e raspadores.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 654, seção 8.2</em></span>
+          
+        </li>
+      
+      </ol>
+    
+
+    
+    <h4>4.2.8 Justificativas técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">A vedação atual com borracha convencional não impede totalmente a emissão de poeira fugitiva nos pontos de transferência, conforme constatado em campo. A NFPA 654 recomenda sistemas de vedação que limitem a dispersão de particulado combustível para o ambiente.&lt;/p&gt;&lt;p&gt;Considerando que a poeira de farelo de soja é classificada como combustível (St-1) e que o risco do equipamento é Substancial, a substituição por vedação pressurizada é necessária para reduzir a concentração de poeira no entorno e minimizar o risco de explosão secundária externa.</li>
+      
+        <li value="2">Os pontos de transferência são reconhecidos como as principais fontes de geração de poeira em transportadores de material a granel. A NFPA 652 estabelece que sistemas de controle de poeira devem ser aplicados em todos os pontos de geração significativa.&lt;/p&gt;&lt;p&gt;A aspiração localizada com velocidade de captura adequada reduz a concentração de poeira tanto no interior do transportador quanto no ambiente circundante, mitigando o risco de formação de nuvens em concentração explosiva.</li>
+      
+        <li value="3">O acúmulo progressivo de material residual no interior do transportador pode criar condições propícias a uma explosão confinada. A NFPA 654 recomenda programas de limpeza e inspeção documentados para equipamentos que processam materiais combustíveis.&lt;/p&gt;&lt;p&gt;O registro fotográfico permite rastrear a evolução das condições ao longo do tempo e fundamentar decisões de manutenção preventiva.</li>
+      
+      </ol>
+    
+
+    
+    
+
+  </div>
+  
+  <div class="equipment-block" style="page-break-before: always;">
+
+    <h3 class="equipment-title">
+      <span class="section-number">4.3</span>
+      SILO DE ARMAZENAMENTO SA-12
+    </h3>
+
+    
+    
+    <table class="equipment-info-table">
+      <tbody>
+        
+        <tr>
+          <td class="eq-label">Local de instalação:</td>
+          <td>Pátio de Silos — Ala Norte</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="eq-label">Função operacional:</td>
+          <td>Armazenamento intermediário de milho antes do processamento</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    
+
+    
+    <h4>4.3.1 Descrição da operação</h4>
+    
+      <p>Silo metálico vertical para armazenamento de milho — 5.000 t</p>
+    
+
+    
+    
+
+    
+    
+    <h4>4.3.2 Identificação dos perigos</h4>
+    <p>Com base na planilha técnica e na inspeção realizada, foram identificados
+       os seguintes perigos relevantes:</p>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Formação de nuvem de poeira durante carga/descarga do silo</li>
+      
+    
+      
+        <li>Auto-aquecimento de grãos armazenados (hot spot)</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.3.3 Causas possíveis</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Queda livre de grãos sem defletor; ventilação natural insuficiente</li>
+      
+    
+      
+        <li>Umidade excessiva; falta de termometria no corpo do silo</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.3.4 Consequências potenciais</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Explosão no topo do silo com colapso estrutural</li>
+      
+    
+      
+        <li>Incêndio latente com liberação de gases tóxicos e risco de colapso</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.3.5 Classificação do risco</h4>
+    <table class="risk-table">
+      <tbody>
+        <tr>
+          <td class="risk-label">Categoria de Severidade:</td>
+          <td>
+            <span class="risk-value">IV — Catastrófica</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Categoria do Risco:</td>
+          <td>
+            
+            
+              <span class="risk-badge" style="background-color: #dc3545;">Intolerável</span>
+            
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    
+    <h4>4.3.6 Medidas preventivas existentes</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Bocal de aspiração no topo (subdimensionado)</li>
+      
+    
+      
+        <li>Termometria parcial (4 cabos)</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.3.7 Recomendações técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">
+          Redimensionar o sistema de aspiração do topo do silo para vazão mínima de 15.000 m³/h, garantindo velocidade de captura suficiente para conter a nuvem de poeira gerada durante o carregamento a plena capacidade (120 t/h).
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 652, seção 8.1</em></span>
+          
+        </li>
+      
+        <li value="2">
+          Instalar válvula de alívio de explosão (explosion vent) no topo do silo, dimensionada conforme NFPA 68 para o volume de 6.250 m³, com área de alívio direcionada para zona de exclusão demarcada.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 68, seção 7.3</em></span>
+          
+        </li>
+      
+        <li value="3">
+          Completar o sistema de termometria com instalação de 8 cabos adicionais (total 12), distribuídos radialmente em 3 níveis verticais, com integração ao SDAI para alarme em 45 °C e alerta crítico em 55 °C.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 61, seção 6.7</em></span>
+          
+        </li>
+      
+        <li value="4">
+          Instalar defletores de carga no ponto de alimentação do silo para reduzir a velocidade de queda dos grãos e minimizar a geração de poeira em suspensão durante o carregamento.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 61, seção 8.2</em></span>
+          
+        </li>
+      
+        <li value="5">
+          Realizar inspeção interna anual do silo com equipe especializada, incluindo verificação de integridade estrutural, condições de acúmulo de poeira em superfícies e funcionamento dos dispositivos de proteção.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 654, seção 8.3</em></span>
+          
+        </li>
+      
+      </ol>
+    
+
+    
+    <h4>4.3.8 Justificativas técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">O sistema de aspiração atual é subdimensionado conforme constatado em campo, permitindo que poeira em concentração potencialmente explosiva permaneça em suspensão no topo do silo durante operações de carga. A NFPA 652 exige controle de poeira em todos os pontos de geração significativa.&lt;/p&gt;&lt;p&gt;Com classificação de risco Intolerável e consequência potencial de explosão com colapso estrutural, o redimensionamento do sistema de aspiração é uma medida primária de prevenção.</li>
+      
+        <li value="2">Silos de grande volume representam cenários de alta energia de explosão. A NFPA 68 estabelece requisitos para dimensionamento de dispositivos de alívio de explosão em vasos e equipamentos confinados.&lt;/p&gt;&lt;p&gt;A instalação de válvula de alívio no topo é a principal barreira de proteção contra sobrepressão catastrófica, direcionando a energia liberada para zona segura e preservando a integridade estrutural do silo.</li>
+      
+        <li value="3">A termometria parcial (4 cabos) não fornece cobertura adequada para um silo de 5.000 t, criando zonas sem monitoramento onde hot spots podem se desenvolver sem detecção. A NFPA 61 recomenda monitoramento térmico abrangente em silos de grãos.&lt;/p&gt;&lt;p&gt;A integração com o SDAI garante resposta automatizada em caso de elevação de temperatura, permitindo ações preventivas antes da evolução para incêndio declarado.</li>
+      
+        <li value="4">A queda livre de grãos é a principal fonte de geração de poeira em suspensão durante o carregamento de silos. A instalação de defletores reduz significativamente a velocidade de impacto e, consequentemente, a quantidade de poeira dispersa.&lt;/p&gt;&lt;p&gt;Esta medida atua na origem do perigo identificado, sendo complementar ao sistema de aspiração e reduzindo a demanda sobre o mesmo.</li>
+      
+        <li value="5">O silo encontra-se sem inspeção interna há 24 meses, período que excede as boas práticas recomendadas pela NFPA 654. Acúmulos não identificados de poeira em superfícies internas representam combustível disponível para uma explosão secundária de maior intensidade.&lt;/p&gt;&lt;p&gt;A inspeção anual documentada permite manter o controle sobre as condições internas e garantir a operacionalidade dos dispositivos de proteção instalados.</li>
+      
+      </ol>
+    
+
+    
+    
+
+  </div>
+  
+  <div class="equipment-block" style="page-break-before: always;">
+
+    <h3 class="equipment-title">
+      <span class="section-number">4.4</span>
+      FILTRO DE MANGAS FM-05
+    </h3>
+
+    
+    
+    <table class="equipment-info-table">
+      <tbody>
+        
+        <tr>
+          <td class="eq-label">Local de instalação:</td>
+          <td>Área externa — adjacente ao moinho MM-02</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="eq-label">Função operacional:</td>
+          <td>Despoeiramento do sistema de moagem e transporte pneumático</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    
+
+    
+    <h4>4.4.1 Descrição da operação</h4>
+    
+      <p>Filtro de mangas tipo pulse-jet para despoeiramento — 30.000 m³/h</p>
+    
+
+    
+    
+
+    
+    
+    <h4>4.4.2 Identificação dos perigos</h4>
+    <p>Com base na planilha técnica e na inspeção realizada, foram identificados
+       os seguintes perigos relevantes:</p>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Acúmulo de poeira combustível dentro do filtro (tremonha e mangas)</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.4.3 Causas possíveis</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Válvula rotativa travada; falha na limpeza pulse-jet</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.4.4 Consequências potenciais</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Explosão secundária no filtro com projeção de fragmentos</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.4.5 Classificação do risco</h4>
+    <table class="risk-table">
+      <tbody>
+        <tr>
+          <td class="risk-label">Categoria de Severidade:</td>
+          <td>
+            <span class="risk-value">III — Alta</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Categoria do Risco:</td>
+          <td>
+            
+            
+              <span class="risk-badge" style="background-color: #fd7e14;">Substancial</span>
+            
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    
+    <h4>4.4.6 Medidas preventivas existentes</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Válvula rotativa na descarga; sistema pulse-jet operante</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.4.7 Recomendações técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">
+          Instalar sensor de nível tipo capacitivo na tremonha do filtro, com alarme para a sala de controle quando o nível atingir 70% da capacidade, indicando falha na descarga.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 654, seção 7.2</em></span>
+          
+        </li>
+      
+        <li value="2">
+          Instalar válvula de alívio de explosão (explosion vent) dimensionada conforme NFPA 68 na lateral da carcaça do filtro, direcionada para área de exclusão sinalizada e livre de trânsito.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 68, seção 7.2</em></span>
+          
+        </li>
+      
+        <li value="3">
+          Implementar monitoramento diferencial de pressão entre entrada e saída do filtro, com alarme em queda de pressão inferior a 500 Pa (indicando ruptura de manga) e shutdown em sobrepressão.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 652, seção 9.2</em></span>
+          
+        </li>
+      
+      </ol>
+    
+
+    
+    <h4>4.4.8 Justificativas técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">O travamento da válvula rotativa causa acúmulo de poeira na tremonha, aumentando a massa de combustível disponível para uma eventual explosão. A NFPA 654 recomenda monitoramento de nível em equipamentos de coleta de poeira.&lt;/p&gt;&lt;p&gt;O sensor de nível com alarme permite intervenção antes que o acúmulo atinja níveis críticos, funcionando como barreira preventiva contra a condição precursora identificada.</li>
+      
+        <li value="2">Filtros de mangas são reconhecidos como pontos críticos de explosão secundária em plantas de processamento de grãos. A NFPA 68 fornece metodologia validada para dimensionamento de dispositivos de alívio em filtros industriais.&lt;/p&gt;&lt;p&gt;A válvula de alívio limita a sobrepressão interna e previne a ruptura não controlada da carcaça, que poderia causar projeção de fragmentos em área com trânsito de pessoas.</li>
+      
+        <li value="3">A ruptura de mangas permite passagem de poeira fina para o lado limpo do filtro, reduzindo a eficiência e potencialmente liberando particulado para a atmosfera ou para dutos a jusante. A NFPA 652 recomenda monitoramento de integridade em sistemas de filtragem.&lt;/p&gt;&lt;p&gt;O monitoramento diferencial de pressão é o método mais confiável e econômico para detecção precoce de falhas nas mangas.</li>
+      
+      </ol>
+    
+
+    
+    
+
+  </div>
+  
+  <div class="equipment-block" style="page-break-before: always;">
+
+    <h3 class="equipment-title">
+      <span class="section-number">4.5</span>
+      MOINHO DE MARTELOS MM-02
+    </h3>
+
+    
+    
+    <table class="equipment-info-table">
+      <tbody>
+        
+        <tr>
+          <td class="eq-label">Local de instalação:</td>
+          <td>Setor de Moagem — Prédio Industrial 3</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="eq-label">Função operacional:</td>
+          <td>Moagem de farelo de soja para granulometria de ensaque</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    
+
+    
+    <h4>4.5.1 Descrição da operação</h4>
+    
+      <p>Moinho de martelos para moagem de farelo — 60 t/h</p>
+    
+
+    
+    
+
+    
+    
+    <h4>4.5.2 Identificação dos perigos</h4>
+    <p>Com base na planilha técnica e na inspeção realizada, foram identificados
+       os seguintes perigos relevantes:</p>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Alta concentração de poeira fina no interior do moinho durante operação</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.5.3 Causas possíveis</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Operação gera particulado fino com granulometria ≤ 75 µm em concentrações acima do MEC</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.5.4 Consequências potenciais</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Explosão primária severa com propagação pelo sistema de transporte pneumático</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.5.5 Classificação do risco</h4>
+    <table class="risk-table">
+      <tbody>
+        <tr>
+          <td class="risk-label">Categoria de Severidade:</td>
+          <td>
+            <span class="risk-value">IV — Catastrófica</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Categoria do Risco:</td>
+          <td>
+            
+            
+              <span class="risk-badge" style="background-color: #dc3545;">Intolerável</span>
+            
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    
+    <h4>4.5.6 Medidas preventivas existentes</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Ímã permanente na entrada; aspiração local</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.5.7 Recomendações técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">
+          Instalar sistema de supressão de explosão (HRD — High Rate Discharge) no corpo do moinho, com detectores de pressão de resposta ≤ 5 ms e agente supressor tipo bicarbonato de sódio, dimensionado para Pred ≤ 0,5 bar.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 69, seção 8.2</em></span>
+          
+        </li>
+      
+        <li value="2">
+          Instalar válvula de isolamento rápido (tipo guilhotina pneumática com tempo de fechamento ≤ 50 ms) na saída do moinho para o sistema de transporte pneumático, impedindo propagação de chama e pressão.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 69, seção 10.3</em></span>
+          
+        </li>
+      
+        <li value="3">
+          Substituir o ímã permanente na entrada por detector de metais tipo indutivo com rejeição automática, capaz de identificar materiais ferrosos e não-ferrosos com diâmetro ≥ 3 mm.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 652, seção 8.8</em></span>
+          
+        </li>
+      
+        <li value="4">
+          Implementar monitoramento contínuo de vibração nos mancais do rotor, com alarme em 7 mm/s RMS e shutdown automático em 11 mm/s RMS, integrado ao CLP de segurança.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 652, seção 8.6</em></span>
+          
+        </li>
+      
+      </ol>
+    
+
+    
+    <h4>4.5.8 Justificativas técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">O moinho de martelos opera intrinsecamente em condições explosivas, com concentrações de poeira acima do MEC (Minimum Explosible Concentration) no interior da câmara de moagem. A NFPA 69 estabelece requisitos para sistemas de supressão em equipamentos onde a prevenção total da formação de atmosferas explosivas não é viável.&lt;/p&gt;&lt;p&gt;Considerando a classificação de risco Intolerável e o potencial de início de cadeia de propagação, o sistema HRD é a barreira de proteção mais eficaz para este cenário, capaz de suprimir a explosão nos primeiros milissegundos.</li>
+      
+        <li value="2">A conexão do moinho ao sistema de transporte pneumático cria um caminho de propagação para explosões primárias. A NFPA 69 recomenda isolamento mecânico automatizado em pontos de interconexão entre equipamentos classificados.&lt;/p&gt;&lt;p&gt;A válvula de isolamento rápido interrompe a propagação de chama e onda de pressão, limitando os efeitos da explosão ao volume do moinho e protegendo o filtro de mangas e demais equipamentos a jusante.</li>
+      
+        <li value="3">Objetos metálicos no fluxo de material representam fontes de ignição por impacto e faísca mecânica. O ímã permanente atual não detecta materiais não-ferrosos (alumínio, inox) que podem gerar faíscas ao impactar os martelos.&lt;/p&gt;&lt;p&gt;A substituição por detector de metais com rejeição automática elimina esta fonte de ignição na origem, conforme boas práticas da NFPA 652.</li>
+      
+        <li value="4">Vibração excessiva no rotor indica desgaste ou desbalanceamento dos martelos, condição que aumenta o risco de atrito metal-metal e geração de calor localizado. A NFPA 652 recomenda monitoramento de condição em equipamentos críticos de processamento.&lt;/p&gt;&lt;p&gt;O shutdown automático em nível crítico previne a evolução da condição para ignição, sendo compatível com a classificação de risco Intolerável do equipamento.</li>
+      
+      </ol>
+    
+
+    
+    
+
+  </div>
+  
+  <div class="equipment-block" style="page-break-before: always;">
+
+    <h3 class="equipment-title">
+      <span class="section-number">4.6</span>
+      ROSCA TRANSPORTADORA RT-07
+    </h3>
+
+    
+    
+    <table class="equipment-info-table">
+      <tbody>
+        
+        <tr>
+          <td class="eq-label">Local de instalação:</td>
+          <td>Setor de Ensaque — Galpão 2</td>
+        </tr>
+        
+        
+        <tr>
+          <td class="eq-label">Função operacional:</td>
+          <td>Transporte de farelo moído do silo pulmão para a ensacadeira</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    
+
+    
+    <h4>4.6.1 Descrição da operação</h4>
+    
+      <p>Rosca transportadora horizontal — transporte de farelo para ensaque</p>
+    
+
+    
+    
+
+    
+    
+    <h4>4.6.2 Identificação dos perigos</h4>
+    <p>Com base na planilha técnica e na inspeção realizada, foram identificados
+       os seguintes perigos relevantes:</p>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Atrito entre helicóide e calha por desalinhamento</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.6.3 Causas possíveis</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Desgaste do mancal intermediário; falta de manutenção preventiva</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.6.4 Consequências potenciais</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Ignição de farelo com propagação para silos conectados</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.6.5 Classificação do risco</h4>
+    <table class="risk-table">
+      <tbody>
+        <tr>
+          <td class="risk-label">Categoria de Severidade:</td>
+          <td>
+            <span class="risk-value">II — Média</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Categoria do Risco:</td>
+          <td>
+            
+            
+              <span class="risk-badge" style="background-color: #ffc107; color: #333;">Moderado</span>
+            
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    
+    <h4>4.6.6 Medidas preventivas existentes</h4>
+    
+  
+    <ul class="detail-list">
+    
+      
+        <li>Monitoramento visual pela operação</li>
+      
+    
+    </ul>
+  
+
+
+    
+    <h4>4.6.7 Recomendações técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">
+          Instalar sensor de rotação (speed switch) no eixo da rosca, configurado para parada automática em caso de sub-velocidade (≤ 80% da rotação nominal), indicando travamento ou sobrecarga.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 61, seção 6.5</em></span>
+          
+        </li>
+      
+        <li value="2">
+          Instalar sensores de temperatura tipo PT100 nos mancais intermediário e de ponta, com alarme em 60 °C e integração ao sistema supervisório para registro histórico.
+          
+            <br/><span class="norma-ref"><em>Ref.: NFPA 61, seção 6.8</em></span>
+          
+        </li>
+      
+      </ol>
+    
+
+    
+    <h4>4.6.8 Justificativas técnicas</h4>
+    
+      <ol class="detail-list">
+      
+        <li value="1">O travamento da rosca transportadora gera atrito intenso entre o helicóide e a calha, constituindo fonte de ignição potencial para o farelo transportado. A NFPA 61 recomenda monitoramento de rotação em transportadores de materiais combustíveis.&lt;/p&gt;&lt;p&gt;A detecção automática de sub-velocidade permite intervenção antes que o atrito prolongado eleve a temperatura a ponto de ignição do farelo de soja (aproximadamente 340 °C — valor de referência da literatura técnica).</li>
+      
+        <li value="2">O monitoramento visual atualmente empregado é insuficiente para detectar elevação de temperatura nos mancais, uma vez que o aquecimento pode ocorrer gradualmente sem sinais visíveis até o estágio avançado. A NFPA 61 recomenda sensoriamento contínuo em pontos de atrito de equipamentos de transporte.&lt;/p&gt;&lt;p&gt;O registro histórico viabiliza análise de tendência e planejamento de manutenção preditiva, reduzindo intervenções corretivas emergenciais.</li>
+      
+      </ol>
+    
+
+    
+    
+
+  </div>
+  
+
+  <p class="summary-count">
+    Total de equipamentos avaliados: <strong>6</strong>
+  </p>
+
+</div>
+
+
+
+<div class="section">
+  <h2>
+    <span class="section-number">5.</span>
+    RECOMENDAÇÕES CONSOLIDADAS
+  </h2>
+
+  <p>
+    A tabela abaixo consolida todas as recomendações técnicas por equipamento,
+    organizadas por prioridade de implementação conforme a classificação de risco.
+  </p>
+
+  <table class="consolidated-table">
+    <thead>
+      <tr>
+        <th style="width: 4%;">#</th>
+        <th style="width: 18%;">Equipamento</th>
+        <th style="width: 38%;">Recomendação</th>
+        <th style="width: 15%;">Base Normativa</th>
+        <th style="width: 10%;">Prioridade</th>
+        <th style="width: 15%;">Prazo</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      
+        
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>1</td>
+              <td>Elevador de Canecas EC-01</td>
+              <td>Instalar sensores de desalinhamento de correia (tipo chave de desvio) no tambor de retorno e no tambor de acionamento, com intertravamento configurado para parada automática do motor em caso de desvio superior a 15 mm.</td>
+              <td>NFPA 652, seção 8.3</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>2</td>
+              <td>Elevador de Canecas EC-01</td>
+              <td>Implementar sistema de monitoramento contínuo de temperatura nos mancais do pé e da cabeça do elevador, com alarme em 70 °C e shutdown em 85 °C, integrado ao sistema supervisório da planta.</td>
+              <td>NFPA 61, seção 6.8</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>3</td>
+              <td>Elevador de Canecas EC-01</td>
+              <td>Instalar portas de inspeção com trinco à prova de explosão na cabeça e no pé do elevador, possibilitando inspeção visual periódica sem desmontagem completa, conforme periodicidade quinzenal.</td>
+              <td>NFPA 654, seção 7.1</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>4</td>
+              <td>Elevador de Canecas EC-01</td>
+              <td>Implementar válvula de alívio de explosão (explosion vent) dimensionada conforme o volume interno do elevador em sua cabeça, com área de alívio calculada por meio da equação de Bartknecht e direcionada para área segura.</td>
+              <td>NFPA 68, seção 7.2</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+        
+      
+        
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>5</td>
+              <td>Transportador Redler TR-03</td>
+              <td>Substituir as vedações atuais (borracha convencional) por vedação tipo labirinto pressurizado nos pontos de carga e descarga, garantindo estanqueidade contra emissão fugitiva de poeira para o ambiente externo.</td>
+              <td>NFPA 654, seção 7.4</td>
+              <td><span class="priority-alta">Alta</span></td>
+              <td>Curto prazo (30–90 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>6</td>
+              <td>Transportador Redler TR-03</td>
+              <td>Instalar bocais de aspiração localizada nos dois pontos de transferência (entrada e saída), conectados ao sistema de despoeiramento central, com velocidade de captura mínima de 1,0 m/s na face do bocal.</td>
+              <td>NFPA 652, seção 8.1</td>
+              <td><span class="priority-alta">Alta</span></td>
+              <td>Curto prazo (30–90 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>7</td>
+              <td>Transportador Redler TR-03</td>
+              <td>Implementar procedimento de inspeção e limpeza interna semestral do transportador, com registro fotográfico das condições de acúmulo e desgaste das correntes e raspadores.</td>
+              <td>NFPA 654, seção 8.2</td>
+              <td><span class="priority-alta">Alta</span></td>
+              <td>Curto prazo (30–90 dias)</td>
+            </tr>
+          
+        
+      
+        
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>8</td>
+              <td>Silo de Armazenamento SA-12</td>
+              <td>Redimensionar o sistema de aspiração do topo do silo para vazão mínima de 15.000 m³/h, garantindo velocidade de captura suficiente para conter a nuvem de poeira gerada durante o carregamento a plena capacidade (120 t/h).</td>
+              <td>NFPA 652, seção 8.1</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>9</td>
+              <td>Silo de Armazenamento SA-12</td>
+              <td>Instalar válvula de alívio de explosão (explosion vent) no topo do silo, dimensionada conforme NFPA 68 para o volume de 6.250 m³, com área de alívio direcionada para zona de exclusão demarcada.</td>
+              <td>NFPA 68, seção 7.3</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>10</td>
+              <td>Silo de Armazenamento SA-12</td>
+              <td>Completar o sistema de termometria com instalação de 8 cabos adicionais (total 12), distribuídos radialmente em 3 níveis verticais, com integração ao SDAI para alarme em 45 °C e alerta crítico em 55 °C.</td>
+              <td>NFPA 61, seção 6.7</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>11</td>
+              <td>Silo de Armazenamento SA-12</td>
+              <td>Instalar defletores de carga no ponto de alimentação do silo para reduzir a velocidade de queda dos grãos e minimizar a geração de poeira em suspensão durante o carregamento.</td>
+              <td>NFPA 61, seção 8.2</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>12</td>
+              <td>Silo de Armazenamento SA-12</td>
+              <td>Realizar inspeção interna anual do silo com equipe especializada, incluindo verificação de integridade estrutural, condições de acúmulo de poeira em superfícies e funcionamento dos dispositivos de proteção.</td>
+              <td>NFPA 654, seção 8.3</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+        
+      
+        
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>13</td>
+              <td>Filtro de Mangas FM-05</td>
+              <td>Instalar sensor de nível tipo capacitivo na tremonha do filtro, com alarme para a sala de controle quando o nível atingir 70% da capacidade, indicando falha na descarga.</td>
+              <td>NFPA 654, seção 7.2</td>
+              <td><span class="priority-alta">Alta</span></td>
+              <td>Curto prazo (30–90 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>14</td>
+              <td>Filtro de Mangas FM-05</td>
+              <td>Instalar válvula de alívio de explosão (explosion vent) dimensionada conforme NFPA 68 na lateral da carcaça do filtro, direcionada para área de exclusão sinalizada e livre de trânsito.</td>
+              <td>NFPA 68, seção 7.2</td>
+              <td><span class="priority-alta">Alta</span></td>
+              <td>Curto prazo (30–90 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>15</td>
+              <td>Filtro de Mangas FM-05</td>
+              <td>Implementar monitoramento diferencial de pressão entre entrada e saída do filtro, com alarme em queda de pressão inferior a 500 Pa (indicando ruptura de manga) e shutdown em sobrepressão.</td>
+              <td>NFPA 652, seção 9.2</td>
+              <td><span class="priority-alta">Alta</span></td>
+              <td>Curto prazo (30–90 dias)</td>
+            </tr>
+          
+        
+      
+        
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>16</td>
+              <td>Moinho de Martelos MM-02</td>
+              <td>Instalar sistema de supressão de explosão (HRD — High Rate Discharge) no corpo do moinho, com detectores de pressão de resposta ≤ 5 ms e agente supressor tipo bicarbonato de sódio, dimensionado para Pred ≤ 0,5 bar.</td>
+              <td>NFPA 69, seção 8.2</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>17</td>
+              <td>Moinho de Martelos MM-02</td>
+              <td>Instalar válvula de isolamento rápido (tipo guilhotina pneumática com tempo de fechamento ≤ 50 ms) na saída do moinho para o sistema de transporte pneumático, impedindo propagação de chama e pressão.</td>
+              <td>NFPA 69, seção 10.3</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>18</td>
+              <td>Moinho de Martelos MM-02</td>
+              <td>Substituir o ímã permanente na entrada por detector de metais tipo indutivo com rejeição automática, capaz de identificar materiais ferrosos e não-ferrosos com diâmetro ≥ 3 mm.</td>
+              <td>NFPA 652, seção 8.8</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>19</td>
+              <td>Moinho de Martelos MM-02</td>
+              <td>Implementar monitoramento contínuo de vibração nos mancais do rotor, com alarme em 7 mm/s RMS e shutdown automático em 11 mm/s RMS, integrado ao CLP de segurança.</td>
+              <td>NFPA 652, seção 8.6</td>
+              <td><span class="priority-urgente">Urgente</span></td>
+              <td>Imediato (0–30 dias)</td>
+            </tr>
+          
+        
+      
+        
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>20</td>
+              <td>Rosca Transportadora RT-07</td>
+              <td>Instalar sensor de rotação (speed switch) no eixo da rosca, configurado para parada automática em caso de sub-velocidade (≤ 80% da rotação nominal), indicando travamento ou sobrecarga.</td>
+              <td>NFPA 61, seção 6.5</td>
+              <td><span class="priority-media">Média</span></td>
+              <td>Médio prazo (90–180 dias)</td>
+            </tr>
+          
+            
+            
+            
+            
+              
+              
+              
+            
+            <tr>
+              <td>21</td>
+              <td>Rosca Transportadora RT-07</td>
+              <td>Instalar sensores de temperatura tipo PT100 nos mancais intermediário e de ponta, com alarme em 60 °C e integração ao sistema supervisório para registro histórico.</td>
+              <td>NFPA 61, seção 6.8</td>
+              <td><span class="priority-media">Média</span></td>
+              <td>Médio prazo (90–180 dias)</td>
+            </tr>
+          
+        
+      
+    </tbody>
+  </table>
+
+  <p class="text-muted mt-1">
+    Total de recomendações: <strong>21</strong>
+  </p>
+</div>
+
+
+
+<div class="section">
+  <h2>
+    <span class="section-number">6.</span>
+    CLASSIFICAÇÃO DE RISCO GERAL
+  </h2>
+
+  <h3>6.1 Distribuição por Nível de Risco</h3>
+
+  
+  
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+
+  <div class="risk-distribution">
+    <table>
+      <thead>
+        <tr>
+          <th>Nível de Risco</th>
+          <th>Quantidade</th>
+          <th>Percentual</th>
+          <th>Ação Requerida</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td><span class="risk-badge" style="background-color: #dc3545;">Intolerável</span></td>
+          <td>3</td>
+          <td>50%</td>
+          <td>Intervenção imediata obrigatória (0–30 dias)</td>
+        </tr>
+        
+        
+        <tr>
+          <td><span class="risk-badge" style="background-color: #fd7e14;">Substancial</span></td>
+          <td>2</td>
+          <td>33%</td>
+          <td>Ação em curto prazo (30–90 dias)</td>
+        </tr>
+        
+        
+        <tr>
+          <td><span class="risk-badge" style="background-color: #ffc107; color: #333;">Moderado</span></td>
+          <td>1</td>
+          <td>17%</td>
+          <td>Ação programada (90–180 dias)</td>
+        </tr>
+        
+        
+      </tbody>
+    </table>
+  </div>
+
+  <h3>6.2 Resumo</h3>
+
+  
+    <p>
+      Dos <strong>6</strong> equipamentos avaliados na unidade
+      <strong>Unidade São Francisco do Sul — SC</strong>,
+      
+        <strong>3</strong> apresentam risco
+        <strong>Intolerável</strong> e requerem intervenção imediata, 
+      
+      
+        <strong>2</strong> apresentam risco
+        <strong>Substancial</strong> com ação requerida em até 90 dias, 
+      
+      
+        e <strong>1</strong>
+        apresentam risco <strong>Moderado</strong> com ação programada.
+      
+    </p>
+    <p>
+      Recomenda-se a implementação prioritária das medidas para os equipamentos
+      classificados como risco Intolerável, seguidos dos equipamentos com risco
+      Substancial, conforme cronograma detalhado na seção de Recomendações Consolidadas.
+    </p>
+  
+</div>
+
+
+
+<div class="section">
+  <h2>
+    <span class="section-number">7.</span>
+    CONCLUSÃO GERAL
+  </h2>
+
+  
+    <div class="llm-content">
+      
+  
+    
+      
+      
+        
+        
+        
+        
+          <p>Com base na análise realizada em 6 equipamentos da unidade São Francisco do Sul, conclui-se que:</p>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <ul class="text-list">
+          
+            
+            
+              <li>3 equipamentos apresentam risco INTOLERÁVEL e requerem intervenção imediata: Elevador de Canecas EC-01, Silo de Armazenamento SA-12 e Moinho de Martelos MM-02</li>
+            
+          
+            
+            
+              <li>2 equipamentos apresentam risco SUBSTANCIAL e devem ser tratados em até 90 dias: Transportador Redler TR-03 e Filtro de Mangas FM-05</li>
+            
+          
+            
+            
+              <li>1 equipamento apresenta risco MODERADO com ação programada em até 180 dias: Rosca Transportadora RT-07</li>
+            
+          
+          </ul>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <p>O Moinho de Martelos MM-02 é o equipamento de maior criticidade da planta, requerendo instalação prioritária de sistema de supressão de explosão (HRD) e válvula de isolamento rápido.</p>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <p>Recomenda-se a implementação imediata das medidas indicadas para os itens de risco Intolerável, com cronograma máximo de 30 dias para início de implantação e 90 dias para conclusão. Riscos Substanciais devem ser tratados em paralelo, com prazo de 90 dias.</p>
+        
+      
+    
+      
+      
+        
+        
+        
+        
+          <p>A empresa deve manter programa de inspeção contínua, com revisão periódica desta análise conforme NFPA 652 (mínimo a cada 3 anos ou quando houver mudanças significativas nas operações ou configuração dos equipamentos).</p>
+        
+      
+    
+  
+
+    </div>
+  
+</div>
+
+
+
+<div class="section references-section">
+  <h2>
+    <span class="section-number">8.</span>
+    REFERÊNCIAS NORMATIVAS
+  </h2>
+
+  
+  
+
+  
+  
+  
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+    
+      
+    
+  
+
+  
+  <h3>8.1 Normas Nacionais (ABNT)</h3>
+  <ul class="references-list">
+    
+      <li>ABNT NBR IEC 60079-10-2 — Atmosferas explosivas: classificação de áreas — Poeiras combustíveis</li>
+    
+      <li>ABNT NBR IEC 60079-14 — Projeto, seleção e montagem de instalações elétricas</li>
+    
+      <li>ABNT NBR IEC 60079-0 — Requisitos gerais para equipamentos</li>
+    
+      <li>ABNT NBR IEC 60079-31 — Proteção contra ignição de poeira por invólucro</li>
+    
+      <li>ABNT NBR IEC 60079-17 — Inspeção e manutenção de instalações elétricas</li>
+    
+      <li>ABNT NBR 5410 — Instalações elétricas de baixa tensão</li>
+    
+  </ul>
+  
+
+  
+  <h3>8.2 Normas Internacionais (NFPA / IEC)</h3>
+  <ul class="references-list">
+    
+      <li>NFPA 652:2022 — Standard on the Fundamentals of Combustible Dust</li>
+    
+      <li>NFPA 654 — Prevention of Fire and Dust Explosions from Manufacturing, Processing, and Handling of Combustible Particulate Solids</li>
+    
+      <li>NFPA 68 — Standard on Explosion Protection by Deflagration Venting</li>
+    
+      <li>NFPA 69 — Standard on Explosion Prevention Systems</li>
+    
+  </ul>
+  
+
+  
+  <h3>8.3 Normas Regulamentadoras (NR)</h3>
+  <ul class="references-list">
+    
+      <li>NR-10 — Segurança em instalações e serviços em eletricidade</li>
+    
+  </ul>
+  
+</div>
+
+
+
+<div class="section encerramento">
+  <h2>
+    <span class="section-number">9.</span>
+    ENCERRAMENTO
+  </h2>
+
+  <p>
+    Este relatório foi elaborado com base em visita técnica, coleta de dados
+    operacionais, classificação de áreas, normas técnicas nacionais e
+    internacionais, e melhores práticas de engenharia aplicáveis ao perfil de
+    <strong>DHA — Dust Hazard Analysis</strong>.
+  </p>
+
+  <p>
+    As informações contidas neste documento são de caráter confidencial e
+    destinam-se exclusivamente à empresa contratante
+    <strong>Bunge Alimentos S.A.</strong>.
+    A reprodução total ou parcial sem autorização prévia é vedada.
+  </p>
+
+  
+  <p>
+    A <strong>Konis Safety Engenharia</strong> permanece à disposição para:
+  </p>
+  <ul>
+    <li>Suporte na implantação técnica das recomendações;</li>
+    <li>Treinamento de operadores e equipes de manutenção;</li>
+    <li>Projetos de engenharia de proteção e classificação de áreas;</li>
+    <li>Auditoria periódica e atualização da análise de riscos.</li>
+  </ul>
+  
+
+  <div class="signature-block">
+    
+      <p>Rod. BR-280, km 8 — São Francisco do Sul/SC, 13/03/2026 19:44.</p>
+    
+
+    
+    <div class="signature">
+      <div class="signature-line"></div>
+      <p class="signature-name">Eng. Roberto M. Nascimento</p>
+      
+        <p class="signature-role">CREA-SC 098765/D</p>
+      
+      
+        <p class="signature-art">ART: SC20260001234567</p>
+      
+    </div>
+    
+
+    <div class="stamp-area">
+      <span>Carimbo profissional</span>
+    </div>
+  </div>
+</div>
+
+
+
+
+<div class="section annex-landscape">
+  <h2>ANEXO A — Inventário Completo de Riscos</h2>
+
+  <p>
+    Tabela consolidada com todos os itens de risco avaliados na unidade
+    <strong>Unidade São Francisco do Sul — SC</strong>.
+  </p>
+
+  <table class="inventory-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Equipamento</th>
+        <th>Perigo</th>
+        <th>Causas</th>
+        <th>Consequências</th>
+        <th>Severidade</th>
+        <th>Cat. Risco</th>
+        <th>Medidas Existentes</th>
+        <th>Medidas a Implementar</th>
+        <th>Obs.</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      <tr>
+        <td>1</td>
+        <td>Elevador de Canecas EC-01</td>
+        <td>Acúmulo de poeira combustível no interior do elevador (pé e cabeça)</td>
+        <td>Falha no sistema de aspiração; desgaste das canecas; atrito correia/tambor</td>
+        <td>Explosão primária com propagação para equipamentos conectados</td>
+        <td>
+          
+          
+            <span style="color: #dc3545; font-weight: 700;">IV — Catastrófica</span>
+          
+        </td>
+        <td>
+          
+          
+            <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">Intolerável</span>
+          
+        </td>
+        <td>Sistema de aspiração centralizado operante</td>
+        <td>Instalar sensores de alinhamento de correia e monitoramento de temperatura nos mancais.</td>
+        <td>Último alinhamento realizado há 14 meses.</td>
+      </tr>
+      
+      <tr>
+        <td>2</td>
+        <td>Elevador de Canecas EC-01</td>
+        <td>Atrito correia/tambor gerando fonte de ignição</td>
+        <td>Desalinhamento de correia sem sensor de detecção</td>
+        <td>Incêndio interno com danos estruturais e risco de propagação</td>
+        <td>
+          
+          
+            <span style="color: #dc3545; font-weight: 700;">IV — Catastrófica</span>
+          
+        </td>
+        <td>
+          
+          
+            <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">Intolerável</span>
+          
+        </td>
+        <td>Sistema de aspiração centralizado operante</td>
+        <td>Implementar sistema de detecção de desalinhamento com shutdown automático.</td>
+        <td>None</td>
+      </tr>
+      
+      <tr>
+        <td>3</td>
+        <td>Transportador Redler TR-03</td>
+        <td>Geração de poeira em suspensão nos pontos de transferência</td>
+        <td>Vedação insuficiente nas juntas; acúmulo em superfícies internas</td>
+        <td>Explosão confinada no interior do transportador</td>
+        <td>
+          
+          
+            <span style="color: #fd7e14; font-weight: 700;">III — Alta</span>
+          
+        </td>
+        <td>
+          
+          
+            <span class="risk-badge" style="background-color: #fd7e14; font-size: 7pt; padding: 1px 4px;">Substancial</span>
+          
+        </td>
+        <td>Vedação com borracha nos pontos de carga</td>
+        <td>Substituir vedações por modelo pressurizado e instalar bocais de aspiração nos pontos de transferência.</td>
+        <td>None</td>
+      </tr>
+      
+      <tr>
+        <td>4</td>
+        <td>Silo de Armazenamento SA-12</td>
+        <td>Formação de nuvem de poeira durante carga/descarga do silo</td>
+        <td>Queda livre de grãos sem defletor; ventilação natural insuficiente</td>
+        <td>Explosão no topo do silo com colapso estrutural</td>
+        <td>
+          
+          
+            <span style="color: #dc3545; font-weight: 700;">IV — Catastrófica</span>
+          
+        </td>
+        <td>
+          
+          
+            <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">Intolerável</span>
+          
+        </td>
+        <td>Bocal de aspiração no topo (subdimensionado)</td>
+        <td>Redimensionar sistema de aspiração do topo; instalar válvula de alívio de explosão (explosion vent).</td>
+        <td>Silo sem inspeção interna há 24 meses.</td>
+      </tr>
+      
+      <tr>
+        <td>5</td>
+        <td>Silo de Armazenamento SA-12</td>
+        <td>Auto-aquecimento de grãos armazenados (hot spot)</td>
+        <td>Umidade excessiva; falta de termometria no corpo do silo</td>
+        <td>Incêndio latente com liberação de gases tóxicos e risco de colapso</td>
+        <td>
+          
+          
+            <span style="color: #fd7e14; font-weight: 700;">III — Alta</span>
+          
+        </td>
+        <td>
+          
+          
+            <span class="risk-badge" style="background-color: #fd7e14; font-size: 7pt; padding: 1px 4px;">Substancial</span>
+          
+        </td>
+        <td>Termometria parcial (4 cabos)</td>
+        <td>Completar sistema de termometria com 12 cabos distribuídos e integrar alarme ao SDAI.</td>
+        <td>None</td>
+      </tr>
+      
+      <tr>
+        <td>6</td>
+        <td>Filtro de Mangas FM-05</td>
+        <td>Acúmulo de poeira combustível dentro do filtro (tremonha e mangas)</td>
+        <td>Válvula rotativa travada; falha na limpeza pulse-jet</td>
+        <td>Explosão secundária no filtro com projeção de fragmentos</td>
+        <td>
+          
+          
+            <span style="color: #fd7e14; font-weight: 700;">III — Alta</span>
+          
+        </td>
+        <td>
+          
+          
+            <span class="risk-badge" style="background-color: #fd7e14; font-size: 7pt; padding: 1px 4px;">Substancial</span>
+          
+        </td>
+        <td>Válvula rotativa na descarga; sistema pulse-jet operante</td>
+        <td>Instalar sensor de nível na tremonha e válvula de alívio de explosão na carcaça do filtro.</td>
+        <td>None</td>
+      </tr>
+      
+      <tr>
+        <td>7</td>
+        <td>Moinho de Martelos MM-02</td>
+        <td>Alta concentração de poeira fina no interior do moinho durante operação</td>
+        <td>Operação gera particulado fino com granulometria ≤ 75 µm em concentrações acima do MEC</td>
+        <td>Explosão primária severa com propagação pelo sistema de transporte pneumático</td>
+        <td>
+          
+          
+            <span style="color: #dc3545; font-weight: 700;">IV — Catastrófica</span>
+          
+        </td>
+        <td>
+          
+          
+            <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">Intolerável</span>
+          
+        </td>
+        <td>Ímã permanente na entrada; aspiração local</td>
+        <td>Instalar sistema de supressão de explosão (HRD) e válvula de isolamento rápido na saída.</td>
+        <td>Equipamento crítico — maior risco da planta.</td>
+      </tr>
+      
+      <tr>
+        <td>8</td>
+        <td>Rosca Transportadora RT-07</td>
+        <td>Atrito entre helicóide e calha por desalinhamento</td>
+        <td>Desgaste do mancal intermediário; falta de manutenção preventiva</td>
+        <td>Ignição de farelo com propagação para silos conectados</td>
+        <td>
+          
+          
+            <span style="color: #ffc107; font-weight: 700;">II — Média</span>
+          
+        </td>
+        <td>
+          
+          
+            <span class="risk-badge" style="background-color: #ffc107; color: #333; font-size: 7pt; padding: 1px 4px;">Moderado</span>
+          
+        </td>
+        <td>Monitoramento visual pela operação</td>
+        <td>Instalar sensor de rotação (speed switch) e sensor de temperatura nos mancais.</td>
+        <td>None</td>
+      </tr>
+      
+    </tbody>
+  </table>
+
+  <p class="text-muted mt-1">
+    Total de itens: <strong>8</strong>
+  </p>
+</div>
+
+
+</body>
+</html>

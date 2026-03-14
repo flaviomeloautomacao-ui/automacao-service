@@ -1,26 +1,10 @@
 /* ==========================================================================
    styles.css — Estilos do relatório técnico (PDF via WeasyPrint)
    ==========================================================================
-   ┌──────────────────────────────────────────────────────────────────────┐
-   │  COMO EDITAR O VISUAL DO PDF                                       │
-   │                                                                      │
-   │  Este arquivo controla 100% da aparência visual do relatório PDF.  │
-   │  Cada seção está comentada para facilitar a edição.                │
-   │                                                                      │
-   │  DICAS RÁPIDAS:                                                    │
-   │  • Alterar cores:  busque "color:" e "background-color:"          │
-   │  • Alterar fontes: busque "font-family:"                          │
-   │  • Alterar margens da página: edite @page → margin                │
-   │  • Alterar tamanho: edite @page → size (A4, Letter, etc.)        │
-   │  • Rodapé: edite @bottom-center e @bottom-right em @page         │
-   │  • Capa: classe .cover e suas sub-classes                         │
-   │  • Tabelas: classes table, .inventory-table, .risk-table          │
-   │  • Seções de equipamento: .equipment-block, .equipment-title      │
-   │  • Quebras de página: page-break-before / page-break-after        │
-   │                                                                      │
-   │  Para adicionar logo: coloque a imagem na pasta templates/ e      │
-   │  referencie no report.html com <img src="logo.png">               │
-   └──────────────────────────────────────────────────────────────────────┘ */
+   Controla 100% da aparência visual do relatório PDF.
+   Inclui: logo no cabeçalho, tabelas de risco coloridas, matriz 5×5,
+   recomendações consolidadas, controle de revisões, etc.
+   ========================================================================== */
 
 /* ---------- Reset & Base ---------- */
 
@@ -30,32 +14,78 @@
     padding: 0;
 }
 
+/* ---------- Running Header (logo em todas as páginas) ---------- */
+
+.running-header {
+    position: running(pageHeader);
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1.5px solid #0f3460;
+    padding-bottom: 4px;
+}
+
+.running-header img {
+    height: 28px;
+    width: auto;
+}
+
+.running-header-title {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 7pt;
+    color: #555;
+    text-align: center;
+    flex: 1;
+}
+
+.running-header-rev {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 7pt;
+    color: #555;
+    text-align: right;
+    white-space: nowrap;
+}
+
+
 /* ---------- Page Setup ---------- */
-/* Controla tamanho, margens e conteúdo do rodapé de TODAS as páginas. */
 
 @page {
     size: A4;
-    margin: 25mm 20mm 30mm 20mm;
+    margin: 30mm 20mm 25mm 25mm;
 
-    @bottom-center {
-        content: "Página " counter(page) " de " counter(pages);
+    @top-left {
+        content: element(pageHeader);
+        width: 100%;
+    }
+
+    @bottom-left {
+        content: "Konis Safety Engenharia — Segurança é essencial";
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        font-size: 8pt;
-        color: #666;
+        font-size: 7pt;
+        color: #888;
     }
 
     @bottom-right {
-        content: "Documento confidencial";
+        content: "Pág. " counter(page) " / " counter(pages);
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        font-size: 7pt;
-        color: #999;
+        font-size: 8pt;
+        color: #555;
     }
 }
 
-/* Primeira página (capa): sem rodapé */
+/* Primeira página (capa): sem cabeçalho nem rodapé */
 @page :first {
-    @bottom-center { content: none; }
-    @bottom-right  { content: none; }
+    margin: 25mm 20mm 25mm 20mm;
+    @top-left     { content: none; }
+    @bottom-left  { content: none; }
+    @bottom-right { content: none; }
+}
+
+/* Página do Anexo em paisagem */
+@page landscape {
+    size: A4 landscape;
+    margin: 20mm 15mm 20mm 15mm;
 }
 
 
@@ -77,8 +107,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 { font-size: 22pt; }
-h2 { font-size: 15pt; border-bottom: 2px solid #0f3460; padding-bottom: 4px; margin-top: 1em; }
-h3 { font-size: 13pt; margin-top: 0.8em; }
+h2 { font-size: 14pt; border-bottom: 2px solid #0f3460; padding-bottom: 4px; margin-top: 1em; }
+h3 { font-size: 12pt; margin-top: 0.8em; }
 h4 { font-size: 10.5pt; margin-top: 0.6em; color: #333; }
 
 p {
@@ -101,47 +131,72 @@ strong { color: #1a1a2e; }
     align-items: center;
     min-height: 100%;
     text-align: center;
-    padding: 2em 0;
+    padding: 0;
+}
+
+.cover-logo {
+    margin-bottom: 2em;
+}
+
+.cover-logo img {
+    height: 70px;
+    width: auto;
 }
 
 .cover-content {
     width: 100%;
-    max-width: 500px;
+    max-width: 520px;
 }
 
 .cover-title {
-    font-size: 24pt;
+    font-size: 36pt;
     color: #0f3460;
-    margin-bottom: 0.2em;
-    line-height: 1.2;
+    margin-bottom: 0.15em;
+    line-height: 1.15;
     letter-spacing: 0.5px;
+    font-weight: 800;
 }
 
 .cover-subtitle-main {
-    font-size: 16pt;
+    font-size: 15pt;
     color: #0f3460;
     font-weight: 600;
+    margin-bottom: 0.3em;
+}
+
+.cover-subtitle {
+    font-size: 11pt;
+    color: #444;
+    font-weight: 400;
     margin-bottom: 0.5em;
 }
 
 .cover-divider {
-    width: 60%;
+    width: 70%;
     height: 3px;
     background: linear-gradient(90deg, #0f3460, #e94560);
-    margin: 1.5em auto;
+    margin: 1.2em auto;
     border-radius: 2px;
+}
+
+.cover-doc-code {
+    font-size: 10pt;
+    color: #0f3460;
+    font-weight: 700;
+    margin-bottom: 1em;
+    letter-spacing: 0.5px;
 }
 
 .cover-table {
     width: 100%;
     text-align: left;
     border-collapse: collapse;
-    margin: 1em 0;
-    font-size: 10.5pt;
+    margin: 0.8em 0;
+    font-size: 10pt;
 }
 
 .cover-table td {
-    padding: 5px 8px;
+    padding: 4px 8px;
     vertical-align: top;
     border: none;
 }
@@ -150,13 +205,43 @@ strong { color: #1a1a2e; }
     font-weight: 700;
     color: #0f3460;
     white-space: nowrap;
-    width: 40%;
+    width: 42%;
 }
 
 .cover-footer {
-    margin-top: 3em;
-    font-size: 9pt;
+    margin-top: 2em;
+    font-size: 8.5pt;
     color: #888;
+}
+
+
+/* ==========================================================================
+   APRESENTAÇÃO TÉCNICA E IMPORTÂNCIA DOS SERVIÇOS
+   ========================================================================== */
+
+.apresentacao-section {
+    page-break-after: always;
+}
+
+.apresentacao-section h2 {
+    margin-bottom: 1em;
+}
+
+.apresentacao-h3 {
+    font-size: 11pt;
+    color: #0f3460;
+    margin-top: 1.2em;
+    margin-bottom: 0.4em;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.apresentacao-h4 {
+    font-size: 10pt;
+    color: #333;
+    margin-top: 0.9em;
+    margin-bottom: 0.3em;
+    font-weight: 700;
 }
 
 
@@ -251,6 +336,92 @@ strong { color: #1a1a2e; }
 
 
 /* ==========================================================================
+   TABELAS DE CRITÉRIOS (Metodologia) — Severidade, Probabilidade
+   ========================================================================== */
+
+table.criteria-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8em 0;
+    font-size: 9.5pt;
+}
+
+.criteria-table thead {
+    background-color: #0f3460;
+    color: #fff;
+}
+
+.criteria-table thead th {
+    padding: 5px 8px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 9pt;
+}
+
+.criteria-table tbody td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+}
+
+.criteria-table tbody tr:nth-child(even) {
+    background-color: #f7f8fa;
+}
+
+/* Célula colorida de nível */
+.criteria-table .level-cell {
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    padding: 4px 10px;
+    border-radius: 2px;
+}
+
+
+/* ==========================================================================
+   MATRIZ DE RISCO 5×5
+   ========================================================================== */
+
+table.risk-matrix {
+    border-collapse: collapse;
+    margin: 1em auto;
+    font-size: 8.5pt;
+    text-align: center;
+}
+
+.risk-matrix th,
+.risk-matrix td {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    min-width: 70px;
+    vertical-align: middle;
+}
+
+.risk-matrix thead th {
+    background-color: #0f3460;
+    color: #fff;
+    font-weight: 600;
+    font-size: 8pt;
+}
+
+.risk-matrix tbody th {
+    background-color: #e8edf5;
+    font-weight: 600;
+    color: #0f3460;
+    text-align: right;
+    padding-right: 10px;
+    white-space: nowrap;
+}
+
+/* Cores dos níveis de risco */
+.risk-low       { background-color: #28a745; color: #fff; font-weight: 700; }
+.risk-medium    { background-color: #ffc107; color: #333; font-weight: 700; }
+.risk-high      { background-color: #fd7e14; color: #fff; font-weight: 700; }
+.risk-very-high { background-color: #dc3545; color: #fff; font-weight: 700; }
+.risk-critical  { background-color: #721c24; color: #fff; font-weight: 700; }
+
+
+/* ==========================================================================
    EQUIPAMENTOS — Blocos de análise individual
    ========================================================================== */
 
@@ -259,13 +430,63 @@ strong { color: #1a1a2e; }
 }
 
 .equipment-title {
-    font-size: 13pt;
+    font-size: 12pt;
     color: #0f3460;
     border-bottom: 1.5px solid #0f3460;
     padding-bottom: 3px;
     margin-bottom: 0.5em;
     text-transform: uppercase;
     letter-spacing: 0.3px;
+}
+
+/* Dados complementares do equipamento */
+.equipment-info-table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+    margin: 0.3em 0 0.8em 0;
+    font-size: 9.5pt;
+}
+
+.equipment-info-table td {
+    padding: 3px 8px;
+    vertical-align: top;
+    border: none;
+}
+
+.equipment-info-table .eq-label {
+    font-weight: 700;
+    color: #0f3460;
+    white-space: nowrap;
+    width: 35%;
+}
+
+/* Imagens com legenda */
+.equipment-images {
+    margin: 0.8em 0;
+}
+
+.equipment-photo {
+    display: inline-block;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.equipment-photo img {
+    display: block;
+    max-width: 460px;
+    width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+    padding: 2px;
+}
+
+.equipment-photo .photo-caption {
+    font-size: 8.5pt;
+    color: #555;
+    margin-top: 4px;
+    font-style: italic;
 }
 
 /* Listas dentro da análise de equipamento */
@@ -289,12 +510,12 @@ ol.detail-list {
 /* Referência normativa dentro de recomendação */
 .norma-ref {
     display: inline-block;
-    font-size: 0.9em;
+    font-size: 0.88em;
     color: #555;
     margin-top: 0.15em;
 }
 
-/* Tabela de classificação do risco (pequena, 2 linhas) */
+/* Tabela de classificação do risco (por equipamento) */
 .risk-table {
     width: auto;
     border-collapse: collapse;
@@ -319,6 +540,16 @@ ol.detail-list {
     color: #0f3460;
 }
 
+/* Badge de risco colorido */
+.risk-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: 9pt;
+    color: #fff;
+}
+
 .summary-count {
     margin-top: 1em;
     font-size: 10pt;
@@ -327,14 +558,87 @@ ol.detail-list {
 
 
 /* ==========================================================================
+   RECOMENDAÇÕES CONSOLIDADAS
+   ========================================================================== */
+
+table.consolidated-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    font-size: 8.5pt;
+}
+
+.consolidated-table thead {
+    background-color: #0f3460;
+    color: #fff;
+}
+
+.consolidated-table thead th {
+    padding: 5px 6px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 8pt;
+}
+
+.consolidated-table tbody td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+}
+
+.consolidated-table tbody tr:nth-child(even) {
+    background-color: #f7f8fa;
+}
+
+/* Prioridade badges */
+.priority-urgente { background-color: #721c24; color: #fff; padding: 2px 6px; border-radius: 2px; font-weight: 700; font-size: 8pt; }
+.priority-alta    { background-color: #dc3545; color: #fff; padding: 2px 6px; border-radius: 2px; font-weight: 700; font-size: 8pt; }
+.priority-media   { background-color: #ffc107; color: #333; padding: 2px 6px; border-radius: 2px; font-weight: 700; font-size: 8pt; }
+.priority-baixa   { background-color: #28a745; color: #fff; padding: 2px 6px; border-radius: 2px; font-weight: 700; font-size: 8pt; }
+
+
+/* ==========================================================================
+   CLASSIFICAÇÃO DE RISCO GERAL (resumo)
+   ========================================================================== */
+
+.risk-distribution {
+    margin: 1em 0;
+}
+
+.risk-distribution table {
+    width: auto;
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 10pt;
+}
+
+.risk-distribution td,
+.risk-distribution th {
+    padding: 5px 14px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.risk-distribution thead th {
+    background-color: #e8edf5;
+    font-weight: 600;
+    color: #0f3460;
+}
+
+
+/* ==========================================================================
    TABELA DO INVENTÁRIO (Anexo)
    ========================================================================== */
+
+.annex-landscape {
+    page: landscape;
+}
 
 table.inventory-table {
     width: 100%;
     border-collapse: collapse;
     margin: 1em 0;
-    font-size: 8pt;
+    font-size: 7.5pt;
 }
 
 .inventory-table thead {
@@ -343,15 +647,15 @@ table.inventory-table {
 }
 
 .inventory-table thead th {
-    padding: 6px 6px;
+    padding: 5px 5px;
     text-align: left;
     font-weight: 600;
     white-space: nowrap;
-    font-size: 8pt;
+    font-size: 7.5pt;
 }
 
 .inventory-table tbody td {
-    padding: 4px 6px;
+    padding: 3px 5px;
     border-bottom: 1px solid #ddd;
     vertical-align: top;
 }
@@ -365,13 +669,20 @@ table.inventory-table {
    REFERÊNCIAS NORMATIVAS
    ========================================================================== */
 
+.references-section h3 {
+    font-size: 11pt;
+    margin-top: 1em;
+    margin-bottom: 0.3em;
+    color: #0f3460;
+}
+
 .references-list {
     list-style: disc;
-    margin: 0.5em 0 0.5em 1.5em;
+    margin: 0.3em 0 0.5em 1.5em;
 }
 
 .references-list li {
-    margin-bottom: 0.4em;
+    margin-bottom: 0.35em;
     line-height: 1.4;
 }
 
@@ -401,7 +712,7 @@ table.inventory-table {
 }
 
 .signature-line {
-    width: 250px;
+    width: 280px;
     border-bottom: 1px solid #333;
     margin: 0 auto 0.5em auto;
 }
@@ -419,6 +730,25 @@ table.inventory-table {
     text-align: center;
 }
 
+.signature-art {
+    font-size: 8.5pt;
+    color: #555;
+    text-align: center;
+    margin-top: 0.3em;
+}
+
+.stamp-area {
+    width: 200px;
+    height: 80px;
+    border: 1px dashed #aaa;
+    margin: 1.5em auto 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7.5pt;
+    color: #aaa;
+}
+
 
 /* ==========================================================================
    UTILITÁRIOS
@@ -432,3 +762,4 @@ table.inventory-table {
 .mb-1 { margin-bottom: 0.5em; }
 .mb-2 { margin-bottom: 1em; }
 .page-break { page-break-before: always; }
+.no-break { page-break-inside: avoid; }
