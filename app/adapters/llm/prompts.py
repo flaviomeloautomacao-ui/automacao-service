@@ -224,6 +224,7 @@ _USER_PROMPT_TEMPLATE: str = (
     "Elaboração: {elaboracao}\n"
     "Data da Vistoria: {data_avaliacao}\n"
     "Contrato: {contrato}\n\n"
+    "{observacoes_section}"
     "### Tipo de Análise ###\n"
     "Perfil: {perfil_label}\n"
     "Foco: {perfil_foco}\n"
@@ -343,6 +344,22 @@ def build_user_prompt(context: dict[str, Any]) -> str:
     )
     total_riscos = len(rows)
 
+    # ── Seção 7/14: Observações gerais normalizadas (prompt simplificado) ──
+    # Usa o prompt normalizado (observacoes_gerais_prompt) se disponível,
+    # caso contrário usa o texto original (observacoes_gerais).
+    # Se ambos estiverem vazios, omite a seção inteira (Seção 7: NÃO chamar LLM).
+    obs_prompt = (
+        company.get("observacoes_gerais_prompt")
+        or company.get("observacoes_gerais")
+        or ""
+    ).strip()
+    observacoes_section = ""
+    if obs_prompt:
+        observacoes_section = (
+            "### Observações do Cliente ###\n"
+            f"{obs_prompt}\n\n"
+        )
+
     return _USER_PROMPT_TEMPLATE.format(
         razao_social=company.get("razao_social", "N/I"),
         cnpj=company.get("cnpj", "N/I"),
@@ -354,6 +371,7 @@ def build_user_prompt(context: dict[str, Any]) -> str:
         elaboracao=company.get("elaboracao", "N/I"),
         data_avaliacao=company.get("data_avaliacao", "N/I"),
         contrato=company.get("contrato", "N/I"),
+        observacoes_section=observacoes_section,
         perfil_label=cfg["label"],
         perfil_foco=cfg["foco"],
         tipo_atmosfera=cfg["tipo_atmosfera"],

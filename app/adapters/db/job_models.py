@@ -223,6 +223,7 @@ class ReportModel(Base):
     responsavel: Mapped[str | None] = mapped_column(String, nullable=True)
     registro_profissional: Mapped[str | None] = mapped_column(String, nullable=True)
     observacoes_gerais: Mapped[str | None] = mapped_column(Text, nullable=True)
+    observacoes_gerais_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,

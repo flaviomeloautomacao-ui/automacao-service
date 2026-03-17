@@ -341,6 +341,7 @@ class JobRepository:
                 "responsavel": report.responsavel,
                 "registro_profissional": report.registro_profissional,
                 "observacoes_gerais": report.observacoes_gerais,
+                "observacoes_gerais_prompt": report.observacoes_gerais_prompt,
             }
         except Exception as exc:
             raise DBError(
