@@ -190,9 +190,27 @@ def validate_llm_output(
         )
 
     # ── OV-08 / OV-09: renumerar sequencialmente ─────────────────
-    # ── OV-12: fallback de norma_referencia ───────────────────────
+    # ── OV-12: fallback de norma_referencia (fortalecido com RAG) ─
     # ── §5.2: limites de tamanho ──────────────────────────────────
     default_norma = llm_input.normas_aplicaveis[0] if llm_input.normas_aplicaveis else ""
+
+    # Conjunto de normas válidas: normas do profile + sources do RAG
+    valid_norm_sources: set[str] = set()
+    for na in llm_input.normas_aplicaveis:
+        valid_norm_sources.add(na.strip().lower())
+        # Adicionar variantes parciais (ex.: "ABNT NBR 16385")
+        for part in na.split("—"):
+            cleaned = part.strip().lower()
+            if len(cleaned) >= 5:
+                valid_norm_sources.add(cleaned)
+    for exc in llm_input.normative_context:
+        src_lower = exc.source.strip().lower()
+        valid_norm_sources.add(src_lower)
+        # Também aceitar sem extensão .pdf
+        if src_lower.endswith(".pdf"):
+            valid_norm_sources.add(src_lower[:-4].strip())
+
+    has_normative_context = bool(llm_input.normative_context)
 
     final_recs: list[RecomendacaoTecnica] = []
     final_justs: list[JustificativaTecnica] = []
@@ -204,10 +222,36 @@ def validate_llm_output(
             _REC_TEXT_MAX,
         )
 
-        # Norma referência (OV-12)
+        # Norma referência (OV-12 — fortalecido)
         norma = (rec.get("norma_referencia") or "").strip()
         if len(norma) < _REC_NORMA_MIN:
             norma = default_norma
+        else:
+            # Validar se a norma citada existe entre as fontes válidas
+            norma_lower = norma.strip().lower()
+            norm_is_valid = any(
+                valid_src in norma_lower or norma_lower in valid_src
+                for valid_src in valid_norm_sources
+            )
+            if not norm_is_valid and has_normative_context:
+                # Fallback: usar a norma mais relevante do contexto RAG
+                best_source = llm_input.normative_context[0].source
+                logger.info(
+                    "OV-12 | equip={} | norma inventada '{}' → fallback para '{}' (RAG)",
+                    equip,
+                    norma,
+                    best_source,
+                )
+                norma = best_source
+            elif not norm_is_valid:
+                # Sem RAG: manter fallback para norma do perfil
+                logger.info(
+                    "OV-12 | equip={} | norma '{}' não reconhecida → fallback default",
+                    equip,
+                    norma,
+                )
+                norma = default_norma
+
         norma = _truncate(norma, _REC_NORMA_MAX)
 
         # Texto da justificativa

@@ -383,6 +383,14 @@ class ProcessUploadUseCase:
             profile or "default",
             len(rows_dicts),
         )
+
+        # Setar contexto de tracking no LLM client
+        if hasattr(self._llm, 'set_tracking_context'):
+            self._llm.set_tracking_context(
+                flow="upload",
+                step="global_sections",
+            )
+
         sections = await self._llm.generate_sections(context)
         logger.info("Seções LLM geradas com sucesso")
         return sections

@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "generated_at": "2026-03-17",
+    "project": "AutomacaoDHA / PythonServiceAutomacao",
+    "description": "Inventário completo de pontos de consumo de LLM e embedding no sistema"
+  },
+
+  "providers": {
+    "openrouter": {
+      "label": "OpenRouter (API compatível OpenAI)",
+      "base_url_config": "OPENROUTER_BASE_URL",
+      "api_key_config": "OPENROUTER_API_KEY",
+      "default_base_url": "https://openrouter.ai/api/v1",
+      "used_for": ["generation"]
+    },
+    "openai": {
+      "label": "OpenAI (API de Embeddings)",
+      "base_url_config": "EMBEDDING_BASE_URL",
+      "api_key_config": "EMBEDDING_API_KEY (fallback: OPENROUTER_API_KEY)",
+      "default_base_url": "https://api.openai.com/v1",
+      "used_for": ["embedding"]
+    }
+  },
+
+  "models": {
+    "openai/gpt-4o": {
+      "provider": "openrouter",
+      "type": "generation",
+      "config_key": "LLM_MODEL",
+      "pricing_usd_per_1k_tokens": {
+        "input": 0.0025,
+        "output": 0.010
+      },
+      "used_in": ["global_sections", "per_equipment_narrative", "global_sections_retry", "per_equipment_retry"]
+    },
+    "text-embedding-3-small": {
+      "provider": "openai",
+      "type": "embedding",
+      "config_key": "EMBEDDING_MODEL",
+      "pricing_usd_per_1k_tokens": {
+        "input": 0.00002,
+        "output": 0.0
+      },
+      "used_in": ["rag_embedding"]
+    }
+  },
+
+  "call_points": [
+    {
+      "id": "CP-01",
+      "file": "app/adapters/llm/openrouter_client.py",
+      "class": "OpenRouterClient",
+      "function": "generate_sections",
+      "purpose": "Gera seções globais do laudo (introdução, metodologia, conclusão, materiais)",
+      "model": "LLM_MODEL (default: openai/gpt-4o)",
+      "provider": "openrouter",
+      "call_type": "generation",
+      "called_by": ["ProcessUploadUseCase._generate_llm_sections", "ProcessJobUseCase.execute (step 3a)"],
+      "retry_behavior": "Se JSON inválido: 1 retry com prompt reforçado (total 2 chamadas)",
+      "estimated_input_tokens": "2000-5000 (depende de quantos equipamentos/riscos)",
+      "estimated_output_tokens": "1000-3000",
+      "estimated_cost_per_call_usd": "0.005-0.035"
+    },
+    {
+      "id": "CP-02",
+      "file": "app/adapters/llm/openrouter_client.py",
+      "class": "OpenRouterClient",
+      "function": "call_chat",
+      "purpose": "Gera narrativa per-equipment (recomendações + justificativas técnicas)",
+      "model": "LLM_MODEL (default: openai/gpt-4o)",
+      "provider": "openrouter",
+      "call_type": "generation",
+      "called_by": ["equipment_narrative_generator.generate_equipment_narrative"],
+      "retry_behavior": "Attempt 1: prompt padrão; Attempt 2: prompt reforçado; Attempt 3: fallback determinístico",
+      "estimated_input_tokens": "2500-4000 (system prompt ~2500 + user prompt 500-1500)",
+      "estimated_output_tokens": "500-1500",
+      "estimated_cost_per_call_usd": "0.004-0.015"
+    },
+    {
+      "id": "CP-03",
+      "file": "app/adapters/norms/embedding_provider.py",
+      "class": "OpenAIEmbeddingProvider",
+      "function": "embed_text",
+      "purpose": "Gera embedding vetorial da query semântica de um equipamento para busca RAG de normas ABNT",
+      "model": "EMBEDDING_MODEL (default: text-embedding-3-small)",
+      "provider": "openai",
+      "call_type": "embedding",
+      "called_by": ["ABNTRetriever.retrieve_for_equipment"],
+      "retry_behavior": "Sem retry — falha retorna resultado vazio (graceful degradation)",
+      "estimated_input_tokens": "50-200 (query semântica do equipamento)",
+      "estimated_output_tokens": 0,
+      "estimated_cost_per_call_usd": "0.000001-0.000004"
+    }
+  ],
+
+  "flows": {
+    "process_job": {
+      "endpoint": "POST /process",
+      "file": "app/api/routes/process.py",
+      "use_case": "ProcessJobUseCase.execute",
+      "description": "Pipeline completo de geração de laudo: dados → RAG → LLM global → LLM per-equipment → PDF",
+      "is_async": true,
+      "steps_with_llm": [
+        {
+          "step": "rag_embedding",
+          "step_name": "data_processing (step 2f)",
+          "call_point": "CP-03",
+          "calls_per_execution": "N (1 por equipamento; se DEVLLM=true: 1)",
+          "description": "Gera embedding para busca vetorial de normas ABNT por equipamento",
+          "can_be_skipped": "Sim, se RAG_ENABLED=false ou sem API key"
+        },
+        {
+          "step": "global_sections",
+          "step_name": "llm_analysis (step 3a)",
+          "call_point": "CP-01",
+          "calls_per_execution": "1-2 (1 normal + 1 retry se JSON inválido)",
+          "description": "Gera introdução, metodologia, conclusão e materiais do laudo"
+        },
+        {
+          "step": "per_equipment_narrative",
+          "step_name": "llm_analysis (step 3b)",
+          "call_point": "CP-02",
+          "calls_per_execution": "N-2N (1-2 por equipamento; se DEVLLM=true: 1-2 para o 1º, fallback para os demais)",
+          "description": "Gera recomendações e justificativas técnicas por equipamento"
+        }
+      ],
+      "total_calls_formula": {
+        "embedding": "N equipamentos (quando RAG habilitado)",
+        "generation": "1 (global) + N (per-equipment) = N+1 chamadas (melhor caso); 2 + 2N (pior caso com retries)"
+      }
+    },
+    "upload": {
+      "endpoint": "POST /uploads",
+      "file": "app/api/routes/uploads.py",
+      "use_case": "ProcessUploadUseCase.execute",
+      "description": "Pipeline legado de upload direto: parse → validação → LLM global → PDF (sem RAG, sem per-equipment)",
+      "is_async": false,
+      "steps_with_llm": [
+        {
+          "step": "global_sections",
+          "step_name": "step 5",
+          "call_point": "CP-01",
+          "calls_per_execution": "1-2 (1 normal + 1 retry se JSON inválido)",
+          "description": "Gera introdução, metodologia, conclusão e materiais do laudo"
+        }
+      ],
+      "total_calls_formula": {
+        "embedding": "0",
+        "generation": "1 (melhor caso); 2 (pior caso)"
+      }
+    }
+  },
+
+  "cost_estimates": {
+    "per_job_with_10_equipments": {
+      "embedding_calls": 10,
+      "embedding_cost_usd": 0.00005,
+      "global_section_calls": 1,
+      "global_section_cost_usd": 0.015,
+      "per_equipment_calls": 10,
+      "per_equipment_cost_usd": 0.08,
+      "total_calls": 21,
+      "total_cost_usd": 0.095,
+      "most_expensive": "per_equipment_narrative (84%)",
+      "cheapest": "rag_embedding (<0.1%)",
+      "notes": "Estimativa com GPT-4o. Com retries, pode chegar a 42 chamadas e ~$0.19"
+    },
+    "per_job_with_5_equipments": {
+      "embedding_calls": 5,
+      "embedding_cost_usd": 0.000025,
+      "global_section_calls": 1,
+      "global_section_cost_usd": 0.015,
+      "per_equipment_calls": 5,
+      "per_equipment_cost_usd": 0.04,
+      "total_calls": 11,
+      "total_cost_usd": 0.055,
+      "notes": "Estimativa com GPT-4o, sem retries"
+    },
+    "per_upload_legacy": {
+      "embedding_calls": 0,
+      "generation_calls": 1,
+      "total_cost_usd": 0.015,
+      "notes": "Fluxo legado sem RAG e sem per-equipment"
+    }
+  },
+
+  "dev_mode": {
+    "config_key": "DEVLLM",
+    "effect": "Quando true, apenas o 1º equipamento recebe chamadas LLM e RAG reais. Os demais recebem fallback vazio.",
+    "cost_reduction": "Reduz de N+1 chamadas para 3 (1 embedding + 1 global + 1 per-equipment)"
+  },
+
+  "optimization_opportunities": [
+    {
+      "id": "OPT-01",
+      "area": "per_equipment_narrative",
+      "impact": "ALTO",
+      "description": "Trocar modelo de GPT-4o para GPT-4o-mini nas chamadas per-equipment",
+      "estimated_savings": "~85% do custo per-equipment",
+      "risk": "Possível redução na qualidade das recomendações técnicas",
+      "implementation": "Adicionar config LLM_MODEL_PER_EQUIPMENT com default gpt-4o-mini"
+    },
+    {
+      "id": "OPT-02",
+      "area": "per_equipment_narrative",
+      "impact": "ALTO",
+      "description": "Implementar batch/agrupamento de equipamentos similares para reduzir chamadas",
+      "estimated_savings": "30-50% das chamadas per-equipment",
+      "risk": "Complexidade na implementação, risco de misturar contextos",
+      "implementation": "Agrupar equipamentos com perigos similares e gerar recomendações em batch"
+    },
+    {
+      "id": "OPT-03",
+      "area": "global_sections",
+      "impact": "MÉDIO",
+      "description": "Cache de seções globais para mesma planilha (mesmo hash de dados)",
+      "estimated_savings": "100% em reprocessamentos",
+      "risk": "Baixo — cache invalidado ao mudar dados",
+      "implementation": "Hash dos dados de entrada → lookup em cache antes de chamar LLM"
+    },
+    {
+      "id": "OPT-04",
+      "area": "system_prompt",
+      "impact": "MÉDIO",
+      "description": "System prompt per-equipment tem ~2500 tokens. Comprimir sem perder qualidade",
+      "estimated_savings": "~20-30% dos input tokens per-equipment",
+      "risk": "Possível degradação se compressão for excessiva",
+      "implementation": "Reescrever system prompt mais conciso, testar A/B"
+    },
+    {
+      "id": "OPT-05",
+      "area": "rag_embedding",
+      "impact": "BAIXO",
+      "description": "Cache de embeddings por equipamento (mesmos equipamentos em jobs diferentes)",
+      "estimated_savings": "Desprezível em custo, mas reduz latência",
+      "risk": "Muito baixo",
+      "implementation": "Cache em memória ou Redis por hash do query text"
+    },
+    {
+      "id": "OPT-06",
+      "area": "retry_logic",
+      "impact": "MÉDIO",
+      "description": "Melhorar system prompt para reduzir taxa de retry de JSON inválido",
+      "estimated_savings": "Até 50% das chamadas extras por retry",
+      "risk": "Baixo",
+      "implementation": "Analisar logs de retry e ajustar instruções de formatação"
+    },
+    {
+      "id": "OPT-07",
+      "area": "per_equipment_narrative",
+      "impact": "ALTO",
+      "description": "Usar response_format json_schema (structured outputs) para eliminar retries de formato",
+      "estimated_savings": "Elimina praticamente todos os retries de formato",
+      "risk": "Requer modelo que suporte structured outputs",
+      "implementation": "Adicionar JSON schema no payload da API"
+    }
+  ],
+
+  "tracking": {
+    "tracker_module": "app/infrastructure/llm_cost_tracker.py",
+    "api_endpoints": {
+      "GET /costs/summary": "Resumo geral",
+      "GET /costs/by-flow": "Custos por fluxo",
+      "GET /costs/by-step": "Custos por etapa",
+      "GET /costs/by-model": "Custos por modelo",
+      "GET /costs/by-job": "Custos por job (com detalhamento per-equipment)",
+      "GET /costs/ranking": "Chamadas mais caras",
+      "GET /costs/records": "Todos os registros (JSON)",
+      "GET /costs/records/csv": "Todos os registros (CSV)",
+      "POST /costs/persist": "Força persistência em disco",
+      "DELETE /costs/records": "Limpa registros em memória"
+    },
+    "persistence_file": "output/llm_usage_log.json",
+    "auto_persist_interval": "A cada 5 registros",
+    "data_source": "Tokens reais da API quando disponíveis (usage field), estimativa (4 chars/token) quando não"
+  }
+}

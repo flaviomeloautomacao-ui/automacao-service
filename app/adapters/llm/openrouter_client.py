@@ -41,6 +41,7 @@ from app.adapters.llm.prompts import (
     build_user_prompt,
 )
 from app.domain.errors import LLMError
+from app.infrastructure.llm_cost_tracker import CostTimer, get_tracker
 
 # ---------------------------------------------------------------------------
 # Exceções internas para retry
@@ -105,6 +106,10 @@ class OpenRouterClient:
         self._model = model
         self._timeout = timeout
         self._max_retries = max_retries
+        self._tracker = get_tracker()
+
+        # Contexto de tracking (setado externamente por quem chama)
+        self._tracking_context: dict[str, str] = {}
 
         logger.info(
             "OpenRouterClient inicializado | model={} | base_url={} | key={}",
@@ -112,6 +117,32 @@ class OpenRouterClient:
             self._base_url,
             _mask_key(self._api_key),
         )
+
+    def set_tracking_context(
+        self,
+        *,
+        flow: str = "",
+        step: str = "",
+        job_id: str = "",
+        equipment_name: str = "",
+    ) -> None:
+        """Define o contexto de tracking para as próximas chamadas.
+
+        Deve ser chamado antes de ``generate_sections`` ou ``call_chat``
+        para associar a chamada ao fluxo/job correto.
+
+        Args:
+            flow: Nome do fluxo (e.g. ``process_job``).
+            step: Etapa do fluxo (e.g. ``global_sections``).
+            job_id: ID do job.
+            equipment_name: Nome do equipamento.
+        """
+        self._tracking_context = {
+            "flow": flow,
+            "step": step,
+            "job_id": job_id,
+            "equipment_name": equipment_name,
+        }
 
     # ------------------------------------------------------------------
     # Método público — porta LLMPort
@@ -297,31 +328,104 @@ class OpenRouterClient:
                     detail=str(data)[:500],
                 )
 
+            # ── Capturar usage da API para tracking de custo ────
+            api_usage = data.get("usage")
+
             logger.debug(
                 "Resposta recebida | status={} | content_len={}",
                 status,
                 len(content),
             )
-            return content
+            return content, api_usage
 
+        ctx = self._tracking_context
+        timer = CostTimer()
         try:
-            return await _do_request()
+            with timer:
+                result_tuple = await _do_request()
+            content_result, api_usage = result_tuple
+
+            # ── Registrar uso com sucesso ─────────────────────
+            self._tracker.record_generation(
+                flow=ctx.get("flow", "unknown"),
+                step=ctx.get("step", "unknown"),
+                provider="openrouter",
+                model=self._model,
+                prompt_text=system_prompt + user_prompt,
+                response_text=content_result,
+                duration_ms=timer.duration_ms,
+                success=True,
+                job_id=ctx.get("job_id", ""),
+                equipment_name=ctx.get("equipment_name", ""),
+                api_usage=api_usage,
+                tokens_source="api" if api_usage else "estimate",
+            )
+            return content_result
+
         except _RetryableHTTPError as exc:
+            self._tracker.record_generation(
+                flow=ctx.get("flow", "unknown"),
+                step=ctx.get("step", "unknown"),
+                provider="openrouter",
+                model=self._model,
+                prompt_text=system_prompt + user_prompt,
+                duration_ms=timer.duration_ms,
+                success=False,
+                error_message=str(exc),
+                job_id=ctx.get("job_id", ""),
+                equipment_name=ctx.get("equipment_name", ""),
+            )
             raise LLMError(
                 "OpenRouter indisponível após retries.",
                 detail=str(exc),
             ) from exc
         except RetryError as exc:
+            self._tracker.record_generation(
+                flow=ctx.get("flow", "unknown"),
+                step=ctx.get("step", "unknown"),
+                provider="openrouter",
+                model=self._model,
+                prompt_text=system_prompt + user_prompt,
+                duration_ms=timer.duration_ms,
+                success=False,
+                error_message=str(exc),
+                job_id=ctx.get("job_id", ""),
+                equipment_name=ctx.get("equipment_name", ""),
+            )
             raise LLMError(
                 "OpenRouter indisponível após retries.",
                 detail=str(exc),
             ) from exc
         except httpx.TimeoutException as exc:
+            self._tracker.record_generation(
+                flow=ctx.get("flow", "unknown"),
+                step=ctx.get("step", "unknown"),
+                provider="openrouter",
+                model=self._model,
+                prompt_text=system_prompt + user_prompt,
+                duration_ms=timer.duration_ms,
+                success=False,
+                error_message=str(exc),
+                job_id=ctx.get("job_id", ""),
+                equipment_name=ctx.get("equipment_name", ""),
+            )
             raise LLMError(
                 f"Timeout ao chamar OpenRouter ({self._timeout}s).",
                 detail=str(exc),
             ) from exc
         except httpx.HTTPError as exc:
+            self._tracker.record_generation(
+                flow=ctx.get("flow", "unknown"),
+                step=ctx.get("step", "unknown"),
+                provider="openrouter",
+                model=self._model,
+                prompt_text=system_prompt + user_prompt,
+                duration_ms=timer.duration_ms,
+                success=False,
+                error_message=str(exc),
+                job_id=ctx.get("job_id", ""),
+                equipment_name=ctx.get("equipment_name", ""),
+            )
             raise LLMError(
                 "Erro de rede ao chamar OpenRouter.",
                 detail=str(exc),

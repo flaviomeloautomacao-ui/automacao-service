@@ -149,12 +149,31 @@ def build_equipment_user_prompt(
 
     # ── Instrução final ───────────────────────────────────────────
     sections.append("")
-    sections.append(
-        "Analise SOMENTE este equipamento. "
-        "Gere recomendações técnicas numeradas e justificativas técnicas numeradas, "
-        "fundamentadas nos perigos, consequências e classificação de risco apresentados. "
-        "As recomendações devem ir além das medidas existentes e usar as medidas a implementar como orientação."
-    )
+
+    if all_normative:
+        # Instrução reforçada quando há contexto normativo recuperado
+        sections.append(
+            "Analise SOMENTE este equipamento. "
+            "Gere recomendações técnicas numeradas e justificativas técnicas numeradas, "
+            "fundamentadas nos perigos, consequências e classificação de risco apresentados. "
+            "As recomendações devem ir além das medidas existentes e usar as medidas a implementar como orientação."
+        )
+        sections.append("")
+        sections.append(
+            "REGRAS DE REFERÊNCIA NORMATIVA:\n"
+            "• Use PRIORITARIAMENTE os trechos normativos recuperados acima como base para as recomendações e justificativas.\n"
+            "• Em \"norma_referencia\", cite a norma exatamente como aparece no campo fonte dos trechos acima (ex.: o título do documento).\n"
+            "• NÃO invente norma, seção ou obrigação técnica que não esteja suportada pelos trechos normativos fornecidos ou pela lista de normas aplicáveis.\n"
+            "• Quando o contexto normativo recuperado não for suficiente para uma recomendação, use uma das normas da lista de Normas Aplicáveis e indique isso claramente.\n"
+            "• Cada justificativa deve referenciar ao menos um dos trechos normativos fornecidos, quando disponível."
+        )
+    else:
+        sections.append(
+            "Analise SOMENTE este equipamento. "
+            "Gere recomendações técnicas numeradas e justificativas técnicas numeradas, "
+            "fundamentadas nos perigos, consequências e classificação de risco apresentados. "
+            "As recomendações devem ir além das medidas existentes e usar as medidas a implementar como orientação."
+        )
     sections.append("")
     sections.append("Responda EXCLUSIVAMENTE com o JSON no formato abaixo:")
     sections.append(

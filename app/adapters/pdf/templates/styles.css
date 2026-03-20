@@ -464,22 +464,39 @@ table.risk-matrix {
 /* Imagens com legenda */
 .equipment-images {
     margin: 0.8em 0;
+    width: 100%;
+    font-size: 0; /* remove inline-block whitespace */
+}
+
+.equipment-images::after {
+    content: "";
+    display: block;
+    clear: both;
 }
 
 .equipment-photo {
     display: inline-block;
-    margin-right: 10px;
-    margin-bottom: 10px;
+    vertical-align: top;
     text-align: center;
+    box-sizing: border-box;
+    font-size: 10pt; /* restore font-size */
 }
+
+/* Larguras dinâmicas por quantidade de imagens */
+.equipment-photo.photo-count-1 { width: 100%; }
+.equipment-photo.photo-count-2 { width: 49%; margin-right: 1%; }
+.equipment-photo.photo-count-3 { width: 32%; margin-right: 1%; }
+.equipment-photo.photo-count-4 { width: 49%; margin-right: 1%; margin-bottom: 10px; }
 
 .equipment-photo img {
     display: block;
-    max-width: 460px;
     width: 100%;
+    max-height: 400px;
+    object-fit: contain;
     height: auto;
     border: 1px solid #ccc;
     padding: 2px;
+    box-sizing: border-box;
 }
 
 .equipment-photo .photo-caption {

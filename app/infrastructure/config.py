@@ -59,6 +59,16 @@ class Settings(BaseSettings):
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     LLM_MODEL: str = "openai/gpt-4o"
 
+    # ── RAG / Embedding (normas ABNT) ───────────────────────────
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_BASE_URL: str = "https://api.openai.com/v1"
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    RAG_ENABLED: bool = True
+    RAG_TOP_K: int = 8
+    RAG_MAX_CHUNKS: int = 5
+    RAG_MIN_SCORE: float = 0.15
+    RAG_NORM_TABLE: str = "konis_db"
+
     # ── Dev / Teste ─────────────────────────────────────────────
     DEVLLM: bool = False
 

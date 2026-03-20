@@ -696,11 +696,13 @@
     {# 4.x.2 Registro fotográfico #}
     {% if eq.images %}
     <h4>{{ sec_equip }}.{{ eq.index }}.2 Registro fotográfico</h4>
+    {% set visible_images = eq.images[:4] %}
+    {% set img_count = visible_images | length %}
     <div class="equipment-images">
       {% set global_photo_ns = namespace(counter=0) %}
-      {% for img in eq.images[:4] %}
+      {% for img in visible_images %}
         {% set global_photo_ns.counter = global_photo_ns.counter + 1 %}
-        <div class="equipment-photo">
+        <div class="equipment-photo photo-count-{{ img_count }}">
           <img src="{{ img.secure_url }}"
                alt="Foto do equipamento {{ eq.nome }}" />
           <p class="photo-caption">
@@ -710,6 +712,7 @@
         </div>
       {% endfor %}
     </div>
+    <div style="clear: both;"></div>
     {% endif %}
 
     {# 4.x.3 Identificação dos perigos #}

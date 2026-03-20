@@ -22,7 +22,7 @@ from __future__ import annotations
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
@@ -39,6 +39,10 @@ from app.domain.services.equipment_prompt_context import (
 from app.domain.services.equipment_narrative_generator import (
     generate_all_equipment_narratives,
 )
+from app.infrastructure.llm_cost_tracker import get_tracker
+
+if TYPE_CHECKING:
+    from app.adapters.norms.abnt_retriever import ABNTRetriever
 
 
 class ProcessJobUseCase:
@@ -50,6 +54,7 @@ class ProcessJobUseCase:
     Args:
         job_repo: Repositório de jobs/steps.
         upload_use_case: Caso de uso original de processamento.
+        abnt_retriever: Retriever de normas ABNT (opcional — RAG vetorial).
     """
 
     def __init__(
@@ -57,9 +62,11 @@ class ProcessJobUseCase:
         *,
         job_repo: JobRepository,
         upload_use_case: ProcessUploadUseCase,
+        abnt_retriever: "ABNTRetriever | None" = None,
     ) -> None:
         self._job_repo = job_repo
         self._uc = upload_use_case
+        self._abnt_retriever = abnt_retriever
 
     async def execute(
         self,
@@ -165,13 +172,69 @@ class ProcessJobUseCase:
                 grouped_equipment, report_equipments
             )
 
-            # 2f) Constrói payloads LLM per-equipment (validados + bounded)
+            # 2f) Recupera contexto normativo ABNT via RAG (se disponível)
+            normative_contexts = None
+            if self._abnt_retriever is not None:
+                try:
+                    logger.info(
+                        "Job {} | RAG normativo — iniciando retrieval para {} equipamentos | profile={}",
+                        job_id,
+                        len(equipment_contexts),
+                        profile,
+                    )
+                    await self._job_repo.update_job(
+                        job_id,
+                        progress=26,
+                        current_step="Recuperando normas ABNT relevantes…",
+                    )
+
+                    # ── Setar contexto de tracking no embedding provider ──
+                    if hasattr(self._abnt_retriever, '_embedding') and hasattr(self._abnt_retriever._embedding, 'set_tracking_context'):
+                        self._abnt_retriever._embedding.set_tracking_context(
+                            flow="process_job",
+                            step="rag_embedding",
+                            job_id=job_id,
+                        )
+
+                    normative_contexts = await self._abnt_retriever.retrieve_for_all_equipments(
+                        equipment_contexts,
+                        profile=profile,
+                    )
+                    equips_com_ctx = sum(1 for v in normative_contexts.values() if v)
+                    total_excerpts = sum(len(v) for v in normative_contexts.values())
+                    logger.info(
+                        "Job {} | RAG normativo — concluído | {}/{} equipamentos com contexto | "
+                        "total_excerpts={}",
+                        job_id,
+                        equips_com_ctx,
+                        len(equipment_contexts),
+                        total_excerpts,
+                    )
+                    if not normative_contexts:
+                        logger.warning(
+                            "Job {} | RAG normativo — nenhum contexto recuperado para nenhum equipamento",
+                            job_id,
+                        )
+                except Exception:
+                    logger.exception(
+                        "Job {} | RAG normativo — ERRO — continuando pipeline sem contexto normativo",
+                        job_id,
+                    )
+                    normative_contexts = None
+            else:
+                logger.info(
+                    "Job {} | RAG normativo — desabilitado (retriever não configurado)",
+                    job_id,
+                )
+
+            # 2g) Constrói payloads LLM per-equipment (validados + bounded)
             from app.adapters.llm.prompts import get_profile_config  # noqa: PLC0415
 
             profile_cfg = get_profile_config(profile)
             equipment_llm_inputs = build_all_equipment_prompt_contexts(
                 equipment_contexts,
                 normas_aplicaveis=profile_cfg["normas_principais"],
+                normative_contexts=normative_contexts,
             )
             logger.info(
                 "Job {} | EquipmentLLMInputs construídos | total={}",
@@ -201,6 +264,14 @@ class ProcessJobUseCase:
             )
 
             # 3a) Seções globais (introdução, metodologia, conclusão)
+            # ── Setar contexto de tracking no LLM client ──
+            if hasattr(self._uc._llm, 'set_tracking_context'):
+                self._uc._llm.set_tracking_context(
+                    flow="process_job",
+                    step="global_sections",
+                    job_id=job_id,
+                )
+
             llm_sections = await self._uc._generate_llm_sections(
                 rows_dicts,
                 company_metadata,
@@ -230,6 +301,12 @@ class ProcessJobUseCase:
 
             llm_client = self._uc._llm
             if isinstance(llm_client, OpenRouterClient):
+                # ── Setar contexto de tracking para per-equipment ──
+                llm_client.set_tracking_context(
+                    flow="process_job",
+                    step="per_equipment_narrative",
+                    job_id=job_id,
+                )
                 llm_call_fn = llm_client.call_chat
             else:
                 # Fallback: wrap generate_sections (shouldn't happen in prod)
@@ -259,6 +336,21 @@ class ProcessJobUseCase:
                 len(equipment_generation_results),
                 sum(1 for r in equipment_generation_results if r.source == "fallback"),
             )
+
+            # ── Persistir tracking de custos e registrar log final ──
+            cost_tracker = get_tracker()
+            cost_tracker.persist_now()
+            job_records = [r for r in cost_tracker.records if r.job_id == job_id]
+            if job_records:
+                total_cost = sum(r.estimated_cost_usd for r in job_records)
+                total_calls = len(job_records)
+                gen_calls = sum(1 for r in job_records if r.call_type == "generation")
+                emb_calls = sum(1 for r in job_records if r.call_type == "embedding")
+                logger.info(
+                    "Job {} | LLM_COST RESUMO | chamadas={} (gen={}, emb={}) | "
+                    "custo_total=${:.6f}",
+                    job_id, total_calls, gen_calls, emb_calls, total_cost,
+                )
 
             await self._job_repo.complete_step(job_id, "llm_analysis")
             await self._job_repo.update_job(
