@@ -342,6 +342,19 @@ class JobRepository:
                 "registro_profissional": report.registro_profissional,
                 "observacoes_gerais": report.observacoes_gerais,
                 "observacoes_gerais_prompt": report.observacoes_gerais_prompt,
+                # ── Novos campos (Fase 4) ──
+                "cover_image_url": report.cover_image_url,
+                "art_numero": report.art_numero,
+                "codigo_documento": report.codigo_documento,
+                "revisions": [
+                    {
+                        "version": rev.version,
+                        "date": rev.date,
+                        "author": rev.author,
+                        "description": rev.description,
+                    }
+                    for rev in sorted(report.revisions, key=lambda r: r.version)
+                ],
             }
         except Exception as exc:
             raise DBError(

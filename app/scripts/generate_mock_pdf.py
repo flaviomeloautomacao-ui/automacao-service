@@ -49,13 +49,13 @@ def _build_metadata() -> dict:
         "revisao": "00",
         "art_numero": "SC20260001234567",
         "data_emissao": "15/02/2026",
-        "revisoes": [
+        "cover_image_url": None,  # Sem imagem de capa no mock (fallback)
+        "revisions": [
             {
-                "revisao": "00",
-                "data": "15/02/2026",
-                "autor": "Konis Safety Engenharia",
-                "revisor": "Eng. Roberto M. Nascimento",
-                "descricao": "Emissão inicial",
+                "version": "00",
+                "date": "15/02/2026",
+                "author": "Konis Safety Engenharia",
+                "description": "Emissão inicial",
             },
         ],
     }

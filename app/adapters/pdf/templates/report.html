@@ -20,6 +20,7 @@
     {{ metadata.codigo_documento | default("") }}
     {% if metadata.revisao %} — Rev. {{ metadata.revisao }}{% endif %}
   </span>
+  <span class="running-header-page"></span>
 </div>
 
 
@@ -117,10 +118,44 @@
       </tbody>
     </table>
 
+    {% if metadata.cover_image_url %}
+    <div class="cover-image">
+      <img src="{{ metadata.cover_image_url }}" alt="Imagem de capa do relatório" />
+    </div>
+    {% endif %}
+
     <div class="cover-footer">
       <p>Gerado em: {{ metadata.data_geracao | default("—") }}</p>
     </div>
   </div>
+</div>
+
+
+{# ====================================================================
+   CONTROLE DE REVISÃO DO DOCUMENTO
+   Espaço vazio para preenchimento manual (correções futuras)
+   ==================================================================== #}
+<div class="revision-control">
+  <h2 style="border-bottom: none; text-align: center; font-size: 14pt; letter-spacing: 0.5px; margin-bottom: 1em;">
+    CONTROLE DE REVISÃO DO DOCUMENTO
+  </h2>
+  <table class="revision-table">
+    <thead>
+      <tr>
+        <th style="width: 12%">Revisão</th>
+        <th style="width: 18%">Data</th>
+        <th style="width: 30%">Responsável</th>
+        <th style="width: 40%">Descrição da Alteração</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+    </tbody>
+  </table>
 </div>
 
 
@@ -130,7 +165,7 @@
 <div class="apresentacao-section">
 
   <h2 style="border-bottom: none; text-align: center; font-size: 14pt; letter-spacing: 0.5px; line-height: 1.35;">
-    KONIS EX — APRESENTAÇÃO TÉCNICA E<br/>IMPORTÂNCIA DOS SERVIÇOS
+    KONIS EX – APRESENTAÇÃO TÉCNICA E<br/>IMPORTÂNCIA DOS SERVIÇOS
   </h2>
 
   <p>
@@ -152,7 +187,7 @@
     processo e aos materiais manuseados:
   </p>
 
-  <h4 class="apresentacao-h4">1.1 DUST HAZARD ANALYSIS (DHA) — POEIRAS COMBUSTÍVEIS</h4>
+  <h4 class="apresentacao-h4">1.1 DUST HAZARD ANALYSIS (DHA) – POEIRAS COMBUSTÍVEIS</h4>
   <p>
     Elaboração de DHA por área e por equipamento, com identificação de cenários de risco,
     fontes de ignição, condições de formação de nuvem de poeira, potencial de propagação e
@@ -160,12 +195,12 @@
   </p>
   <ul class="detail-list">
     <li>Caracterização do perigo (propriedades de explosividade e combustibilidade do pó, quando disponíveis);</li>
-    <li>Avaliação qualitativa/semiquantitativa de risco (probabilidade × severidade);</li>
+    <li>Avaliação qualitativa/semiquantitativa de risco (probabilidade x severidade);</li>
     <li>Definição de recomendações de prevenção (redução de emissões fugitivas, housekeeping, controle de fontes de ignição, medidas de manutenção e operação);</li>
-    <li>Definição de requisitos de mitigação (proteção contra explosão) quando tecnicamente aplicável.</li>
+    <li>Definição de requisitos de mitigação (proteção contraexplosão) quando tecnicamente aplicável.</li>
   </ul>
 
-  <h4 class="apresentacao-h4">1.2 CLASSIFICAÇÃO DE ÁREAS — ATMOSFERAS EXPLOSIVAS (GASES/VAPORES E POEIRAS)</h4>
+  <h4 class="apresentacao-h4">1.2 CLASSIFICAÇÃO DE ÁREAS – ATMOSFERAS EXPLOSIVAS (GASES/VAPORES E POEIRAS)</h4>
   <p>
     Desenvolvimento de estudos e documentos de classificação de áreas, incluindo
     critérios de liberação, grau e disponibilidade de ventilação, extensão de zonas e diretrizes
@@ -177,7 +212,7 @@
     <li>Recomendações para adequação de equipamentos e instalações.</li>
   </ul>
 
-  <h4 class="apresentacao-h4">1.3 ESPECIFICAÇÃO E DIMENSIONAMENTO DE SISTEMAS DE PROTEÇÃO CONTRA EXPLOSÃO</h4>
+  <h4 class="apresentacao-h4">1.3 ESPECIFICAÇÃO E DIMENSIONAMENTO DE SISTEMAS DE PROTEÇÃO CONTRAEXPLOSÃO</h4>
   <p>
     Definição técnica de medidas de mitigação para equipamentos e sistemas de
     processo, conforme viabilidade de aplicação e características de processo/volume,
@@ -195,7 +230,7 @@
   <p>Recomendações e suporte técnico para:</p>
   <ul class="detail-list">
     <li>Controle de ignição (superaquecimento, atrito, faíscas mecânicas, eletricidade estática, falhas elétricas, trabalhos a quente);</li>
-    <li>Melhorias de aspiração/ventilação local exaustora e controle de poeira;</li>
+    <li>Melhorias de aspiração/ventilação local exaustor e controle de poeira;</li>
     <li>Adequações de housekeeping, procedimentos e manutenção preventiva/preditiva;</li>
     <li>Requisitos de aterramento, equipotencialização e seleção de materiais quando aplicável.</li>
   </ul>
@@ -217,17 +252,285 @@
     <li>Aumento da confiabilidade operacional e redução de perdas por paradas e incidentes.</li>
   </ul>
 
-  {# ---------- 3. RESULTADO ESPERADO ---------- #}
-  <h3 class="apresentacao-h3">3. RESULTADO ESPERADO</h3>
+  {# ---------- 3. MATRIZ DE RISCO: SEVERIDADE X PROBABILIDADE ---------- #}
+  <h3 class="apresentacao-h3">3. MATRIZ DE RISCO: SEVERIDADE X PROBABILIDADE</h3>
+
+  <h4 class="apresentacao-h4">3.1 OBJETIVO</h4>
+  <p>
+    Apresentar a matriz de cruzamento entre Severidade e Probabilidade (QUADRO 1), com três
+    categorias para cada parâmetro (Alta, Média e Baixa), e explicar o significado do resultado
+    obtido, para avaliação e interpretação dos resultados.
+  </p>
+
+  <h4 class="apresentacao-h4">3.2 MATRIZ DE CRUZAMENTO</h4>
+  <p><strong>Quadro 1 – Matriz de Severidade e Probabilidade</strong></p>
+
+  <table class="risk-matrix-3x3">
+    <thead>
+      <tr>
+        <th>Severidade \ Probabilidade</th>
+        <th>Baixa</th>
+        <th>Média</th>
+        <th>Alta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>Baixa</th>
+        <td class="risk-3x3-baixo">Baixo</td>
+        <td class="risk-3x3-baixo">Baixo</td>
+        <td class="risk-3x3-medio">Médio</td>
+      </tr>
+      <tr>
+        <th>Média</th>
+        <td class="risk-3x3-baixo">Baixo</td>
+        <td class="risk-3x3-medio">Médio</td>
+        <td class="risk-3x3-alto">Alto</td>
+      </tr>
+      <tr>
+        <th>Alta</th>
+        <td class="risk-3x3-medio">Médio</td>
+        <td class="risk-3x3-alto">Alto</td>
+        <td class="risk-3x3-alto">Alto</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h5 class="apresentacao-h5">3.2.1 Lógica da matriz</h5>
+
+  <p>
+    A <strong>Severidade</strong> representa a intensidade das consequências caso a explosão ocorra.
+    Para essa categorização, considera-se a violência da explosão e os impactos que ela pode causar
+    em pessoas, equipamentos, estrutura, processo e continuidade operacional.
+  </p>
+  <p>
+    A severidade também é influenciada pela existência de sistemas de proteção contraexplosão.
+    Quando o equipamento possui proteção adequada, os efeitos da explosão tendem a ser controlados
+    e a severidade do cenário é reduzida. Na ausência dessas medidas, ou quando são insuficientes,
+    a severidade aumenta.
+  </p>
+  <ul class="detail-list">
+    <li><strong>Baixa:</strong> impactos limitados e controlados, com menor potencial de dano.</li>
+    <li><strong>Média:</strong> impactos relevantes, porém com algum nível de controle ou limitação das consequências.</li>
+    <li><strong>Alta:</strong> impactos severos sobre pessoas, instalações e operação, especialmente em cenários sem proteção adequada ou com potencial de propagação.</li>
+  </ul>
+
+  <p>
+    Quando esses meios de prevenção estão presentes e funcionando adequadamente, a probabilidade
+    da explosão é classificada como baixa. Quando existe apenas parte dessas medidas, ou quando os
+    controles existentes reduzem o risco apenas de forma parcial, a probabilidade pode ser classificada
+    como média. Quando há poucos controles relevantes, ou nenhum controle efetivo, a probabilidade é
+    classificada como alta.
+  </p>
+  <p>
+    Em elevadores, por exemplo, são considerados itens como sensores de subvelocidade, monitoramento
+    de velocidade, sensores de temperatura, detecção de embuchamento, uso de canecas plásticas quando
+    aplicável ao critério adotado, sistema de aterramento adequado e aspiração de pó no pé, na cabeça
+    e no corpo do equipamento.
+  </p>
+  <p>
+    A <strong>Probabilidade</strong> representa a chance de a explosão acontecer. Para essa definição,
+    avalia-se a presença e a qualidade dos meios de prevenção de explosão existentes no equipamento e no processo.
+  </p>
+  <p>
+    Logicamente, temos que ter os cinco componentes da explosão de poeira.
+  </p>
+  <p>
+    Os cinco componentes da explosão de poeira formam o chamado <strong>pentágono da explosão</strong>:
+  </p>
+  <ul class="detail-list">
+    <li><strong>Poeira combustível</strong> — É o material particulado que pode queimar rapidamente, como pó de grãos, açúcar, farinha, amido, madeira, carvão, entre outros.</li>
+    <li><strong>Oxigênio</strong> — Normalmente vem do ar atmosférico. Sem oxigênio suficiente, a combustão não se sustenta.</li>
+    <li><strong>Fonte de ignição</strong> — É o que dá início à combustão, como centelha, faísca mecânica, superfície quente, atrito, eletricidade estática ou equipamento superaquecido.</li>
+    <li><strong>Dispersão da poeira em nuvem</strong> — A poeira precisa estar suspensa no ar em concentração perigosa. Poeira acumulada no chão não explode da mesma forma que poeira dispersa em nuvem.</li>
+    <li><strong>Confinamento</strong> — A explosão de poeira normalmente ganha força quando acontece dentro de um espaço confinado ou parcialmente confinado, como elevadores, filtros, silos, transportadores, moegas e equipamentos de processo.</li>
+  </ul>
+  <p>
+    Para ocorrer uma explosão de poeira, não basta existir apenas poeira combustível. É preciso que esses
+    cinco elementos estejam presentes ao mesmo tempo. Se faltar um deles, a explosão não acontece.
+  </p>
+  <p>
+    <strong>Exemplo prático</strong> — em um elevador de grãos, pode haver:
+  </p>
+  <ul class="detail-list">
+    <li>poeira combustível do produto,</li>
+    <li>oxigênio do ar,</li>
+    <li>uma fonte de ignição, como aquecimento ou desalinhamento,</li>
+    <li>poeira dispersa pela movimentação,</li>
+    <li>e confinamento no corpo do elevador.</li>
+  </ul>
+  <p>
+    Por isso esse tipo de equipamento exige tanta atenção em prevenção e proteção contraexplosão.
+  </p>
+
+  {# ---------- 3.3 COMO INTERPRETAR OS RESULTADOS ---------- #}
+  <h4 class="apresentacao-h4">3.3 COMO INTERPRETAR OS RESULTADOS NA PRÁTICA</h4>
+
+  <h5 class="apresentacao-h5">3.3.1 Severidade</h5>
+  <p>
+    Se o equipamento possui medidas de proteção contraexplosão, como alívio, supressão, isolamento
+    ou outras barreiras eficazes, a consequência do evento tende a ser controlada, reduzindo a severidade
+    atribuída ao cenário. No sentido oposto, quando essas proteções não existem, a severidade sobe,
+    porque os efeitos da explosão podem atingir mais áreas, mais pessoas e causar danos maiores.
+  </p>
+  <p>
+    Na prática, a severidade responde à pergunta: <em>"Se a explosão acontecer, qual será a força do
+    evento e quem ou o que pode ser impactado?"</em>.
+  </p>
+
+  <h5 class="apresentacao-h5">3.3.2 Probabilidade</h5>
+  <p>Ela responde à pergunta:</p>
+  <p>
+    <em>"Quão fácil ou frequente é formar uma atmosfera explosiva e aparecer uma fonte de ignição?"</em>.
+    Em outras palavras, a probabilidade aumenta quando:
+  </p>
+  <ul class="detail-list">
+    <li>há poeira combustível,</li>
+    <li>essa poeira fica suspensa no ar,</li>
+    <li>existe chance de faísca, calor ou atrito,</li>
+    <li>e faltam controles para evitar ou detectar isso.</li>
+  </ul>
+  <p>
+    Por exemplo, o elevador de canecas já é um equipamento mais crítico porque trabalha com:
+    poeira combustível, movimentação constante, atrito mecânico e ambiente confinado.
+  </p>
+  <p>
+    Por isso, quando faltam meios de prevenção, a probabilidade de explosão aumenta. Por exemplo, se não houver:
+  </p>
+  <ul class="detail-list">
+    <li>sensor de temperatura,</li>
+    <li>sensor de subvelocidade,</li>
+    <li>sensor de embuchamento,</li>
+    <li>monitor de desalinhamento,</li>
+    <li>captação de pó,</li>
+    <li>equipamentos Ex,</li>
+  </ul>
+  <p>O risco aumenta porque fica mais fácil acontecer:</p>
+  <ul class="detail-list">
+    <li>aquecimento,</li>
+    <li>atrito,</li>
+    <li>travamento,</li>
+    <li>acúmulo de pó,</li>
+    <li>nuvem de poeira,</li>
+    <li>e uma ignição sem ser percebida a tempo.</li>
+  </ul>
+  <p>
+    No elevador de canecas, essa chance aumenta quando o equipamento opera sem monitoramento
+    e sem prevenção, porque os desvios deixam de ser detectados e a poeira com ignição pode
+    evoluir para explosão.
+  </p>
+
+  {# ---------- 3.4 CLASSIFICAÇÃO DO RISCO ---------- #}
+  <h4 class="apresentacao-h4">3.4 CLASSIFICAÇÃO DO RISCO</h4>
+
+  <p>
+    <strong>Baixo:</strong> Indica uma condição de risco reduzido, resultante da combinação de severidade
+    e probabilidade baixas, ou de uma delas em nível moderado com baixa chance de ocorrência. Mesmo
+    sendo classificado como baixo, o cenário deve permanecer sob controle e monitoramento.
+  </p>
+  <p>
+    <strong>Médio:</strong> Indica uma condição de atenção, em que existe potencial relevante de impacto
+    ou uma chance de ocorrência que não pode ser ignorada. Esse resultado mostra que o cenário precisa
+    de medidas de controle, acompanhamento e, quando aplicável, ações de melhoria para redução do risco.
+  </p>
+  <p>
+    <strong>Alto:</strong> Indica uma condição crítica, em que a combinação entre severidade e probabilidade
+    representa risco significativo para pessoas, processo, equipamentos e continuidade operacional. Esse
+    resultado exige prioridade na implementação de medidas preventivas e corretivas, visando reduzir a
+    probabilidade de ocorrência e/ou a severidade das consequências.
+  </p>
+
+  <h5 class="apresentacao-h5">3.4.1 Interpretação dos cruzamentos</h5>
+  <ul class="detail-list">
+    <li>Baixa severidade + Baixa probabilidade = <strong>Baixo</strong></li>
+    <li>Baixa severidade + Média probabilidade = <strong>Baixo</strong></li>
+    <li>Baixa severidade + Alta probabilidade = <strong>Médio</strong></li>
+    <li>Média severidade + Baixa probabilidade = <strong>Baixo</strong></li>
+    <li>Média severidade + Média probabilidade = <strong>Médio</strong></li>
+    <li>Média severidade + Alta probabilidade = <strong>Alto</strong></li>
+    <li>Alta severidade + Baixa probabilidade = <strong>Médio</strong></li>
+    <li>Alta severidade + Média probabilidade = <strong>Alto</strong></li>
+    <li>Alta severidade + Alta probabilidade = <strong>Alto</strong></li>
+  </ul>
+
+  {# ---------- 3.5 AVALIAÇÃO PÓS-IMPLEMENTAÇÃO ---------- #}
+  <h4 class="apresentacao-h4">3.5 AVALIAÇÃO PÓS-IMPLEMENTAÇÃO DAS RECOMENDAÇÕES</h4>
+
+  <p>
+    A avaliação pós-implementação corresponde à análise do risco residual esperado, considerando a
+    hipótese de implantação futura das recomendações propostas neste relatório.
+  </p>
+  <p>
+    Ressalta-se que, na data desta avaliação, os apontamentos e recomendações ainda não foram
+    implementados. Dessa forma, a classificação apresentada nesta etapa não representa a condição
+    atual da unidade, mas sim uma classificação futura estimada, elaborada a pedido da empresa, com
+    o objetivo de demonstrar a condição de risco esperada após a adoção dos ajustes recomendados.
+  </p>
+  <p>
+    Essa análise tem como finalidade indicar tecnicamente o potencial de redução de risco associado
+    à implementação das medidas propostas, permitindo visualizar o comportamento esperado do cenário
+    após a introdução de novas salvaguardas.
+  </p>
+  <p>
+    A implementação de medidas como sensores, intertravamentos, captação de pó, limpeza adequada,
+    remoção de materiais estranhos, controle de temperatura, manutenção preventiva, aterramento e
+    adequação de componentes reduz principalmente a <strong>probabilidade</strong>, pois dificulta a
+    formação simultânea de atmosfera explosiva e fonte de ignição.
+  </p>
+  <p>
+    Já a implementação de medidas como alívio de explosão, supressão, isolamento, abafadores de
+    chama e partículas e direcionamento da descarga para área segura reduz a <strong>severidade</strong>,
+    pois limita a propagação, a sobrepressão e a exposição de pessoas e ativos aos efeitos da explosão.
+  </p>
+  <p>
+    Assim, para fins de reclassificação pós-implementação, devem ser observados os seguintes princípios:
+  </p>
+  <ul class="detail-list">
+    <li>quando forem implementadas apenas medidas de prevenção, a tendência é ocorrer redução da probabilidade, podendo a severidade permanecer inalterada;</li>
+    <li>quando forem implementadas medidas de proteção/mitigação, a severidade pode ser reduzida, desde que as barreiras sejam tecnicamente adequadas ao cenário;</li>
+    <li>quando o processo continuar contendo pó combustível, oxidante, possibilidade de dispersão e confinamento, o perigo permanece existente, ainda que o risco tenha sido reduzido;</li>
+    <li>a classificação pós-implementação deve refletir a condição futura esperada, assumindo que as recomendações sejam efetivamente implantadas, mantidas e operadas de forma adequada.</li>
+  </ul>
+  <p>
+    Portanto, esta classificação pós-implementação deve ser entendida como uma projeção técnica de
+    risco futuro, elaborada com base nas melhorias recomendadas, e não como confirmação de que tais
+    medidas já se encontram instaladas ou em operação. Espera-se que, com a execução dos ajustes
+    propostos, haja redução dos danos potenciais e melhoria da condição de segurança do processo,
+    ainda que o perigo não seja integralmente eliminado.
+  </p>
+
+  {# ---------- 4. RESULTADO ESPERADO ---------- #}
+  <h3 class="apresentacao-h3">4. RESULTADO ESPERADO</h3>
 
   <p>
     Como resultado, a KONIS EX entrega documentação técnica rastreável (relatórios,
     planilhas, recomendações e especificações) e um conjunto de ações priorizadas que
     orientam o cliente na implementação de medidas de prevenção e proteção, promovendo
-    um ambiente industrial mais seguro, robusto e aderente às melhores práticas de engenharia.
+    um ambiente industrial mais seguro, robusto e aderente às melhores práticas de engenharia,
+    sob os documentos intitulados: <strong>{{ metadata.codigo_documento | default("—") }}</strong>
+    (este relatório) e a <strong>{{ metadata.filename | default("Planilha DHA") }}</strong>,
+    com suas versões atualizadas em <strong>{{ metadata.data_avaliacao | default("—") }}</strong>.
   </p>
 
 </div>
+
+
+{# ====================================================================
+   Variável de numeração de seções (depende se tem seção materiais)
+   ==================================================================== #}
+{% set sec_intro = 1 %}
+{% if profile_config.materiais_section | default(false) %}
+  {% set sec_materiais = sec_intro + 1 %}
+  {% set sec_metodo = sec_materiais + 1 %}
+{% else %}
+  {% set sec_metodo = sec_intro + 1 %}
+{% endif %}
+{% set sec_equip = sec_metodo + 1 %}
+{% set sec_recomendacoes = sec_equip + 1 %}
+{% set sec_classif = sec_recomendacoes + 1 %}
+{% set sec_conclusao = sec_classif + 1 %}
+{% set sec_refs = sec_conclusao + 1 %}
+{% set sec_encerramento = sec_refs + 1 %}
 
 
 {# ====================================================================
@@ -237,48 +540,42 @@
   <h2 class="toc-title">SUMÁRIO</h2>
 
   <ul class="toc-list">
-    <li><span class="toc-number">1.</span> Introdução</li>
-    <li class="toc-sub"><span class="toc-number">1.1.</span> Objetivo</li>
+    <li><a class="toc-link" href="#sec-intro"><span class="toc-number">{{ sec_intro }}.</span> Introdução</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-intro-objetivo"><span class="toc-number">{{ sec_intro }}.1.</span> Objetivo</a></li>
 
     {% if profile_config.materiais_section | default(false) %}
-    <li><span class="toc-number">2.</span> Caracterização dos Materiais Combustíveis</li>
-    <li class="toc-sub"><span class="toc-number">2.1.</span> Materiais Presentes na Unidade</li>
-    <li class="toc-sub"><span class="toc-number">2.2.</span> Propriedades Típicas de Explosividade</li>
-    <li class="toc-sub"><span class="toc-number">2.3.</span> Considerações Técnicas</li>
-    <li class="toc-sub"><span class="toc-number">2.4.</span> Conclusão Técnica</li>
-    <li><span class="toc-number">3.</span> Metodologia Aplicada à Avaliação</li>
-    <li class="toc-sub"><span class="toc-number">3.1.</span> Visão Geral do Método</li>
-    <li class="toc-sub"><span class="toc-number">3.2.</span> Critérios de Severidade</li>
-    <li class="toc-sub"><span class="toc-number">3.3.</span> Critérios de Probabilidade</li>
-    <li class="toc-sub"><span class="toc-number">3.4.</span> Matriz de Risco</li>
-    <li class="toc-sub"><span class="toc-number">3.5.</span> Etapas da Avaliação</li>
-    <li><span class="toc-number">4.</span> Análise Técnica Individual — Equipamentos</li>
+    <li><a class="toc-link" href="#sec-materiais"><span class="toc-number">{{ sec_materiais }}.</span> Caracterização dos Materiais Combustíveis</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-materiais-1"><span class="toc-number">{{ sec_materiais }}.1.</span> Materiais Presentes na Unidade</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-materiais-2"><span class="toc-number">{{ sec_materiais }}.2.</span> Propriedades Típicas de Explosividade</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-materiais-3"><span class="toc-number">{{ sec_materiais }}.3.</span> Considerações Técnicas</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-materiais-4"><span class="toc-number">{{ sec_materiais }}.4.</span> Conclusão Técnica</a></li>
+    <li><a class="toc-link" href="#sec-metodo"><span class="toc-number">{{ sec_metodo }}.</span> Metodologia Aplicada à Avaliação</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-metodo-1"><span class="toc-number">{{ sec_metodo }}.1.</span> Visão Geral do Método</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-metodo-2"><span class="toc-number">{{ sec_metodo }}.2.</span> Etapas da Avaliação</a></li>
+    <li><a class="toc-link" href="#sec-equip"><span class="toc-number">{{ sec_equip }}.</span> Análise Técnica Individual — Equipamentos</a></li>
     {% for eq in equipments %}
-    <li class="toc-sub"><span class="toc-number">4.{{ eq.index }}.</span> {{ eq.nome }}</li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-equip-{{ eq.index }}"><span class="toc-number">{{ sec_equip }}.{{ eq.index }}.</span> {{ eq.nome }}</a></li>
     {% endfor %}
-    <li><span class="toc-number">5.</span> Recomendações Consolidadas</li>
-    <li><span class="toc-number">6.</span> Classificação de Risco Geral</li>
-    <li><span class="toc-number">7.</span> Conclusão Geral</li>
-    <li><span class="toc-number">8.</span> Referências Normativas</li>
-    <li><span class="toc-number">9.</span> Encerramento</li>
-    <li><span class="toc-number">A.</span> Anexo — Inventário Completo de Riscos</li>
+    <li><a class="toc-link" href="#sec-recomendacoes"><span class="toc-number">{{ sec_recomendacoes }}.</span> Recomendações Consolidadas</a></li>
+    <li><a class="toc-link" href="#sec-classif"><span class="toc-number">{{ sec_classif }}.</span> Classificação de Risco Geral</a></li>
+    <li><a class="toc-link" href="#sec-conclusao"><span class="toc-number">{{ sec_conclusao }}.</span> Conclusão Geral</a></li>
+    <li><a class="toc-link" href="#sec-refs"><span class="toc-number">{{ sec_refs }}.</span> Referências Normativas</a></li>
+    <li><a class="toc-link" href="#sec-encerramento"><span class="toc-number">{{ sec_encerramento }}.</span> Encerramento</a></li>
+    <li><a class="toc-link" href="#sec-anexo"><span class="toc-number">A.</span> Anexo — Inventário Completo de Riscos</a></li>
     {% else %}
-    <li><span class="toc-number">2.</span> Metodologia Aplicada à Avaliação</li>
-    <li class="toc-sub"><span class="toc-number">2.1.</span> Visão Geral do Método</li>
-    <li class="toc-sub"><span class="toc-number">2.2.</span> Critérios de Severidade</li>
-    <li class="toc-sub"><span class="toc-number">2.3.</span> Critérios de Probabilidade</li>
-    <li class="toc-sub"><span class="toc-number">2.4.</span> Matriz de Risco</li>
-    <li class="toc-sub"><span class="toc-number">2.5.</span> Etapas da Avaliação</li>
-    <li><span class="toc-number">3.</span> Análise Técnica Individual — Equipamentos</li>
+    <li><a class="toc-link" href="#sec-metodo"><span class="toc-number">{{ sec_metodo }}.</span> Metodologia Aplicada à Avaliação</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-metodo-1"><span class="toc-number">{{ sec_metodo }}.1.</span> Visão Geral do Método</a></li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-metodo-2"><span class="toc-number">{{ sec_metodo }}.2.</span> Etapas da Avaliação</a></li>
+    <li><a class="toc-link" href="#sec-equip"><span class="toc-number">{{ sec_equip }}.</span> Análise Técnica Individual — Equipamentos</a></li>
     {% for eq in equipments %}
-    <li class="toc-sub"><span class="toc-number">3.{{ eq.index }}.</span> {{ eq.nome }}</li>
+    <li class="toc-sub"><a class="toc-link" href="#sec-equip-{{ eq.index }}"><span class="toc-number">{{ sec_equip }}.{{ eq.index }}.</span> {{ eq.nome }}</a></li>
     {% endfor %}
-    <li><span class="toc-number">4.</span> Recomendações Consolidadas</li>
-    <li><span class="toc-number">5.</span> Classificação de Risco Geral</li>
-    <li><span class="toc-number">6.</span> Conclusão Geral</li>
-    <li><span class="toc-number">7.</span> Referências Normativas</li>
-    <li><span class="toc-number">8.</span> Encerramento</li>
-    <li><span class="toc-number">A.</span> Anexo — Inventário Completo de Riscos</li>
+    <li><a class="toc-link" href="#sec-recomendacoes"><span class="toc-number">{{ sec_recomendacoes }}.</span> Recomendações Consolidadas</a></li>
+    <li><a class="toc-link" href="#sec-classif"><span class="toc-number">{{ sec_classif }}.</span> Classificação de Risco Geral</a></li>
+    <li><a class="toc-link" href="#sec-conclusao"><span class="toc-number">{{ sec_conclusao }}.</span> Conclusão Geral</a></li>
+    <li><a class="toc-link" href="#sec-refs"><span class="toc-number">{{ sec_refs }}.</span> Referências Normativas</a></li>
+    <li><a class="toc-link" href="#sec-encerramento"><span class="toc-number">{{ sec_encerramento }}.</span> Encerramento</a></li>
+    <li><a class="toc-link" href="#sec-anexo"><span class="toc-number">A.</span> Anexo — Inventário Completo de Riscos</a></li>
     {% endif %}
   </ul>
 </div>
@@ -331,37 +628,12 @@
 
 
 {# ====================================================================
-   Variável de numeração de seções (depende se tem seção materiais)
-   ==================================================================== #}
-{% if profile_config.materiais_section | default(false) %}
-  {% set sec_intro = 1 %}
-  {% set sec_materiais = 2 %}
-  {% set sec_metodo = 3 %}
-  {% set sec_equip = 4 %}
-  {% set sec_recomendacoes = 5 %}
-  {% set sec_classif = 6 %}
-  {% set sec_conclusao = 7 %}
-  {% set sec_refs = 8 %}
-  {% set sec_encerramento = 9 %}
-{% else %}
-  {% set sec_intro = 1 %}
-  {% set sec_metodo = 2 %}
-  {% set sec_equip = 3 %}
-  {% set sec_recomendacoes = 4 %}
-  {% set sec_classif = 5 %}
-  {% set sec_conclusao = 6 %}
-  {% set sec_refs = 7 %}
-  {% set sec_encerramento = 8 %}
-{% endif %}
-
-
-{# ====================================================================
-   SEÇÃO 1: INTRODUÇÃO (com sub-seções estáticas)
+   SEÇÃO: INTRODUÇÃO (com sub-seções estáticas)
    ==================================================================== #}
 <div class="section">
-  <h2><span class="section-number">{{ sec_intro }}.</span> INTRODUÇÃO</h2>
+  <h2 id="sec-intro"><span class="section-number">{{ sec_intro }}.</span> INTRODUÇÃO</h2>
 
-  <h3>{{ sec_intro }}.1 Objetivo</h3>
+  <h3 id="sec-intro-objetivo">{{ sec_intro }}.1 Objetivo</h3>
   {% if llm_sections.introducao %}
     <div class="llm-content">
       {{ render_text(llm_sections.introducao) }}
@@ -403,17 +675,17 @@
    ==================================================================== #}
 {% if profile_config.materiais_section | default(false) %}
 <div class="section">
-  <h2><span class="section-number">{{ sec_materiais }}.</span> CARACTERIZAÇÃO DOS MATERIAIS COMBUSTÍVEIS</h2>
+  <h2 id="sec-materiais"><span class="section-number">{{ sec_materiais }}.</span> CARACTERIZAÇÃO DOS MATERIAIS COMBUSTÍVEIS</h2>
 
   {% if llm_sections.materiais is mapping %}
     {# ---- 2.1 Materiais Presentes na Unidade ---- #}
-    <h3>{{ sec_materiais }}.1 Materiais Presentes na Unidade</h3>
+    <h3 id="sec-materiais-1">{{ sec_materiais }}.1 Materiais Presentes na Unidade</h3>
     <div class="llm-content">
       {{ render_text(llm_sections.materiais.materiais_presentes) }}
     </div>
 
     {# ---- 2.2 Propriedades Típicas de Explosividade ---- #}
-    <h3>{{ sec_materiais }}.2 Propriedades Típicas de Explosividade (Dados de Referência)</h3>
+    <h3 id="sec-materiais-2">{{ sec_materiais }}.2 Propriedades Típicas de Explosividade (Dados de Referência)</h3>
     {% if llm_sections.materiais.propriedades_intro %}
       <p>{{ llm_sections.materiais.propriedades_intro }}</p>
     {% endif %}
@@ -442,7 +714,7 @@
     {% endif %}
 
     {# ---- 2.3 Considerações Técnicas ---- #}
-    <h3>{{ sec_materiais }}.3 Considerações Técnicas</h3>
+    <h3 id="sec-materiais-3">{{ sec_materiais }}.3 Considerações Técnicas</h3>
     {% if llm_sections.materiais.consideracoes %}
     <ul class="detail-list">
       {% for item in llm_sections.materiais.consideracoes %}
@@ -452,7 +724,7 @@
     {% endif %}
 
     {# ---- 2.4 Conclusão Técnica ---- #}
-    <h3>{{ sec_materiais }}.4 Conclusão Técnica</h3>
+    <h3 id="sec-materiais-4">{{ sec_materiais }}.4 Conclusão Técnica</h3>
     <div class="llm-content">
       {{ render_text(llm_sections.materiais.conclusao_tecnica) }}
     </div>
@@ -475,9 +747,9 @@
    SEÇÃO 3: METODOLOGIA (com tabelas estáticas de critérios e matriz)
    ==================================================================== #}
 <div class="section">
-  <h2><span class="section-number">{{ sec_metodo }}.</span> METODOLOGIA APLICADA À AVALIAÇÃO</h2>
+  <h2 id="sec-metodo"><span class="section-number">{{ sec_metodo }}.</span> METODOLOGIA APLICADA À AVALIAÇÃO</h2>
 
-  <h3>{{ sec_metodo }}.1 Visão Geral do Método</h3>
+  <h3 id="sec-metodo-1">{{ sec_metodo }}.1 Visão Geral do Método</h3>
   {% if llm_sections.metodologia %}
     <div class="llm-content">
       {{ render_text(llm_sections.metodologia) }}
@@ -491,149 +763,8 @@
     </p>
   {% endif %}
 
-  {# ---- Tabela de Critérios de Severidade (estática) ---- #}
-  <h3>{{ sec_metodo }}.2 Critérios de Severidade</h3>
-  <p>A tabela abaixo apresenta os critérios utilizados para classificação da severidade dos cenários de risco identificados:</p>
-
-  <table class="criteria-table">
-    <thead>
-      <tr>
-        <th style="width: 20%;">Nível</th>
-        <th style="width: 10%;">Valor</th>
-        <th>Descrição</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="level-cell" style="background-color: #28a745;">Desprezível</span></td>
-        <td style="text-align: center;">I</td>
-        <td>Sem impacto significativo à segurança, saúde ou meio ambiente. Danos materiais insignificantes.</td>
-      </tr>
-      <tr>
-        <td><span class="level-cell" style="background-color: #8bc34a;">Baixa</span></td>
-        <td style="text-align: center;">II</td>
-        <td>Danos leves e reversíveis. Lesões menores sem afastamento. Danos materiais de baixo custo.</td>
-      </tr>
-      <tr>
-        <td><span class="level-cell" style="background-color: #ffc107; color: #333;">Média</span></td>
-        <td style="text-align: center;">III</td>
-        <td>Danos moderados, parcialmente reversíveis. Lesões com afastamento temporário. Danos significativos aos equipamentos.</td>
-      </tr>
-      <tr>
-        <td><span class="level-cell" style="background-color: #fd7e14;">Alta</span></td>
-        <td style="text-align: center;">IV</td>
-        <td>Danos graves e irreversíveis. Lesões incapacitantes permanentes. Destruição parcial de instalações.</td>
-      </tr>
-      <tr>
-        <td><span class="level-cell" style="background-color: #dc3545;">Catastrófica</span></td>
-        <td style="text-align: center;">V</td>
-        <td>Catastrófico — múltiplas fatalidades possíveis. Destruição total de instalações. Impacto ambiental severo.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  {# ---- Tabela de Critérios de Probabilidade (estática) ---- #}
-  <h3>{{ sec_metodo }}.3 Critérios de Probabilidade</h3>
-  <p>A tabela abaixo apresenta os critérios utilizados para classificação da probabilidade de ocorrência:</p>
-
-  <table class="criteria-table">
-    <thead>
-      <tr>
-        <th style="width: 20%;">Nível</th>
-        <th style="width: 10%;">Valor</th>
-        <th>Descrição</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Remota</td>
-        <td style="text-align: center;">1</td>
-        <td>Improvável durante a vida útil da instalação. Sem registro histórico na indústria.</td>
-      </tr>
-      <tr>
-        <td>Baixa</td>
-        <td style="text-align: center;">2</td>
-        <td>Ocorrência possível, porém sem registro na instalação. Registros esporádicos na indústria.</td>
-      </tr>
-      <tr>
-        <td>Média</td>
-        <td style="text-align: center;">3</td>
-        <td>Já registrado na indústria ou em instalações similares. Possível ocorrência ao longo da vida útil.</td>
-      </tr>
-      <tr>
-        <td>Alta</td>
-        <td style="text-align: center;">4</td>
-        <td>Ocorrência ocasional no site ou em instalações da empresa. Esperado ocorrer mais de uma vez.</td>
-      </tr>
-      <tr>
-        <td>Muito Alta</td>
-        <td style="text-align: center;">5</td>
-        <td>Frequente ou contínuo. Ocorrência esperada em curto prazo nas condições atuais de operação.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  {# ---- Matriz de Risco 5×5 (estática) ---- #}
-  <h3>{{ sec_metodo }}.4 Matriz de Risco</h3>
-  <p>O nível de risco é determinado pelo cruzamento da severidade com a probabilidade, conforme a matriz abaixo:</p>
-
-  <table class="risk-matrix">
-    <thead>
-      <tr>
-        <th>Probabilidade ↓ \ Severidade →</th>
-        <th>I — Desprezível</th>
-        <th>II — Baixa</th>
-        <th>III — Média</th>
-        <th>IV — Alta</th>
-        <th>V — Catastrófica</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <th>5 — Muito Alta</th>
-        <td class="risk-medium">Moderado</td>
-        <td class="risk-high">Substancial</td>
-        <td class="risk-high">Substancial</td>
-        <td class="risk-very-high">Intolerável</td>
-        <td class="risk-critical">Intolerável</td>
-      </tr>
-      <tr>
-        <th>4 — Alta</th>
-        <td class="risk-medium">Moderado</td>
-        <td class="risk-medium">Moderado</td>
-        <td class="risk-high">Substancial</td>
-        <td class="risk-high">Substancial</td>
-        <td class="risk-very-high">Intolerável</td>
-      </tr>
-      <tr>
-        <th>3 — Média</th>
-        <td class="risk-low">Tolerável</td>
-        <td class="risk-medium">Moderado</td>
-        <td class="risk-medium">Moderado</td>
-        <td class="risk-high">Substancial</td>
-        <td class="risk-high">Substancial</td>
-      </tr>
-      <tr>
-        <th>2 — Baixa</th>
-        <td class="risk-low">Tolerável</td>
-        <td class="risk-low">Tolerável</td>
-        <td class="risk-medium">Moderado</td>
-        <td class="risk-medium">Moderado</td>
-        <td class="risk-high">Substancial</td>
-      </tr>
-      <tr>
-        <th>1 — Remota</th>
-        <td class="risk-low">Trivial</td>
-        <td class="risk-low">Tolerável</td>
-        <td class="risk-low">Tolerável</td>
-        <td class="risk-medium">Moderado</td>
-        <td class="risk-medium">Moderado</td>
-      </tr>
-    </tbody>
-  </table>
-
   {# ---- Etapas da Avaliação (estática) ---- #}
-  <h3>{{ sec_metodo }}.5 Etapas da Avaliação</h3>
+  <h3 id="sec-metodo-2">{{ sec_metodo }}.2 Etapas da Avaliação</h3>
   <p>A avaliação seguiu as seguintes etapas:</p>
   <ol class="detail-list">
     <li>Levantamento dos materiais e substâncias presentes na planta, com identificação das propriedades de risco.</li>
@@ -652,7 +783,7 @@
    SEÇÃO 4: ANÁLISE TÉCNICA INDIVIDUAL — EQUIPAMENTOS
    ==================================================================== #}
 <div class="section">
-  <h2>
+  <h2 id="sec-equip">
     <span class="section-number">{{ sec_equip }}.</span>
     ANÁLISE TÉCNICA INDIVIDUAL — EQUIPAMENTOS
   </h2>
@@ -660,7 +791,7 @@
   {% for eq in equipments %}
   <div class="equipment-block" {% if not loop.first %}style="page-break-before: always;"{% endif %}>
 
-    <h3 class="equipment-title">
+    <h3 class="equipment-title" id="sec-equip-{{ eq.index }}">
       <span class="section-number">{{ sec_equip }}.{{ eq.index }}</span>
       {{ eq.nome | upper }}
     </h3>
@@ -830,7 +961,7 @@
    SEÇÃO 5: RECOMENDAÇÕES CONSOLIDADAS
    ==================================================================== #}
 <div class="section">
-  <h2>
+  <h2 id="sec-recomendacoes">
     <span class="section-number">{{ sec_recomendacoes }}.</span>
     RECOMENDAÇÕES CONSOLIDADAS
   </h2>
@@ -900,7 +1031,7 @@
    SEÇÃO 6: CLASSIFICAÇÃO DE RISCO GERAL
    ==================================================================== #}
 <div class="section">
-  <h2>
+  <h2 id="sec-classif">
     <span class="section-number">{{ sec_classif }}.</span>
     CLASSIFICAÇÃO DE RISCO GERAL
   </h2>
@@ -1002,7 +1133,7 @@
    SEÇÃO 7: CONCLUSÃO GERAL
    ==================================================================== #}
 <div class="section">
-  <h2>
+  <h2 id="sec-conclusao">
     <span class="section-number">{{ sec_conclusao }}.</span>
     CONCLUSÃO GERAL
   </h2>
@@ -1034,7 +1165,7 @@
    SEÇÃO 8: REFERÊNCIAS NORMATIVAS (categorizadas)
    ==================================================================== #}
 <div class="section references-section">
-  <h2>
+  <h2 id="sec-refs">
     <span class="section-number">{{ sec_refs }}.</span>
     REFERÊNCIAS NORMATIVAS
   </h2>
@@ -1088,10 +1219,15 @@
    SEÇÃO 9: ENCERRAMENTO
    ==================================================================== #}
 <div class="section encerramento">
-  <h2>
+  <h2 id="sec-encerramento">
     <span class="section-number">{{ sec_encerramento }}.</span>
     ENCERRAMENTO
   </h2>
+
+  <p>
+    Este documento foi elaborado pela <strong>{{ metadata.elaboracao | default("Konis Ex do Brasil Ltda.") }}</strong>
+    e representa a análise técnica realizada conforme as normas e metodologias descritas ao longo deste relatório.
+  </p>
 
   <p>
     Este relatório foi elaborado com base em visita técnica, coleta de dados
@@ -1107,17 +1243,17 @@
     A reprodução total ou parcial sem autorização prévia é vedada.
   </p>
 
-  {% if metadata.elaboracao %}
   <p>
-    A <strong>{{ metadata.elaboracao }}</strong> permanece à disposição para:
+    A <strong>{{ metadata.elaboracao | default("Konis Safety Engenharia") }}</strong> permanece à disposição para:
   </p>
   <ul>
+    <li>Esclarecimentos sobre o conteúdo deste relatório;</li>
     <li>Suporte na implantação técnica das recomendações;</li>
     <li>Treinamento de operadores e equipes de manutenção;</li>
     <li>Projetos de engenharia de proteção e classificação de áreas;</li>
+    <li>Acompanhamento das medidas recomendadas e futuras reavaliações;</li>
     <li>Auditoria periódica e atualização da análise de riscos.</li>
   </ul>
-  {% endif %}
 
   <div class="signature-block">
     {% if metadata.endereco %}
@@ -1132,7 +1268,7 @@
         <p class="signature-role">{{ metadata.registro_profissional }}</p>
       {% endif %}
       {% if metadata.art_numero %}
-        <p class="signature-art">ART: {{ metadata.art_numero }}</p>
+        <p class="signature-art">ART nº {{ metadata.art_numero }}</p>
       {% endif %}
     </div>
     {% endif %}
@@ -1141,6 +1277,12 @@
       <span>Carimbo profissional</span>
     </div>
   </div>
+
+  {% if metadata.codigo_documento %}
+  <p class="document-code" style="margin-top: 2em; font-size: 8.5pt; color: #888; text-align: center;">
+    Código do documento: {{ metadata.codigo_documento }}
+  </p>
+  {% endif %}
 </div>
 
 
@@ -1149,7 +1291,7 @@
    ==================================================================== #}
 {% if rows %}
 <div class="section annex-landscape">
-  <h2>ANEXO A — Inventário Completo de Riscos</h2>
+  <h2 id="sec-anexo">ANEXO A — Inventário Completo de Riscos</h2>
 
   <p>
     Tabela consolidada com todos os itens de risco avaliados na unidade

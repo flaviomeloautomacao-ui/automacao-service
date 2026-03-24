@@ -19,6 +19,7 @@ e exibe progresso em tempo real.
 
 from __future__ import annotations
 
+import os
 import traceback
 import uuid
 from datetime import datetime, timezone
@@ -136,6 +137,13 @@ class ProcessJobUseCase:
                 job_id,
                 company_metadata is not None,
             )
+
+            # 2b.1) Injeta filename do job no metadata (para template)
+            if company_metadata is None:
+                company_metadata = {}
+            raw_filename = job.get("filename") or ""
+            # Remove extensão de arquivo para exibição no template
+            company_metadata["filename"] = os.path.splitext(raw_filename)[0] if raw_filename else None
 
             await self._job_repo.update_job(
                 job_id,

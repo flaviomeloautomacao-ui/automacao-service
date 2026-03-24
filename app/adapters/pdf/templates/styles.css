@@ -27,7 +27,7 @@
 }
 
 .running-header img {
-    height: 28px;
+    height: 38px;
     width: auto;
 }
 
@@ -47,6 +47,19 @@
     white-space: nowrap;
 }
 
+.running-header-page {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 8pt;
+    color: #555;
+    text-align: right;
+    white-space: nowrap;
+    margin-left: 12px;
+}
+
+.running-header-page::after {
+    content: "Pág. " counter(page) " / " counter(pages);
+}
+
 
 /* ---------- Page Setup ---------- */
 
@@ -59,19 +72,6 @@
         width: 100%;
     }
 
-    @bottom-left {
-        content: "Konis Safety Engenharia — Segurança é essencial";
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        font-size: 7pt;
-        color: #888;
-    }
-
-    @bottom-right {
-        content: "Pág. " counter(page) " / " counter(pages);
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        font-size: 8pt;
-        color: #555;
-    }
 }
 
 /* Primeira página (capa): sem cabeçalho nem rodapé */
@@ -79,7 +79,6 @@
     margin: 25mm 20mm 25mm 20mm;
     @top-left     { content: none; }
     @bottom-left  { content: none; }
-    @bottom-right { content: none; }
 }
 
 /* Página do Anexo em paisagem */
@@ -214,6 +213,62 @@ strong { color: #1a1a2e; }
     color: #888;
 }
 
+/* ---------- Imagem de Capa (Feature 1) ---------- */
+
+.cover-image {
+    width: 100%;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.cover-image img {
+    max-width: 90%;
+    max-height: 280px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+
+/* ==========================================================================
+   CONTROLE DE REVISÃO DO DOCUMENTO (Feature 2)
+   ========================================================================== */
+
+.revision-control {
+    page-break-before: always;
+    page-break-after: always;
+}
+
+.revision-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-top: 1em;
+}
+
+.revision-table th {
+    background-color: #0f3460;
+    color: #fff;
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.revision-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+}
+
+/* Linhas vazias para preenchimento manual */
+.revision-table td.revision-empty {
+    height: 28px;
+    border-bottom: 1px solid #ccc;
+}
+
+.revision-table tr:nth-child(even) td {
+    background-color: #f8f9fa;
+}
+
 
 /* ==========================================================================
    APRESENTAÇÃO TÉCNICA E IMPORTÂNCIA DOS SERVIÇOS
@@ -243,6 +298,57 @@ strong { color: #1a1a2e; }
     margin-bottom: 0.3em;
     font-weight: 700;
 }
+
+.apresentacao-h5 {
+    font-size: 9.5pt;
+    color: #444;
+    margin-top: 0.7em;
+    margin-bottom: 0.25em;
+    font-weight: 600;
+    font-style: italic;
+}
+
+
+/* ==========================================================================
+   MATRIZ DE RISCO 3×3 (Apresentação Técnica)
+   ========================================================================== */
+
+table.risk-matrix-3x3 {
+    border-collapse: collapse;
+    margin: 1em auto;
+    font-size: 9pt;
+    text-align: center;
+    width: 80%;
+}
+
+.risk-matrix-3x3 th,
+.risk-matrix-3x3 td {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    min-width: 80px;
+    vertical-align: middle;
+}
+
+.risk-matrix-3x3 thead th {
+    background-color: #0f3460;
+    color: #fff;
+    font-weight: 600;
+    font-size: 9pt;
+}
+
+.risk-matrix-3x3 tbody th {
+    background-color: #e8edf5;
+    font-weight: 600;
+    color: #0f3460;
+    text-align: right;
+    padding-right: 12px;
+    white-space: nowrap;
+}
+
+/* Cores dos níveis de risco 3×3 */
+.risk-3x3-baixo { background-color: #28a745; color: #fff; font-weight: 700; }
+.risk-3x3-medio { background-color: #ffc107; color: #333; font-weight: 700; }
+.risk-3x3-alto  { background-color: #dc3545; color: #fff; font-weight: 700; }
 
 
 /* ==========================================================================
@@ -286,6 +392,23 @@ strong { color: #1a1a2e; }
     width: 3em;
     font-weight: 700;
     color: #0f3460;
+}
+
+.toc-link {
+    display: flex;
+    text-decoration: none;
+    color: inherit;
+    font-weight: inherit;
+    width: 100%;
+}
+
+.toc-link::after {
+    content: target-counter(attr(href url), page);
+    margin-left: auto;
+    padding-left: 8px;
+    flex-shrink: 0;
+    font-weight: 400;
+    color: #555;
 }
 
 
@@ -332,6 +455,21 @@ strong { color: #1a1a2e; }
 
 .text-list li {
     margin-bottom: 0.2em;
+}
+
+
+/* ==========================================================================
+   RESULTADO ESPERADO (Feature 4)
+   ========================================================================== */
+
+.resultado-esperado {
+    page-break-before: always;
+}
+
+.resultado-esperado .section-content p {
+    text-align: justify;
+    line-height: 1.6;
+    margin-bottom: 12px;
 }
 
 
@@ -764,6 +902,14 @@ table.inventory-table {
     justify-content: center;
     font-size: 7.5pt;
     color: #aaa;
+}
+
+/* Código do documento (Feature 5) */
+.document-code {
+    margin-top: 30px;
+    font-size: 9pt;
+    color: #6c757d;
+    text-align: center;
 }
 
 

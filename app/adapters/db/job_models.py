@@ -225,6 +225,12 @@ class ReportModel(Base):
     observacoes_gerais: Mapped[str | None] = mapped_column(Text, nullable=True)
     observacoes_gerais_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # ── Novos campos (Fase 1) ──
+    cover_image_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    cover_image_public_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    art_numero: Mapped[str | None] = mapped_column(String, nullable=True)
+    codigo_documento: Mapped[str | None] = mapped_column(String, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
     )
@@ -236,9 +242,39 @@ class ReportModel(Base):
     equipments: Mapped[list["ReportEquipmentModel"]] = relationship(
         back_populates="report", lazy="selectin",
     )
+    revisions: Mapped[list["ReportRevisionModel"]] = relationship(
+        back_populates="report", lazy="selectin",
+    )
 
     def __repr__(self) -> str:
         return f"<ReportModel id={self.id} job_id={self.job_id}>"
+
+
+class ReportRevisionModel(Base):
+    """Modelo ORM (somente leitura) para ``report_revisions``."""
+
+    __tablename__ = "report_revisions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    report_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("reports.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    version: Mapped[str] = mapped_column(String, nullable=False)
+    date: Mapped[str] = mapped_column(String, nullable=False)
+    author: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    report: Mapped["ReportModel"] = relationship(back_populates="revisions")
+
+    def __repr__(self) -> str:
+        return f"<ReportRevisionModel id={self.id} version={self.version}>"
 
 
 class ReportEquipmentModel(Base):
