@@ -5,10 +5,17 @@ Implementa ``PdfRendererPort`` definido em ``app.domain.ports``.
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+_MESES_PT = {
+    1: "janeiro", 2: "fevereiro", 3: "março", 4: "abril",
+    5: "maio", 6: "junho", 7: "julho", 8: "agosto",
+    9: "setembro", 10: "outubro", 11: "novembro", 12: "dezembro",
+}
 from weasyprint import HTML
 
 from app.domain.errors import TemplateError
@@ -72,12 +79,15 @@ class WeasyPdfRenderer:
         """
         try:
             template = self._env.get_template(template_name)
+            now = datetime.now()
+            mes_ano = f"{_MESES_PT[now.month]} de {now.year}"
             return template.render(
                 metadata=metadata,
                 rows=rows,
                 llm_sections=llm_sections,
                 equipments=equipments or [],
                 profile_config=profile_config or {},
+                mes_ano=mes_ano,
             )
         except Exception as exc:
             raise TemplateError(

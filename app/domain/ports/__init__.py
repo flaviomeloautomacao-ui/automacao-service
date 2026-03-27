@@ -304,4 +304,55 @@ __all__ = [
     "LLMPort",
     "PdfRendererPort",
     "NormsProviderPort",
+    "LLMCostRepositoryPort",
+    "BudgetGuardPort",
 ]
+
+
+# ---------------------------------------------------------------------------
+# LLMCostRepositoryPort
+# ---------------------------------------------------------------------------
+
+@runtime_checkable
+class LLMCostRepositoryPort(Protocol):
+    """Persistência de registros de custo LLM no banco de dados."""
+
+    async def save_batch(
+        self,
+        records: list[Any],
+        job_id: str,
+    ) -> int:
+        """Insere registros de uso LLM em batch.
+
+        Returns:
+            Número de registros inseridos.
+        """
+        ...
+
+    async def update_job_cost_summary(
+        self,
+        job_id: str,
+        total_cost_usd: float,
+        total_tokens: int,
+        call_count: int,
+    ) -> None:
+        """Atualiza campos pré-agregados de custo no Job."""
+        ...
+
+
+# ---------------------------------------------------------------------------
+# BudgetGuardPort
+# ---------------------------------------------------------------------------
+
+@runtime_checkable
+class BudgetGuardPort(Protocol):
+    """Proteção contra gastos LLM descontrolados."""
+
+    def check_job_budget(
+        self,
+        current_cost: float,
+        current_calls: int,
+        job_id: str,
+    ) -> None:
+        """Verifica limites de custo por job."""
+        ...

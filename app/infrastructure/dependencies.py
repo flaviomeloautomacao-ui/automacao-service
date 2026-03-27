@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from loguru import Logger
 
     from app.adapters.db.job_repository import JobRepository
+    from app.adapters.db.llm_cost_repository import LLMCostRepository
     from app.adapters.db.repository import ReportRepository
     from app.adapters.llm.openrouter_client import OpenRouterClient
     from app.adapters.norms.abnt_retriever import ABNTRetriever
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     from app.adapters.storage.supabase_storage import SupabaseStorage
     from app.application.use_cases.process_job import ProcessJobUseCase
     from app.application.use_cases.process_upload import ProcessUploadUseCase
+    from app.domain.services.budget_guard import BudgetGuard
 
 
 # ── Settings ────────────────────────────────────────────────────
@@ -175,18 +177,25 @@ def get_storage() -> "SupabaseStorage":
 
 
 def get_llm() -> "OpenRouterClient":
-    """Retorna o client OpenRouter (LLM) configurado.
+    """Retorna o client LLM configurado (real ou mock).
 
-    Utiliza as configurações ``OPENROUTER_API_KEY``, ``OPENROUTER_BASE_URL``
-    e ``LLM_MODEL`` do Settings.
-    A API key **não** é registrada em logs.
+    Se ``LLM_MOCK_ENABLED=true``, retorna ``MockLLMClient`` que gera
+    respostas determinísticas sem custo. Caso contrário, retorna
+    ``OpenRouterClient`` que faz chamadas reais à API.
 
     Returns:
-        OpenRouterClient: Implementação concreta de ``LLMPort``.
+        Implementação concreta de ``LLMPort``.
     """
+    settings = get_settings()
+
+    if settings.LLM_MOCK_ENABLED:
+        from app.adapters.llm.mock_client import MockLLMClient  # noqa: PLC0415
+
+        get_logger().warning("LLM MOCK MODE ATIVO — respostas não são reais")
+        return MockLLMClient()  # type: ignore[return-value]
+
     from app.adapters.llm.openrouter_client import OpenRouterClient  # noqa: PLC0415
 
-    settings = get_settings()
     return OpenRouterClient(
         api_key=settings.OPENROUTER_API_KEY,
         base_url=settings.OPENROUTER_BASE_URL,
@@ -255,39 +264,75 @@ async def get_job_repository(
     return JobRepository(session)
 
 
-# ── ABNT Retriever (RAG Normativo) ──────────────────────────────
+# ── LLM Cost Repository ────────────────────────────────────────
 
 
-async def get_abnt_retriever(
+async def get_llm_cost_repository(
     session: AsyncSession = Depends(get_db),
-) -> "ABNTRetriever | None":
-    """Monta o ``ABNTRetriever`` para busca vetorial de normas ABNT.
-
-    Retorna ``None`` se o RAG estiver desabilitado ou se a chave de
-    embedding não estiver configurada (graceful degradation).
+) -> "LLMCostRepository":
+    """Fornece um ``LLMCostRepository`` vinculado à sessão da requisição.
 
     Args:
         session: Sessão async injetada via ``Depends(get_db)``.
 
     Returns:
+        LLMCostRepository: repositório de custos LLM.
+    """
+    from app.adapters.db.llm_cost_repository import LLMCostRepository  # noqa: PLC0415
+
+    return LLMCostRepository(session)
+
+
+# ── Budget Guard ────────────────────────────────────────────────
+
+
+def get_budget_guard() -> "BudgetGuard":
+    """Retorna o BudgetGuard configurado.
+
+    Returns:
+        BudgetGuard: proteção contra gastos descontrolados.
+    """
+    from app.domain.services.budget_guard import BudgetGuard  # noqa: PLC0415
+
+    settings = get_settings()
+    return BudgetGuard(settings)
+
+
+# ── ABNT Retriever (RAG Normativo) ──────────────────────────────
+
+
+async def get_abnt_retriever() -> AsyncGenerator["ABNTRetriever | None", None]:
+    """Monta o ``ABNTRetriever`` para busca vetorial de normas ABNT.
+
+    Usa uma sessão de banco **dedicada** (isolada da sessão do
+    ``JobRepository``) para que falhas em queries pgvector não
+    envenenem a transação do pipeline de processamento.
+
+    Retorna ``None`` se o RAG estiver desabilitado ou se a chave de
+    embedding não estiver configurada (graceful degradation).
+
+    Yields:
         ABNTRetriever configurado, ou None se indisponível.
     """
     from app.adapters.norms.abnt_retriever import ABNTRetriever  # noqa: PLC0415
     from app.adapters.norms.embedding_provider import OpenAIEmbeddingProvider  # noqa: PLC0415
     from app.adapters.norms.norm_repository import NormVectorRepository  # noqa: PLC0415
+    from app.infrastructure.db import get_session as _get_rag_session  # noqa: PLC0415
 
     settings = get_settings()
 
     if not settings.RAG_ENABLED:
         get_logger().info("RAG normativo — desabilitado via RAG_ENABLED=false")
-        return None
+        yield None
+        return
 
     api_key = settings.EMBEDDING_API_KEY or settings.OPENROUTER_API_KEY
     if not api_key:
         get_logger().warning(
             "RAG normativo — sem EMBEDDING_API_KEY ou OPENROUTER_API_KEY — retrieval desabilitado"
         )
-        return None
+        yield None
+        return
 
     get_logger().info(
         "RAG normativo — inicializando | model={} | base_url={} | table={} | "
@@ -307,18 +352,28 @@ async def get_abnt_retriever(
         model=settings.EMBEDDING_MODEL,
     )
 
-    norm_repo = NormVectorRepository(
-        session,
-        table_name=settings.RAG_NORM_TABLE,
-    )
+    # Sessão dedicada para RAG — isolada da sessão do JobRepository
+    rag_session_gen = _get_rag_session()
+    rag_session = await rag_session_gen.__anext__()
+    try:
+        norm_repo = NormVectorRepository(
+            rag_session,
+            table_name=settings.RAG_NORM_TABLE,
+        )
 
-    return ABNTRetriever(
-        embedding_provider=embedding_provider,
-        norm_repository=norm_repo,
-        top_k=settings.RAG_TOP_K,
-        max_chunks=settings.RAG_MAX_CHUNKS,
-        min_score=settings.RAG_MIN_SCORE,
-    )
+        yield ABNTRetriever(
+            embedding_provider=embedding_provider,
+            norm_repository=norm_repo,
+            top_k=settings.RAG_TOP_K,
+            max_chunks=settings.RAG_MAX_CHUNKS,
+            min_score=settings.RAG_MIN_SCORE,
+        )
+    finally:
+        # Garante cleanup da sessão RAG (commit/rollback)
+        try:
+            await rag_session_gen.__anext__()
+        except StopAsyncIteration:
+            pass
 
 
 # ── Process Job Use Case ────────────────────────────────────────
@@ -328,17 +383,22 @@ async def get_process_job_use_case(
     job_repo: "JobRepository" = Depends(get_job_repository),
     upload_uc: "ProcessUploadUseCase" = Depends(get_use_case),
     abnt_retriever: "ABNTRetriever | None" = Depends(get_abnt_retriever),
+    cost_repo: "LLMCostRepository" = Depends(get_llm_cost_repository),
+    budget_guard: "BudgetGuard" = Depends(get_budget_guard),
 ) -> "ProcessJobUseCase":
     """Monta o ``ProcessJobUseCase`` com dependências injetadas.
 
     Combina o ``JobRepository`` (para reportar progresso) com o
-    ``ProcessUploadUseCase`` (para a lógica de pipeline) e
-    opcionalmente o ``ABNTRetriever`` (para RAG normativo).
+    ``ProcessUploadUseCase`` (para a lógica de pipeline),
+    ``ABNTRetriever`` (RAG normativo), ``LLMCostRepository``
+    (persistência de custos) e ``BudgetGuard`` (proteção de orçamento).
 
     Args:
         job_repo: Repositório de jobs/steps.
         upload_uc: Use case de processamento de upload.
         abnt_retriever: Retriever de normas ABNT (opcional).
+        cost_repo: Repositório de custos LLM.
+        budget_guard: Proteção de orçamento LLM.
 
     Returns:
         ProcessJobUseCase: caso de uso pronto para execução.
@@ -349,4 +409,6 @@ async def get_process_job_use_case(
         job_repo=job_repo,
         upload_use_case=upload_uc,
         abnt_retriever=abnt_retriever,
+        cost_repository=cost_repo,
+        budget_guard=budget_guard,
     )

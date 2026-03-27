@@ -98,8 +98,11 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
     "text-embedding-3-small": {
         "input_per_1k": 0.00002,
         "output_per_1k": 0.0,
-    },
-    "text-embedding-3-large": {
+    },    # OpenRouter usa prefixo "openai/" — mantemos o mesmo custo
+    "openai/text-embedding-3-small": {
+        "input_per_1k": 0.00002,
+        "output_per_1k": 0.0,
+    },    "text-embedding-3-large": {
         "input_per_1k": 0.00013,
         "output_per_1k": 0.0,
     },
@@ -229,6 +232,7 @@ class LLMUsageRecord:
     tokens_source: str = "estimate"
     prompt_chars: int = 0
     response_chars: int = 0
+    retry_attempt: int | None = None
 
     def __post_init__(self) -> None:
         """Calcula campos derivados se não fornecidos."""
@@ -707,6 +711,26 @@ class LLMCostTracker:
         """Limpa todos os registros em memória."""
         with self._lock:
             self._records.clear()
+
+    def clear_records_for_job(self, job_id: str) -> None:
+        """Remove registros de um job específico da memória.
+
+        Chamado após persistência bem-sucedida no banco.
+        Evita acúmulo de registros em servidores de longa duração.
+
+        Args:
+            job_id: ID do job cujos registros devem ser removidos.
+        """
+        with self._lock:
+            before = len(self._records)
+            self._records = [r for r in self._records if r.job_id != job_id]
+            removed = before - len(self._records)
+        logger.debug(
+            "CostTracker: limpou {} registros do job {} (restantes: {})",
+            removed,
+            job_id,
+            len(self._records),
+        )
 
 
 # ---------------------------------------------------------------------------

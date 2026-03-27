@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes import costs, documents, health, process, uploads
 from app.domain.errors import (
+    BudgetExceededError,
     DBError,
     DomainError,
     LLMError,
@@ -113,6 +114,25 @@ def create_app() -> FastAPI:
                 "error": {
                     "code": "LLM_ERROR",
                     "message": "Falha no serviço de geração de texto.",
+                },
+            },
+        )
+
+    @app.exception_handler(BudgetExceededError)
+    async def _budget_error_handler(
+        request: Request,
+        exc: BudgetExceededError,
+    ) -> JSONResponse:
+        """Retorna 429 para estouro de budget LLM."""
+        logger = get_logger()
+        logger.error("BudgetExceededError: {}", str(exc))
+        return JSONResponse(
+            status_code=429,
+            content={
+                "data": None,
+                "error": {
+                    "code": "BUDGET_EXCEEDED",
+                    "message": str(exc),
                 },
             },
         )

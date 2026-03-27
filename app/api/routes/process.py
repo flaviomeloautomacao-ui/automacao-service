@@ -16,8 +16,10 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
+from app.api.middleware.auth import verify_internal_api_key
+from app.api.middleware.rate_limit import rate_limit_jobs
 from app.infrastructure.dependencies import get_logger, get_process_job_use_case
 from app.application.use_cases.process_job import ProcessJobUseCase
 
@@ -27,7 +29,18 @@ router = APIRouter()
 class ProcessRequest(BaseModel):
     """Corpo da requisição POST /process."""
 
-    job_id: str
+    job_id: str = Field(..., min_length=36, max_length=36)
+
+    @field_validator("job_id")
+    @classmethod
+    def validate_uuid(cls, v: str) -> str:
+        import uuid  # noqa: PLC0415
+
+        try:
+            uuid.UUID(v)
+        except ValueError as exc:
+            raise ValueError(f"job_id inválido: {v}") from exc
+        return v
 
 
 async def _process_in_background(
@@ -57,7 +70,10 @@ async def _process_in_background(
         )
 
 
-@router.post("")
+@router.post(
+    "",
+    dependencies=[Depends(verify_internal_api_key), Depends(rate_limit_jobs)],
+)
 async def process_job(
     body: ProcessRequest,
     background_tasks: BackgroundTasks,

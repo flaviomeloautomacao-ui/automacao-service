@@ -48,3 +48,7 @@ class LLMError(DomainError):
 
 class TemplateError(DomainError):
     """Falha na renderização de template (Jinja2 / HTML / PDF)."""
+
+
+class BudgetExceededError(DomainError):
+    """Custo LLM excedeu o limite configurado (por job ou diário)."""

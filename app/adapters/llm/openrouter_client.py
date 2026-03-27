@@ -52,6 +52,16 @@ class _RetryableHTTPError(Exception):
     """Erro HTTP retryável (429 / 5xx / timeout)."""
 
 
+class CircuitOpenError(LLMError):
+    """Circuit breaker aberto — chamadas LLM temporariamente bloqueadas."""
+
+    def __init__(self, consecutive_failures: int) -> None:
+        super().__init__(
+            f"Circuit breaker aberto após {consecutive_failures} falhas consecutivas."
+        )
+        self.consecutive_failures = consecutive_failures
+
+
 # ---------------------------------------------------------------------------
 # Constantes
 # ---------------------------------------------------------------------------
@@ -110,6 +120,10 @@ class OpenRouterClient:
 
         # Contexto de tracking (setado externamente por quem chama)
         self._tracking_context: dict[str, str] = {}
+
+        # Circuit breaker state
+        self._consecutive_failures: int = 0
+        self._circuit_breaker_threshold: int = 5  # abre após N falhas seguidas
 
         logger.info(
             "OpenRouterClient inicializado | model={} | base_url={} | key={}",
@@ -340,10 +354,22 @@ class OpenRouterClient:
 
         ctx = self._tracking_context
         timer = CostTimer()
+
+        # ── Circuit breaker check ──
+        if self._consecutive_failures >= self._circuit_breaker_threshold:
+            logger.error(
+                "CIRCUIT_BREAKER | OPEN | {} falhas consecutivas — bloqueando chamada",
+                self._consecutive_failures,
+            )
+            raise CircuitOpenError(self._consecutive_failures)
+
         try:
             with timer:
                 result_tuple = await _do_request()
             content_result, api_usage = result_tuple
+
+            # ── Reset circuit breaker on success ──
+            self._consecutive_failures = 0
 
             # ── Registrar uso com sucesso ─────────────────────
             self._tracker.record_generation(
@@ -363,6 +389,7 @@ class OpenRouterClient:
             return content_result
 
         except _RetryableHTTPError as exc:
+            self._consecutive_failures += 1
             self._tracker.record_generation(
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),
@@ -380,6 +407,7 @@ class OpenRouterClient:
                 detail=str(exc),
             ) from exc
         except RetryError as exc:
+            self._consecutive_failures += 1
             self._tracker.record_generation(
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),
@@ -397,6 +425,7 @@ class OpenRouterClient:
                 detail=str(exc),
             ) from exc
         except httpx.TimeoutException as exc:
+            self._consecutive_failures += 1
             self._tracker.record_generation(
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),
@@ -414,6 +443,7 @@ class OpenRouterClient:
                 detail=str(exc),
             ) from exc
         except httpx.HTTPError as exc:
+            self._consecutive_failures += 1
             self._tracker.record_generation(
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),

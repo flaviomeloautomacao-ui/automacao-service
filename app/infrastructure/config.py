@@ -71,6 +71,17 @@ class Settings(BaseSettings):
 
     # ── Dev / Teste ─────────────────────────────────────────────
     DEVLLM: bool = False
+    LLM_MOCK_ENABLED: bool = False
+    DEV_MAX_EQUIPMENTS: int = 0   # 0 = sem limite
+    DEV_SKIP_PDF: bool = False
+
+    # ── Segurança ───────────────────────────────────────────────
+    INTERNAL_API_KEY: str = ""
+
+    # ── Budget / Limites LLM ────────────────────────────────────
+    LLM_MAX_COST_PER_JOB_USD: float = 2.00
+    LLM_MAX_COST_PER_DAY_USD: float = 50.00
+    LLM_MAX_CALLS_PER_JOB: int = 100
 
 
 @lru_cache(maxsize=1)

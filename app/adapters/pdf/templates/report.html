@@ -28,7 +28,8 @@
    CAPA
    ==================================================================== #}
 <div class="cover">
-  <div class="cover-logo">
+  {# Logo no canto superior esquerdo #}
+  <div class="cover-logo-topleft">
     <img src="konis_logo.png" alt="Konis Safety Engenharia" />
   </div>
 
@@ -59,7 +60,7 @@
       <tbody>
         <tr>
           <td class="cover-label">Cliente:</td>
-          <td>{{ metadata.razao_social | default("—") }}</td>
+          <td class="cover-value-bold">{{ metadata.razao_social | default("—") }}</td>
         </tr>
         {% if metadata.cnpj %}
         <tr>
@@ -142,18 +143,19 @@
   <table class="revision-table">
     <thead>
       <tr>
-        <th style="width: 12%">Revisão</th>
-        <th style="width: 18%">Data</th>
-        <th style="width: 30%">Responsável</th>
-        <th style="width: 40%">Descrição da Alteração</th>
+        <th style="width: 10%">Revisão</th>
+        <th style="width: 15%">Data</th>
+        <th style="width: 13%">Aprovação</th>
+        <th style="width: 27%">Responsável</th>
+        <th style="width: 35%">Descrição da Alteração</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
     </tbody>
   </table>
 </div>
@@ -782,7 +784,7 @@
 {# ====================================================================
    SEÇÃO 4: ANÁLISE TÉCNICA INDIVIDUAL — EQUIPAMENTOS
    ==================================================================== #}
-<div class="section">
+<div class="section" style="page-break-before: always;">
   <h2 id="sec-equip">
     <span class="section-number">{{ sec_equip }}.</span>
     ANÁLISE TÉCNICA INDIVIDUAL — EQUIPAMENTOS
@@ -824,30 +826,8 @@
       <p class="text-muted">Descrição não informada na planilha.</p>
     {% endif %}
 
-    {# 4.x.2 Registro fotográfico #}
-    {% if eq.images %}
-    <h4>{{ sec_equip }}.{{ eq.index }}.2 Registro fotográfico</h4>
-    {% set visible_images = eq.images[:4] %}
-    {% set img_count = visible_images | length %}
-    <div class="equipment-images">
-      {% set global_photo_ns = namespace(counter=0) %}
-      {% for img in visible_images %}
-        {% set global_photo_ns.counter = global_photo_ns.counter + 1 %}
-        <div class="equipment-photo photo-count-{{ img_count }}">
-          <img src="{{ img.secure_url }}"
-               alt="Foto do equipamento {{ eq.nome }}" />
-          <p class="photo-caption">
-            Foto {{ global_photo_ns.counter }}
-            {% if img.legenda %} — {{ img.legenda }}{% endif %}
-          </p>
-        </div>
-      {% endfor %}
-    </div>
-    <div style="clear: both;"></div>
-    {% endif %}
-
-    {# 4.x.3 Identificação dos perigos #}
-    {% set sub_offset = 2 if not eq.images else 3 %}
+    {# 4.x.2 Identificação dos perigos #}
+    {% set sub_offset = 2 %}
     <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset }} Identificação dos perigos</h4>
     <p>Com base na planilha técnica e na inspeção realizada, foram identificados
        os seguintes perigos relevantes:</p>
@@ -945,6 +925,28 @@
     {% if eq.observacoes_extras %}
     <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset + 7 }} Observações complementares</h4>
     <p>{{ eq.observacoes_extras }}</p>
+    {% endif %}
+
+    {# 4.x.11 Registro fotográfico (por último na seção do equipamento) #}
+    {% if eq.images %}
+    <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset + 8 }} Registro fotográfico</h4>
+    {% set visible_images = eq.images[:4] %}
+    {% set img_count = visible_images | length %}
+    <div class="equipment-images">
+      {% set global_photo_ns = namespace(counter=0) %}
+      {% for img in visible_images %}
+        {% set global_photo_ns.counter = global_photo_ns.counter + 1 %}
+        <div class="equipment-photo photo-count-{{ img_count }}">
+          <img src="{{ img.secure_url }}"
+               alt="Foto do equipamento {{ eq.nome }}" />
+          <p class="photo-caption">
+            Foto {{ global_photo_ns.counter }}
+            {% if img.legenda %} — {{ img.legenda }}{% endif %}
+          </p>
+        </div>
+      {% endfor %}
+    </div>
+    <div style="clear: both;"></div>
     {% endif %}
 
   </div>
@@ -1225,64 +1227,44 @@
   </h2>
 
   <p>
-    Este documento foi elaborado pela <strong>{{ metadata.elaboracao | default("Konis Ex do Brasil Ltda.") }}</strong>
-    e representa a análise técnica realizada conforme as normas e metodologias descritas ao longo deste relatório.
+    Este relatório foi elaborado com base em visita técnica, coleta de dados operacionais,
+    relatórios complementares, classificação de áreas, normas técnicas nacionais e internacionais, e
+    melhores práticas de engenharia.
   </p>
 
-  <p>
-    Este relatório foi elaborado com base em visita técnica, coleta de dados
-    operacionais, classificação de áreas, normas técnicas nacionais e
-    internacionais, e melhores práticas de engenharia aplicáveis ao perfil de
-    <strong>{{ profile_config.label | default("análise de riscos") }}</strong>.
-  </p>
-
-  <p>
-    As informações contidas neste documento são de caráter confidencial e
-    destinam-se exclusivamente à empresa contratante
-    <strong>{{ metadata.razao_social | default("—") }}</strong>.
-    A reprodução total ou parcial sem autorização prévia é vedada.
-  </p>
-
-  <p>
-    A <strong>{{ metadata.elaboracao | default("Konis Safety Engenharia") }}</strong> permanece à disposição para:
-  </p>
+  <p>A Konis permanece à disposição para:</p>
   <ul>
-    <li>Esclarecimentos sobre o conteúdo deste relatório;</li>
     <li>Suporte na implantação técnica das recomendações;</li>
-    <li>Treinamento de operadores e equipes de manutenção;</li>
-    <li>Projetos de engenharia de proteção e classificação de áreas;</li>
-    <li>Acompanhamento das medidas recomendadas e futuras reavaliações;</li>
-    <li>Auditoria periódica e atualização da análise de riscos.</li>
+    <li>Treinamento de operadores e manutenção;</li>
+    <li>Projetos de engenharia de proteção contraexplosões;</li>
+    <li>Auditoria e atualização do DHA.</li>
   </ul>
 
-  <div class="signature-block">
-    {% if metadata.endereco %}
-      <p>{{ metadata.endereco }}, {{ metadata.data_geracao | default("—") }}.</p>
-    {% endif %}
+  <blockquote class="encerramento-quote">
+    <p>
+      "Proteger vidas, ativos e processos industriais começa com decisões
+      fundamentadas em dados.
+    </p>
+    <p>
+      Este relatório vai além do atendimento às normas, ele consolida o compromisso
+      com uma cultura de segurança sólida, onde cada grama de poeira é tratada com o
+      respeito que sua energia potencial exige. Segurança não é opcional, é essencial."
+    </p>
+  </blockquote>
 
-    {% if metadata.responsavel %}
-    <div class="signature">
-      <div class="signature-line"></div>
-      <p class="signature-name">{{ metadata.responsavel }}</p>
-      {% if metadata.registro_profissional %}
-        <p class="signature-role">{{ metadata.registro_profissional }}</p>
-      {% endif %}
-      {% if metadata.art_numero %}
-        <p class="signature-art">ART nº {{ metadata.art_numero }}</p>
-      {% endif %}
-    </div>
-    {% endif %}
+  <p class="encerramento-city">São Paulo, {{ mes_ano }}.</p>
 
-    <div class="stamp-area">
-      <span>Carimbo profissional</span>
-    </div>
+  <div class="encerramento-contact">
+    <p class="contact-name">Flávio Cavalcante</p>
+    <p class="contact-role">Gerente técnico</p>
+    <br>
+    <p class="contact-phone">M +55 (11) 94572 0000</p>
+    <p class="contact-phone">T +55 (11) 3046 3648</p>
+    <p class="contact-link"><a href="mailto:flavio.cavalcante@konis.com.br">flavio.cavalcante@konis.com.br</a></p>
+    <p class="contact-link"><a href="https://www.konis.com.br" target="_blank">www.konis.com.br</a></p>
+
+    <img src="konis_logo.png" class="encerramento-logo" alt="Konis - Segurança é essencial">
   </div>
-
-  {% if metadata.codigo_documento %}
-  <p class="document-code" style="margin-top: 2em; font-size: 8.5pt; color: #888; text-align: center;">
-    Código do documento: {{ metadata.codigo_documento }}
-  </p>
-  {% endif %}
 </div>
 
 

@@ -104,6 +104,12 @@ class JobRepository:
         pdf_path: str | None = None,
         started_at: datetime | None = None,
         finished_at: datetime | None = None,
+        input_hash: str | None = None,
+        llm_cost_usd: float | None = None,
+        llm_total_tokens: int | None = None,
+        llm_call_count: int | None = None,
+        pipeline_version_id: str | None = None,
+        dedup_source_job_id: str | None = None,
     ) -> None:
         """Atualiza campos de um job.
 
@@ -127,6 +133,18 @@ class JobRepository:
                 values["started_at"] = started_at
             if finished_at is not None:
                 values["finished_at"] = finished_at
+            if input_hash is not None:
+                values["input_hash"] = input_hash
+            if llm_cost_usd is not None:
+                values["llm_cost_usd"] = llm_cost_usd
+            if llm_total_tokens is not None:
+                values["llm_total_tokens"] = llm_total_tokens
+            if llm_call_count is not None:
+                values["llm_call_count"] = llm_call_count
+            if pipeline_version_id is not None:
+                values["pipeline_version_id"] = pipeline_version_id
+            if dedup_source_job_id is not None:
+                values["dedup_source_job_id"] = uuid.UUID(dedup_source_job_id)
 
             if not values:
                 return
@@ -164,6 +182,10 @@ class JobRepository:
         self,
         job_id: str,
         pdf_path: str,
+        *,
+        llm_cost_usd: float | None = None,
+        llm_total_tokens: int | None = None,
+        llm_call_count: int | None = None,
     ) -> None:
         """Marca um job como concluído com sucesso."""
         await self.update_job(
@@ -173,7 +195,46 @@ class JobRepository:
             current_step="Concluído",
             pdf_path=pdf_path,
             finished_at=datetime.now(timezone.utc),
+            llm_cost_usd=llm_cost_usd,
+            llm_total_tokens=llm_total_tokens,
+            llm_call_count=llm_call_count,
         )
+
+    async def find_done_job_by_hash(
+        self,
+        input_hash: str,
+    ) -> dict[str, Any] | None:
+        """Busca um job concluído com o mesmo input_hash (deduplicação).
+
+        Args:
+            input_hash: SHA-256 do input do job.
+
+        Returns:
+            Dict com id, pdf_path e report_id do job encontrado, ou None.
+        """
+        try:
+            stmt = (
+                select(Job)
+                .where(Job.input_hash == input_hash, Job.status == "done")
+                .limit(1)
+            )
+            result = await self._session.execute(stmt)
+            job = result.scalar_one_or_none()
+            if job is None:
+                return None
+            return {
+                "id": str(job.id),
+                "pdf_path": job.pdf_path,
+                "status": job.status,
+            }
+        except Exception as exc:
+            from loguru import logger  # noqa: PLC0415
+            logger.warning(
+                "DEDUP_CHECK | Falha ao buscar job por hash {}: {}",
+                input_hash[:16],
+                str(exc),
+            )
+            return None
 
     # ------------------------------------------------------------------
     # Steps

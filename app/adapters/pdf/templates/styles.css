@@ -76,7 +76,7 @@
 
 /* Primeira página (capa): sem cabeçalho nem rodapé */
 @page :first {
-    margin: 25mm 20mm 25mm 20mm;
+    margin: 12mm 20mm 25mm 20mm;
     @top-left     { content: none; }
     @bottom-left  { content: none; }
 }
@@ -106,7 +106,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 { font-size: 22pt; }
-h2 { font-size: 14pt; border-bottom: 2px solid #0f3460; padding-bottom: 4px; margin-top: 1em; }
+h2 { font-size: 14pt; margin-top: 1em; }
 h3 { font-size: 12pt; margin-top: 0.8em; }
 h4 { font-size: 10.5pt; margin-top: 0.6em; color: #333; }
 
@@ -124,31 +124,36 @@ strong { color: #1a1a2e; }
 
 .cover {
     page-break-after: always;
+    position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     min-height: 100%;
     text-align: center;
     padding: 0;
 }
 
-.cover-logo {
-    margin-bottom: 2em;
+/* Logo no canto superior esquerdo da capa */
+.cover-logo-topleft {
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
-.cover-logo img {
-    height: 70px;
+.cover-logo-topleft img {
+    height: 42px;
     width: auto;
 }
 
 .cover-content {
     width: 100%;
-    max-width: 520px;
+    max-width: 540px;
+    margin-top: 3.5em;
 }
 
 .cover-title {
-    font-size: 36pt;
+    font-size: 32pt;
     color: #0f3460;
     margin-bottom: 0.15em;
     line-height: 1.15;
@@ -157,21 +162,22 @@ strong { color: #1a1a2e; }
 }
 
 .cover-subtitle-main {
-    font-size: 15pt;
+    font-size: 20pt;
     color: #0f3460;
     font-weight: 600;
+    font-style: italic;
     margin-bottom: 0.3em;
 }
 
 .cover-subtitle {
-    font-size: 11pt;
+    font-size: 13pt;
     color: #444;
     font-weight: 400;
     margin-bottom: 0.5em;
 }
 
 .cover-divider {
-    width: 70%;
+    width: 85%;
     height: 3px;
     background: linear-gradient(90deg, #0f3460, #e94560);
     margin: 1.2em auto;
@@ -179,7 +185,7 @@ strong { color: #1a1a2e; }
 }
 
 .cover-doc-code {
-    font-size: 10pt;
+    font-size: 11pt;
     color: #0f3460;
     font-weight: 700;
     margin-bottom: 1em;
@@ -191,11 +197,11 @@ strong { color: #1a1a2e; }
     text-align: left;
     border-collapse: collapse;
     margin: 0.8em 0;
-    font-size: 10pt;
+    font-size: 12pt;
 }
 
 .cover-table td {
-    padding: 4px 8px;
+    padding: 5px 8px;
     vertical-align: top;
     border: none;
 }
@@ -204,11 +210,16 @@ strong { color: #1a1a2e; }
     font-weight: 700;
     color: #0f3460;
     white-space: nowrap;
-    width: 42%;
+    width: 38%;
+}
+
+.cover-value-bold {
+    font-weight: 700;
+    color: #1a1a2e;
 }
 
 .cover-footer {
-    margin-top: 2em;
+    margin-top: 1.5em;
     font-size: 8.5pt;
     color: #888;
 }
@@ -218,12 +229,12 @@ strong { color: #1a1a2e; }
 .cover-image {
     width: 100%;
     text-align: center;
-    margin: 20px 0;
+    margin: 16px 0;
 }
 
 .cover-image img {
     max-width: 90%;
-    max-height: 280px;
+    max-height: 340px;
     object-fit: contain;
     border-radius: 4px;
 }
@@ -417,10 +428,6 @@ table.risk-matrix-3x3 {
    ========================================================================== */
 
 .section {
-    page-break-before: always;
-}
-
-.section:first-of-type {
     page-break-before: auto;
 }
 
@@ -570,8 +577,6 @@ table.risk-matrix {
 .equipment-title {
     font-size: 12pt;
     color: #0f3460;
-    border-bottom: 1.5px solid #0f3460;
-    padding-bottom: 3px;
     margin-bottom: 0.5em;
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -910,6 +915,70 @@ table.inventory-table {
     font-size: 9pt;
     color: #6c757d;
     text-align: center;
+}
+
+/* ---------- Encerramento – novo layout (imagem referência) ---------- */
+
+.encerramento-quote {
+    font-style: italic;
+    margin: 1.8em 1em 1.8em 1.5em;
+    padding: 0;
+    border: none;
+    color: #1a1a2e;
+    line-height: 1.6;
+}
+
+.encerramento-quote p {
+    margin: 0 0 0.3em 0;
+    text-align: justify;
+}
+
+.encerramento-city {
+    text-align: right;
+    margin-top: 3em;
+    font-size: 10pt;
+    color: #1a1a2e;
+}
+
+.encerramento-contact {
+    margin-top: 4em;
+    text-align: left;
+    line-height: 1.3;
+}
+
+.encerramento-contact p {
+    margin: 0;
+    font-size: 9.5pt;
+    color: #333;
+}
+
+.encerramento-contact .contact-name {
+    font-weight: 700;
+    font-size: 10.5pt;
+    color: #1a1a2e;
+}
+
+.encerramento-contact .contact-role {
+    font-size: 9.5pt;
+    color: #333;
+    margin-bottom: 0.3em;
+}
+
+.encerramento-contact .contact-phone {
+    font-size: 9pt;
+    color: #333;
+}
+
+.encerramento-contact .contact-link a {
+    font-size: 9pt;
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.encerramento-logo {
+    width: 120px;
+    display: block;
+    margin-top: 1.5em;
 }
 
 

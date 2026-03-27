@@ -18,7 +18,9 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -82,6 +84,16 @@ class Job(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+    # ── Campos de observabilidade (v2) ──
+    input_hash: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
+    llm_cost_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
+    llm_total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    llm_call_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    pipeline_version_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    dedup_source_job_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("jobs.id"), nullable=True,
     )
 
     def __repr__(self) -> str:
@@ -340,3 +352,76 @@ class EquipmentImageModel(Base):
 
     def __repr__(self) -> str:
         return f"<EquipmentImageModel id={self.id} equipment_id={self.equipment_id}>"
+
+
+# ======================================================================
+# Tabelas de observabilidade LLM (v2)
+# ======================================================================
+
+
+class LlmUsageLogModel(Base):
+    """Mirror SQLAlchemy da tabela ``llm_usage_logs`` (Prisma-managed)."""
+
+    __tablename__ = "llm_usage_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("jobs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    flow: Mapped[str] = mapped_column(String, nullable=False)
+    step: Mapped[str] = mapped_column(String, nullable=False)
+    provider: Mapped[str] = mapped_column(String, nullable=False)
+    model: Mapped[str] = mapped_column(String, nullable=False)
+    call_type: Mapped[str] = mapped_column(String, nullable=False)
+
+    input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    tokens_source: Mapped[str] = mapped_column(String, nullable=False, default="estimate")
+
+    estimated_cost_usd: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    duration_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    retry_attempt: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    equipment_name: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    prompt_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    response_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<LlmUsageLogModel id={self.id} job_id={self.job_id} step={self.step}>"
+
+
+class PipelineVersionModel(Base):
+    """Mirror SQLAlchemy da tabela ``pipeline_versions`` (Prisma-managed)."""
+
+    __tablename__ = "pipeline_versions"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    prompt_version: Mapped[str] = mapped_column(String, nullable=False)
+    schema_version: Mapped[str] = mapped_column(String, nullable=False)
+    rag_strategy: Mapped[str] = mapped_column(String, nullable=False)
+    llm_model: Mapped[str] = mapped_column(String, nullable=False)
+    embedding_model: Mapped[str] = mapped_column(String, nullable=False)
+    prompt_hash: Mapped[str] = mapped_column(String, nullable=False)
+    schema_hash: Mapped[str] = mapped_column(String, nullable=False)
+    rag_top_k: Mapped[int] = mapped_column(Integer, nullable=False)
+    rag_max_chunks: Mapped[int] = mapped_column(Integer, nullable=False)
+    rag_min_score: Mapped[float] = mapped_column(Float, nullable=False)
+    config_snapshot: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<PipelineVersionModel id={self.id} llm_model={self.llm_model}>"

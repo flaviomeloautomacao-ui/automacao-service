@@ -102,11 +102,11 @@ class NormVectorRepository:
                 id,
                 {DEFAULT_CONTENT_COLUMN} AS content,
                 {DEFAULT_METADATA_COLUMN} AS metadata,
-                1 - ({DEFAULT_EMBEDDING_COLUMN} <=> :query_embedding::vector) AS similarity
+                1 - ({DEFAULT_EMBEDDING_COLUMN} <=> (:query_embedding)::vector) AS similarity
             FROM {self._table_name}
             WHERE {DEFAULT_CONTENT_COLUMN} IS NOT NULL
               AND LENGTH({DEFAULT_CONTENT_COLUMN}) >= :min_len
-            ORDER BY {DEFAULT_EMBEDDING_COLUMN} <=> :query_embedding::vector
+            ORDER BY {DEFAULT_EMBEDDING_COLUMN} <=> (:query_embedding)::vector
             LIMIT :top_k
         """)
 
@@ -144,6 +144,9 @@ class NormVectorRepository:
                 self._table_name,
                 top_k,
             )
+            # Rollback para limpar estado de transação falha no PostgreSQL,
+            # evitando InFailedSQLTransactionError em queries subsequentes.
+            await self._session.rollback()
             raise
 
     async def search_by_embedding_with_filter(
@@ -184,12 +187,12 @@ class NormVectorRepository:
                 id,
                 {DEFAULT_CONTENT_COLUMN} AS content,
                 {DEFAULT_METADATA_COLUMN} AS metadata,
-                1 - ({DEFAULT_EMBEDDING_COLUMN} <=> :query_embedding::vector) AS similarity
+                1 - ({DEFAULT_EMBEDDING_COLUMN} <=> (:query_embedding)::vector) AS similarity
             FROM {self._table_name}
             WHERE {DEFAULT_CONTENT_COLUMN} IS NOT NULL
               AND LENGTH({DEFAULT_CONTENT_COLUMN}) >= :min_len
               AND {DEFAULT_METADATA_COLUMN}->>'title' ILIKE :title_filter
-            ORDER BY {DEFAULT_EMBEDDING_COLUMN} <=> :query_embedding::vector
+            ORDER BY {DEFAULT_EMBEDDING_COLUMN} <=> (:query_embedding)::vector
             LIMIT :top_k
         """)
 
@@ -228,4 +231,5 @@ class NormVectorRepository:
                 self._table_name,
                 title_filter,
             )
+            await self._session.rollback()
             raise

@@ -32,7 +32,7 @@ from app.adapters.storage.paths import report_pdf_path
 from app.application.use_cases.process_upload import (
     ProcessUploadUseCase,
 )
-from app.domain.errors import DomainError
+from app.domain.errors import BudgetExceededError, DomainError
 from app.domain.services.equipment_context_builder import build_equipment_contexts
 from app.domain.services.equipment_prompt_context import (
     build_all_equipment_prompt_contexts,
@@ -40,10 +40,14 @@ from app.domain.services.equipment_prompt_context import (
 from app.domain.services.equipment_narrative_generator import (
     generate_all_equipment_narratives,
 )
+from app.domain.services.input_hasher import compute_input_hash
+from app.domain.services.version_snapshot import compute_version_fingerprint
 from app.infrastructure.llm_cost_tracker import get_tracker
 
 if TYPE_CHECKING:
+    from app.adapters.db.llm_cost_repository import LLMCostRepository
     from app.adapters.norms.abnt_retriever import ABNTRetriever
+    from app.domain.services.budget_guard import BudgetGuard
 
 
 class ProcessJobUseCase:
@@ -64,10 +68,14 @@ class ProcessJobUseCase:
         job_repo: JobRepository,
         upload_use_case: ProcessUploadUseCase,
         abnt_retriever: "ABNTRetriever | None" = None,
+        cost_repository: "LLMCostRepository | None" = None,
+        budget_guard: "BudgetGuard | None" = None,
     ) -> None:
         self._job_repo = job_repo
         self._uc = upload_use_case
         self._abnt_retriever = abnt_retriever
+        self._cost_repo = cost_repository
+        self._budget_guard = budget_guard
 
     async def execute(
         self,
@@ -137,6 +145,63 @@ class ProcessJobUseCase:
                 job_id,
                 company_metadata is not None,
             )
+
+            # ── DEDUP CHECK: calcular hash do input e buscar duplicata ──
+            try:
+                input_hash = compute_input_hash(
+                    rows_dicts, profile=profile, company_metadata=company_metadata
+                )
+                await self._job_repo.update_job(job_id, input_hash=input_hash)
+                logger.info(
+                    "Job {} | INPUT_HASH={}", job_id, input_hash[:16]
+                )
+
+                existing = await self._job_repo.find_done_job_by_hash(input_hash)
+                if existing:
+                    logger.info(
+                        "Job {} | DEDUP_HIT | reutilizando resultado do job {}",
+                        job_id,
+                        existing["id"],
+                    )
+                    # Reutilizar PDF do job anterior
+                    await self._job_repo.update_job(
+                        job_id,
+                        dedup_source_job_id=existing["id"],
+                    )
+                    await self._job_repo.mark_job_done(job_id, existing["pdf_path"])
+                    return {
+                        "report_id": "",
+                        "pdf_url": "",
+                        "pdf_path": existing["pdf_path"],
+                        "dedup_source": existing["id"],
+                    }
+            except Exception:
+                logger.warning(
+                    "Job {} | DEDUP_CHECK falhou — continuando sem dedup",
+                    job_id,
+                )
+
+            # ── BUDGET CHECK: verificar custo diário antes de prosseguir ──
+            if self._budget_guard is not None:
+                try:
+                    from app.infrastructure.db import get_session as _get_budget_session  # noqa: PLC0415
+
+                    session_gen = _get_budget_session()
+                    budget_session = await session_gen.__anext__()
+                    try:
+                        await self._budget_guard.check_daily_budget(budget_session)
+                    finally:
+                        try:
+                            await session_gen.__anext__()
+                        except StopAsyncIteration:
+                            pass
+                except BudgetExceededError:
+                    raise
+                except Exception:
+                    logger.warning(
+                        "Job {} | DAILY_BUDGET_CHECK falhou — continuando",
+                        job_id,
+                    )
 
             # 2b.1) Injeta filename do job no metadata (para template)
             if company_metadata is None:
@@ -349,9 +414,13 @@ class ProcessJobUseCase:
             cost_tracker = get_tracker()
             cost_tracker.persist_now()
             job_records = [r for r in cost_tracker.records if r.job_id == job_id]
+            total_cost = 0.0
+            total_tokens_used = 0
+            total_calls = 0
             if job_records:
                 total_cost = sum(r.estimated_cost_usd for r in job_records)
                 total_calls = len(job_records)
+                total_tokens_used = sum(r.total_tokens for r in job_records)
                 gen_calls = sum(1 for r in job_records if r.call_type == "generation")
                 emb_calls = sum(1 for r in job_records if r.call_type == "embedding")
                 logger.info(
@@ -359,6 +428,48 @@ class ProcessJobUseCase:
                     "custo_total=${:.6f}",
                     job_id, total_calls, gen_calls, emb_calls, total_cost,
                 )
+
+            # ── Flush custos para o banco de dados ──
+            if self._cost_repo is not None and job_records:
+                try:
+                    saved = await self._cost_repo.save_batch(
+                        cost_tracker.records, job_id
+                    )
+                    await self._cost_repo.update_job_cost_summary(
+                        job_id=job_id,
+                        total_cost_usd=total_cost,
+                        total_tokens=total_tokens_used,
+                        call_count=total_calls,
+                    )
+                    # Limpar registros do job na memória para evitar duplicatas
+                    cost_tracker.clear_records_for_job(job_id)
+                    logger.info(
+                        "Job {} | COST_DB_FLUSH | saved={} records",
+                        job_id,
+                        saved,
+                    )
+                except Exception:
+                    logger.warning(
+                        "Job {} | COST_DB_FLUSH falhou — custos apenas em memória/arquivo",
+                        job_id,
+                    )
+
+            # ── Budget check per-job (pós-execução) ──
+            if self._budget_guard is not None:
+                try:
+                    self._budget_guard.check_job_budget(
+                        current_cost=total_cost,
+                        current_calls=total_calls,
+                        job_id=job_id,
+                    )
+                except BudgetExceededError:
+                    logger.warning(
+                        "Job {} | BUDGET_EXCEEDED pós-LLM | cost=${:.4f} calls={}",
+                        job_id,
+                        total_cost,
+                        total_calls,
+                    )
+                    # Job já foi processado — log warning mas não falha
 
             await self._job_repo.complete_step(job_id, "llm_analysis")
             await self._job_repo.update_job(
@@ -428,6 +539,67 @@ class ProcessJobUseCase:
 
             await self._job_repo.complete_step(job_id, "report_storage")
 
+            # ── Pipeline Version Snapshot ─────────────────────────
+            if self._cost_repo is not None:
+                try:
+                    from app.adapters.llm.prompts import build_system_prompt  # noqa: PLC0415
+                    from app.infrastructure.config import get_settings as _get_snap_settings  # noqa: PLC0415
+
+                    snap_settings = _get_snap_settings()
+                    sys_prompt = build_system_prompt(profile)
+                    output_schema = {
+                        "recomendacoes_tecnicas": "list",
+                        "justificativas_tecnicas": "list",
+                    }
+                    rag_config = {
+                        "top_k": snap_settings.RAG_TOP_K,
+                        "max_chunks": snap_settings.RAG_MAX_CHUNKS,
+                        "min_score": snap_settings.RAG_MIN_SCORE,
+                    }
+
+                    prompt_hash, schema_hash = compute_version_fingerprint(
+                        system_prompt=sys_prompt,
+                        output_schema=output_schema,
+                        rag_config=rag_config,
+                        llm_model=snap_settings.LLM_MODEL,
+                        embedding_model=snap_settings.EMBEDDING_MODEL,
+                    )
+
+                    version_id = await self._cost_repo.find_or_create_pipeline_version(
+                        prompt_version="1.0",
+                        schema_version="1.0",
+                        rag_strategy="abnt_vector" if self._abnt_retriever else "none",
+                        llm_model=snap_settings.LLM_MODEL,
+                        embedding_model=snap_settings.EMBEDDING_MODEL,
+                        prompt_hash=prompt_hash,
+                        schema_hash=schema_hash,
+                        rag_top_k=snap_settings.RAG_TOP_K,
+                        rag_max_chunks=snap_settings.RAG_MAX_CHUNKS,
+                        rag_min_score=snap_settings.RAG_MIN_SCORE,
+                        config_snapshot={
+                            "llm_model": snap_settings.LLM_MODEL,
+                            "embedding_model": snap_settings.EMBEDDING_MODEL,
+                            "rag_enabled": snap_settings.RAG_ENABLED,
+                            "rag_top_k": snap_settings.RAG_TOP_K,
+                            "rag_max_chunks": snap_settings.RAG_MAX_CHUNKS,
+                            "rag_min_score": snap_settings.RAG_MIN_SCORE,
+                            "profile": profile,
+                        },
+                    )
+
+                    if version_id:
+                        await self._cost_repo.link_job_to_version(job_id, version_id)
+                        logger.info(
+                            "Job {} | VERSION_SNAPSHOT | version_id={}",
+                            job_id,
+                            version_id,
+                        )
+                except Exception:
+                    logger.warning(
+                        "Job {} | VERSION_SNAPSHOT falhou — continuando sem versionamento",
+                        job_id,
+                    )
+
             # ── Finalizar job ─────────────────────────────────────
             await self._job_repo.mark_job_done(job_id, pdf_path)
 
@@ -443,6 +615,16 @@ class ProcessJobUseCase:
                 "pdf_url": pdf_url,
                 "pdf_path": pdf_path,
             }
+
+        except BudgetExceededError as exc:
+            logger.error("Job {} | Budget excedido: {}", job_id, str(exc))
+            await self._fail_job(
+                job_id,
+                error_code="BUDGET_EXCEEDED",
+                error_message=str(exc),
+                step_name=await self._current_processing_step(job_id),
+            )
+            raise
 
         except DomainError as exc:
             logger.error("Job {} | Erro de domínio: {}", job_id, str(exc))
