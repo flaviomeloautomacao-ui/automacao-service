@@ -36,6 +36,7 @@ from app.domain.entities import (
     EquipmentLLMInput,
     LiteratureExcerpt,
     NormativeExcerpt,
+    ResidualRiskClassification,
     RiskClassification,
 )
 
@@ -52,17 +53,25 @@ _MAX_TOTAL_JSON_CHARS = 8_000
 # Valores válidos de severidade/risco (IV-05 / IV-06)
 _VALID_SEVERIDADES: set[str] = {
     "Baixa",
+    "Baixo",
     "Média",
+    "Médio",
     "Média para Alta",
     "Alta",
+    "Alto",
     "Muito Alta",
+    "Muito Alto",
 }
 
 _VALID_RISCOS: set[str] = {
     "Baixo",
+    "Baixa",
     "Médio",
+    "Média",
     "Alto",
+    "Alta",
     "Muito Alto",
+    "Muito Alta",
 }
 
 # ---------------------------------------------------------------------------
@@ -288,14 +297,26 @@ def build_equipment_prompt_context(
         )
         return None
 
-    # ── IV-06: categoria_risco válido ─────────────────────────────
+    # ── IV-06: categoria_probabilidade válido ─────────────────────
     risco_normalized = _normalize_risk(
-        eq.classificacao_do_risco.categoria_risco
+        eq.classificacao_do_risco.categoria_probabilidade
     )
     if risco_normalized is None:
         logger.warning(
-            "IV-06 | categoria_risco inválido '{}' para '{}' — equipamento ignorado",
-            eq.classificacao_do_risco.categoria_risco,
+            "IV-06 | categoria_probabilidade inválido '{}' para '{}' — equipamento ignorado",
+            eq.classificacao_do_risco.categoria_probabilidade,
+            name,
+        )
+        return None
+
+    # ── IV-06b: classificacao_risco válido ───────────────────
+    classif_normalized = _normalize_risk(
+        eq.classificacao_do_risco.classificacao_risco
+    )
+    if classif_normalized is None:
+        logger.warning(
+            "IV-06b | classificacao_risco inválido '{}' para '{}' — equipamento ignorado",
+            eq.classificacao_do_risco.classificacao_risco,
             name,
         )
         return None
@@ -329,7 +350,8 @@ def build_equipment_prompt_context(
         "consequencias_potenciais": consequencias,
         "classificacao_do_risco": {
             "categoria_severidade": sev_normalized,
-            "categoria_risco": risco_normalized,
+            "categoria_probabilidade": risco_normalized,
+            "classificacao_risco": classif_normalized,
         },
         "medidas_preventivas_existentes": medidas_existentes,
         "medidas_a_implementar": medidas_implementar,
@@ -347,6 +369,15 @@ def build_equipment_prompt_context(
         payload_dict = _shrink_to_budget(payload_dict, _MAX_TOTAL_JSON_CHARS)
 
     # ── Construir o modelo Pydantic (validação final) ─────────────
+    # Preparar bloco residual (V3) se disponível
+    residual_risk = None
+    if eq.classificacao_risco_residual is not None:
+        residual_risk = ResidualRiskClassification(
+            categoria_severidade=eq.classificacao_risco_residual.categoria_severidade,
+            categoria_probabilidade=eq.classificacao_risco_residual.categoria_probabilidade,
+            classificacao_risco=eq.classificacao_risco_residual.classificacao_risco,
+        )
+
     try:
         llm_input = EquipmentLLMInput(
             equipment_name=payload_dict["equipment_name"],
@@ -358,10 +389,14 @@ def build_equipment_prompt_context(
                 categoria_severidade=payload_dict["classificacao_do_risco"][
                     "categoria_severidade"
                 ],
-                categoria_risco=payload_dict["classificacao_do_risco"][
-                    "categoria_risco"
+                categoria_probabilidade=payload_dict["classificacao_do_risco"][
+                    "categoria_probabilidade"
+                ],
+                classificacao_risco=payload_dict["classificacao_do_risco"][
+                    "classificacao_risco"
                 ],
             ),
+            classificacao_risco_residual=residual_risk,
             medidas_preventivas_existentes=payload_dict[
                 "medidas_preventivas_existentes"
             ],

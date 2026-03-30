@@ -34,7 +34,7 @@ from typing import Any
 
 from loguru import logger
 
-from app.domain.entities import EquipmentContext, RiskClassification
+from app.domain.entities import EquipmentContext, RiskClassification, ResidualRiskClassification
 from app.domain.services.text_utils import split_field as _split_field, append_unique as _append_unique
 
 # ---------------------------------------------------------------------------
@@ -180,6 +180,11 @@ class _EquipmentAccumulator:
         "consequencias",
         "severidade",
         "risco",
+        "probabilidade",
+        "classificacao",
+        "severidade_2",
+        "probabilidade_2",
+        "classificacao_2",
         "medidas_existentes",
         "medidas_implementar",
         "observacoes",
@@ -195,6 +200,11 @@ class _EquipmentAccumulator:
         self.consequencias: list[str] = []
         self.severidade: str = ""
         self.risco: str = ""
+        self.probabilidade: str = ""
+        self.classificacao: str = ""
+        self.severidade_2: str = ""
+        self.probabilidade_2: str = ""
+        self.classificacao_2: str = ""
         self.medidas_existentes: list[str] = []
         self.medidas_implementar: list[str] = []
         self.observacoes: list[str] = []
@@ -230,6 +240,49 @@ class _EquipmentAccumulator:
                 _highest_risk(self.risco, risco)
                 if self.risco
                 else risco
+            )
+
+        # Probabilidade (V3): consolidar para o mais alto
+        prob = (row.get("categoria_probabilidade") or "").strip()
+        if prob:
+            self.probabilidade = (
+                _highest_risk(self.probabilidade, prob)
+                if self.probabilidade
+                else prob
+            )
+
+        # Classificação do risco (V3): consolidar para o mais alto
+        classif = (row.get("classificacao_risco") or "").strip()
+        if classif:
+            self.classificacao = (
+                _highest_risk(self.classificacao, classif)
+                if self.classificacao
+                else classif
+            )
+
+        # Bloco residual (V3): consolidar para o mais alto por campo
+        sev2 = (row.get("categoria_severidade_2") or "").strip()
+        if sev2:
+            self.severidade_2 = (
+                _highest_severity(self.severidade_2, sev2)
+                if self.severidade_2
+                else sev2
+            )
+
+        prob2 = (row.get("categoria_probabilidade_2") or "").strip()
+        if prob2:
+            self.probabilidade_2 = (
+                _highest_risk(self.probabilidade_2, prob2)
+                if self.probabilidade_2
+                else prob2
+            )
+
+        classif2 = (row.get("classificacao_risco_2") or "").strip()
+        if classif2:
+            self.classificacao_2 = (
+                _highest_risk(self.classificacao_2, classif2)
+                if self.classificacao_2
+                else classif2
             )
 
         # Campos multivalorados — split + dedup
@@ -286,8 +339,14 @@ class _EquipmentAccumulator:
             consequencias_potenciais=list(self.consequencias),
             classificacao_do_risco=RiskClassification(
                 categoria_severidade=self.severidade or "Não informada",
-                categoria_risco=self.risco or "Não informado",
+                categoria_probabilidade=self.probabilidade or self.risco or "Não informado",
+                classificacao_risco=self.classificacao or self.risco or "Não informado",
             ),
+            classificacao_risco_residual=ResidualRiskClassification(
+                categoria_severidade=self.severidade_2 or None,
+                categoria_probabilidade=self.probabilidade_2 or None,
+                classificacao_risco=self.classificacao_2 or None,
+            ) if any([self.severidade_2, self.probabilidade_2, self.classificacao_2]) else None,
             medidas_preventivas_existentes=list(self.medidas_existentes),
             medidas_a_implementar=list(self.medidas_implementar),
             observacoes=list(self.observacoes),

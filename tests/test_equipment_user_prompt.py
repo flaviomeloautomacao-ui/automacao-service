@@ -37,7 +37,8 @@ def _make_input(**overrides: object) -> EquipmentLLMInput:
         "consequencias_potenciais": ["Explosão primária"],
         "classificacao_do_risco": RiskClassification(
             categoria_severidade="Alta",
-            categoria_risco="Alto",
+            categoria_probabilidade="Alto",
+            classificacao_risco="Alto",
         ),
         "medidas_preventivas_existentes": ["Sistema de aspiração parcial"],
         "medidas_a_implementar": ["Instalar supressão de explosão"],
@@ -80,9 +81,10 @@ class TestRequiredBlocks:
 
     def test_contains_risk_classification(self) -> None:
         prompt = build_equipment_user_prompt(_make_input())
-        assert "### Classificação do Risco ###" in prompt
+        assert "### Classificação do Risco" in prompt
         assert "Categoria de Severidade: Alta" in prompt
-        assert "Categoria do Risco: Alto" in prompt
+        assert "Categoria da Probabilidade: Alto" in prompt
+        assert "Classificação do Risco: Alto" in prompt
 
     def test_contains_medidas_existentes(self) -> None:
         prompt = build_equipment_user_prompt(_make_input())

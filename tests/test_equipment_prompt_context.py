@@ -56,7 +56,8 @@ def _make_ctx(**overrides: object) -> EquipmentContext:
         "consequencias_potenciais": ["Explosão primária"],
         "classificacao_do_risco": RiskClassification(
             categoria_severidade="Alta",
-            categoria_risco="Alto",
+            categoria_probabilidade="Alto",
+            classificacao_risco="Alto",
         ),
         "medidas_preventivas_existentes": ["Sistema de aspiração parcial"],
         "medidas_a_implementar": ["Instalar supressão de explosão"],
@@ -154,7 +155,8 @@ class TestInputValidation:
         ctx = _make_ctx(
             classificacao_do_risco=RiskClassification(
                 categoria_severidade="Não informada",
-                categoria_risco="Alto",
+                categoria_probabilidade="Alto",
+                classificacao_risco="Alto",
             )
         )
         result = build_equipment_prompt_context(ctx, _NORMAS)
@@ -164,7 +166,8 @@ class TestInputValidation:
         ctx = _make_ctx(
             classificacao_do_risco=RiskClassification(
                 categoria_severidade="Alta",
-                categoria_risco="Não informado",
+                categoria_probabilidade="Não informado",
+                classificacao_risco="Não informado",
             )
         )
         result = build_equipment_prompt_context(ctx, _NORMAS)
@@ -255,7 +258,8 @@ class TestCanonicalNormalization:
         ctx = _make_ctx(
             classificacao_do_risco=RiskClassification(
                 categoria_severidade="muito alta",
-                categoria_risco="Alto",
+                categoria_probabilidade="Alto",
+                classificacao_risco="Alto",
             )
         )
         result = build_equipment_prompt_context(ctx, _NORMAS)
@@ -266,7 +270,8 @@ class TestCanonicalNormalization:
         ctx = _make_ctx(
             classificacao_do_risco=RiskClassification(
                 categoria_severidade="Alta",
-                categoria_risco="muito alto",
+                categoria_probabilidade="muito alto",
+                classificacao_risco="muito alto",
             )
         )
         result = build_equipment_prompt_context(ctx, _NORMAS)
@@ -277,7 +282,8 @@ class TestCanonicalNormalization:
         ctx = _make_ctx(
             classificacao_do_risco=RiskClassification(
                 categoria_severidade="média para alta",
-                categoria_risco="Médio",
+                categoria_probabilidade="Médio",
+                classificacao_risco="Médio",
             )
         )
         result = build_equipment_prompt_context(ctx, _NORMAS)
@@ -345,7 +351,8 @@ class TestBatchHelper:
             equipment_name="EC-02",
             classificacao_do_risco=RiskClassification(
                 categoria_severidade="INVALIDA",
-                categoria_risco="Alto",
+                categoria_probabilidade="Alto",
+                classificacao_risco="Alto",
             ),
         )
         results = build_all_equipment_prompt_contexts([valid, invalid], _NORMAS)

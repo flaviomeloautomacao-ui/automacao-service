@@ -89,6 +89,15 @@ class MachineRiskRow(BaseModel):
     categoria_severidade: Optional[str] = Field(None, description="Categoria da severidade (texto livre ou escala)")
     categoria_risco: Optional[str] = Field(None, description="Categoria do risco (texto livre ou escala)")
 
+    # V3 — avaliação atual (campos explícitos)
+    categoria_probabilidade: Optional[str] = Field(None, description="Categoria da Probabilidade (V3)")
+    classificacao_risco: Optional[str] = Field(None, description="Classificação consolidada do Risco (V3)")
+
+    # V3 — avaliação residual (pós-implementação das medidas preventivas)
+    categoria_severidade_2: Optional[str] = Field(None, description="Severidade residual pós-implementação")
+    categoria_probabilidade_2: Optional[str] = Field(None, description="Probabilidade residual pós-implementação")
+    classificacao_risco_2: Optional[str] = Field(None, description="Classificação de risco residual pós-implementação")
+
     # Medidas preventivas
     medidas_existentes: Optional[str] = Field(None, description="Medidas preventivas já existentes")
     medidas_implementar: Optional[str] = Field(None, description="Medidas preventivas a implementar")
@@ -134,9 +143,28 @@ class RiskClassification(BaseModel):
     categoria_severidade: str = Field(
         ..., description="Severidade mais alta — ex.: 'Alta', 'Muito Alta'"
     )
-    categoria_risco: str = Field(
-        ..., description="Risco mais alto — ex.: 'Alto', 'Muito Alto'"
+    categoria_probabilidade: str = Field(
+        ..., description="Probabilidade mais alta — ex.: 'Alto', 'Muito Alto'"
     )
+    classificacao_risco: str = Field(
+        ..., description="Classificação de risco consolidada — ex.: 'Alto', 'Muito Alto'"
+    )
+
+    # Compat: alias para código legado que usa categoria_risco
+    @property
+    def categoria_risco(self) -> str:
+        """Alias de compatibilidade para categoria_probabilidade."""
+        return self.categoria_probabilidade
+
+    model_config = {"frozen": True}
+
+
+class ResidualRiskClassification(BaseModel):
+    """Classificação de risco residual — cenário pós-implementação das medidas preventivas."""
+
+    categoria_severidade: Optional[str] = None
+    categoria_probabilidade: Optional[str] = None
+    classificacao_risco: Optional[str] = None
 
     model_config = {"frozen": True}
 
@@ -179,7 +207,13 @@ class EquipmentContext(BaseModel):
 
     # ── Classificação do risco ────────────────────────────────────
     classificacao_do_risco: RiskClassification = Field(
-        ..., description="Severidade e risco consolidados (highest)"
+        ..., description="Severidade, probabilidade e risco consolidados (highest)"
+    )
+
+    # ── Risco residual (V3 — pós-implementação) ─────────────────────
+    classificacao_risco_residual: Optional[ResidualRiskClassification] = Field(
+        None,
+        description="Risco residual pós-implementação das medidas preventivas",
     )
 
     # ── Medidas existentes e seed de recomendações ────────────────
@@ -224,7 +258,13 @@ class EquipmentContext(BaseModel):
             "causas": list(self.causas_possiveis),
             "consequencias": list(self.consequencias_potenciais),
             "severidade": self.classificacao_do_risco.categoria_severidade,
-            "risco": self.classificacao_do_risco.categoria_risco,
+            "risco": self.classificacao_do_risco.categoria_probabilidade,
+            "probabilidade": self.classificacao_do_risco.categoria_probabilidade,
+            "classificacao": self.classificacao_do_risco.classificacao_risco,
+            # Bloco residual (None se não existir)
+            "severidade_residual": self.classificacao_risco_residual.categoria_severidade if self.classificacao_risco_residual else None,
+            "probabilidade_residual": self.classificacao_risco_residual.categoria_probabilidade if self.classificacao_risco_residual else None,
+            "classificacao_residual": self.classificacao_risco_residual.classificacao_risco if self.classificacao_risco_residual else None,
             "medidas_existentes": list(self.medidas_preventivas_existentes),
             "medidas_implementar": list(self.medidas_a_implementar),
             "observacoes": list(self.observacoes),
@@ -283,7 +323,13 @@ class EquipmentLLMInput(BaseModel):
 
     # ── Classificação do risco ────────────────────────────────────
     classificacao_do_risco: RiskClassification = Field(
-        ..., description="Severidade e risco consolidados (highest)",
+        ..., description="Severidade, probabilidade e risco consolidados (highest)",
+    )
+
+    # ── Risco residual (V3) ───────────────────────────────────
+    classificacao_risco_residual: Optional[ResidualRiskClassification] = Field(
+        None,
+        description="Risco residual pós-implementação (quando disponível)",
     )
 
     # ── Medidas ───────────────────────────────────────────────────
@@ -484,6 +530,7 @@ __all__ = [
     "PriorityLevel",
     "MachineRiskRow",
     "RiskClassification",
+    "ResidualRiskClassification",
     "EquipmentContext",
     "EquipmentLLMInput",
     "NormativeExcerpt",

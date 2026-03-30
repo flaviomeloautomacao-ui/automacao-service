@@ -710,6 +710,20 @@ ol.detail-list {
     color: #fff;
 }
 
+/* Risco residual (pós-implementação) */
+.residual-risk-title {
+    color: #555;
+    font-size: 9pt;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    font-style: italic;
+}
+
+.risk-table-residual {
+    border-left: 3px solid #adb5bd;
+    opacity: 0.9;
+}
+
 .summary-count {
     margin-top: 1em;
     font-size: 10pt;

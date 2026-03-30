@@ -32,7 +32,8 @@ def _make_row(**overrides: object) -> MachineRiskRow:
         "causas": "Falha na proteção",
         "consequencias": "Amputação",
         "categoria_severidade": "IV",
-        "categoria_risco": "Alto",
+        "categoria_probabilidade": "Alto",
+        "classificacao_risco": "Alto",
     }
     defaults.update(overrides)
     return MachineRiskRow(**defaults)  # type: ignore[arg-type]
@@ -75,7 +76,8 @@ class TestValidacaoOK:
             descricao_equipamento="Prensa 150t",
             riscos="Mecânico",
             categoria_severidade="IV",
-            categoria_risco="Alto",
+            categoria_probabilidade="Alto",
+            classificacao_risco="Alto",
             medidas_existentes="Barreira",
             medidas_implementar="Sensor",
             observacoes="OK",

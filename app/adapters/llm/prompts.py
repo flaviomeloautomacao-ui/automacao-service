@@ -278,7 +278,8 @@ def build_user_prompt(context: dict[str, Any]) -> str:
                 riscos_linhas.append(f"  • Consequência: {cn}")
             riscos_linhas.append(
                 f"  Severidade: {eq.get('severidade', 'N/I')} | "
-                f"Cat. Risco: {eq.get('risco', 'N/I')}"
+                f"Prob: {eq.get('probabilidade', eq.get('risco', 'N/I'))} | "
+                f"Class: {eq.get('classificacao', eq.get('risco', 'N/I'))}"
             )
             for m in eq.get("medidas_existentes", []):
                 riscos_linhas.append(f"  • Medida existente: {m}")

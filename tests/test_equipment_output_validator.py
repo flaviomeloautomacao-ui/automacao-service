@@ -35,7 +35,8 @@ def _make_input(**overrides) -> EquipmentLLMInput:
         "consequencias_potenciais": ["Explosão"],
         "classificacao_do_risco": RiskClassification(
             categoria_severidade="Alta",
-            categoria_risco="Alto",
+            categoria_probabilidade="Alto",
+            classificacao_risco="Alto",
         ),
         "medidas_preventivas_existentes": ["Sensor instalado"],
         "medidas_a_implementar": [

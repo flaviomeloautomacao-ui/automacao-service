@@ -36,7 +36,8 @@ def _make_input(name: str = "Elevador EC-01", **overrides) -> EquipmentLLMInput:
         "consequencias_potenciais": ["Explosão"],
         "classificacao_do_risco": RiskClassification(
             categoria_severidade="Alta",
-            categoria_risco="Alto",
+            categoria_probabilidade="Alto",
+            classificacao_risco="Alto",
         ),
         "medidas_preventivas_existentes": [],
         "medidas_a_implementar": ["Instalar supressão", "Revisar ventilação"],

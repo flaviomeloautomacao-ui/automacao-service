@@ -40,6 +40,8 @@ def _make_row(**overrides: object) -> dict:
         "consequencias": "Amputação",
         "categoria_severidade": "Alta",
         "categoria_risco": "Alto",
+        "categoria_probabilidade": "Alto",
+        "classificacao_risco": "Alto",
         "medidas_existentes": "Barreira física",
         "medidas_implementar": "Sensor de presença",
         "observacoes": None,
@@ -70,7 +72,8 @@ class TestSingleEquipmentSingleRow:
         assert ctx.consequencias_potenciais == ["Amputação"]
         assert ctx.classificacao_do_risco == RiskClassification(
             categoria_severidade="Alta",
-            categoria_risco="Alto",
+            categoria_probabilidade="Alto",
+            classificacao_risco="Alto",
         )
         assert ctx.medidas_preventivas_existentes == ["Barreira física"]
         assert ctx.medidas_a_implementar == ["Sensor de presença"]
@@ -142,12 +145,13 @@ class TestSeverityRiskConsolidation:
 
     def test_risk_highest_chosen(self) -> None:
         rows = [
-            _make_row(categoria_risco="Baixo"),
-            _make_row(categoria_risco="Muito Alto"),
-            _make_row(categoria_risco="Médio"),
+            _make_row(categoria_probabilidade="Baixo", classificacao_risco="Baixo"),
+            _make_row(categoria_probabilidade="Muito Alto", classificacao_risco="Muito Alto"),
+            _make_row(categoria_probabilidade="Médio", classificacao_risco="Médio"),
         ]
         contexts = build_equipment_contexts(rows)
-        assert contexts[0].classificacao_do_risco.categoria_risco == "Muito Alto"
+        assert contexts[0].classificacao_do_risco.categoria_probabilidade == "Muito Alto"
+        assert contexts[0].classificacao_do_risco.classificacao_risco == "Muito Alto"
 
     def test_severity_media_para_alta(self) -> None:
         """'Média para Alta' deve ser inferior a 'Alta'."""
@@ -248,10 +252,11 @@ class TestEdgeCases:
         assert contexts[0].descricao_da_operacao == "Não informado"
 
     def test_missing_severity_risk_placeholder(self) -> None:
-        rows = [_make_row(categoria_severidade=None, categoria_risco=None)]
+        rows = [_make_row(categoria_severidade=None, categoria_risco=None, categoria_probabilidade=None, classificacao_risco=None)]
         ctx = build_equipment_contexts(rows)[0]
         assert ctx.classificacao_do_risco.categoria_severidade == "Não informada"
-        assert ctx.classificacao_do_risco.categoria_risco == "Não informado"
+        assert ctx.classificacao_do_risco.categoria_probabilidade == "Não informado"
+        assert ctx.classificacao_do_risco.classificacao_risco == "Não informado"
 
 
 # ---------------------------------------------------------------------------

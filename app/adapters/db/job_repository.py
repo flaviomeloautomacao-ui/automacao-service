@@ -32,6 +32,12 @@ _COLUMN_NORMALIZE_MAP: dict[str, str] = {
     "Consequências": "consequencias",
     "Categoria da Severidade": "categoria_severidade",
     "Categoria do Risco": "categoria_risco",
+    # V3 — novos campos
+    "Categoria da Probabilidade": "categoria_probabilidade",
+    "Classificação do Risco": "classificacao_risco",
+    "Categoria da Severidade 2": "categoria_severidade_2",
+    "Categoria da Probabilidade 2": "categoria_probabilidade_2",
+    "Classificação do Risco 2": "classificacao_risco_2",
     "Medidas Preventivas Existentes": "medidas_existentes",
     "Medidas Preventivas a Implementar": "medidas_implementar",
     "Observações": "observacoes",

@@ -41,6 +41,15 @@ COLUMN_MAP: dict[str, str] = {
     "categoria da severidade ": "categoria_severidade",
     "categoria do risco": "categoria_risco",
     "categoria do risco ": "categoria_risco",
+    # V3 — novos campos
+    "categoria da probabilidade": "categoria_probabilidade",
+    "categoria da probabilidade ": "categoria_probabilidade",  # trailing space
+    "classificação do risco": "classificacao_risco",
+    "classificacao do risco": "classificacao_risco",           # sem acento
+    "categoria da severidade 2": "categoria_severidade_2",
+    "categoria da probabilidade 2": "categoria_probabilidade_2",
+    "classificação do risco 2": "classificacao_risco_2",
+    "classificacao do risco 2": "classificacao_risco_2",       # sem acento
     "medidas preventivas existentes": "medidas_existentes",
     "medidas preventivas a implementar": "medidas_implementar",
     "observações": "observacoes",
@@ -48,6 +57,7 @@ COLUMN_MAP: dict[str, str] = {
 }
 
 #: Tokens usados para detectar a linha de cabeçalho.
+#: V1 e V3 contêm todos estes tokens no cabeçalho.
 _HEADER_TOKENS: set[str] = {"equipamento", "riscos", "perigo", "consequências"}
 
 #: Campos obrigatórios que devem estar presentes como colunas.
@@ -342,6 +352,23 @@ class PandasSpreadsheetParser:
                     ),
                     categoria_risco=_cell_to_optional_str(
                         record.get("categoria_risco")
+                    ),
+                    # V3 — avaliação atual
+                    categoria_probabilidade=_cell_to_optional_str(
+                        record.get("categoria_probabilidade")
+                    ),
+                    classificacao_risco=_cell_to_optional_str(
+                        record.get("classificacao_risco")
+                    ),
+                    # V3 — avaliação residual
+                    categoria_severidade_2=_cell_to_optional_str(
+                        record.get("categoria_severidade_2")
+                    ),
+                    categoria_probabilidade_2=_cell_to_optional_str(
+                        record.get("categoria_probabilidade_2")
+                    ),
+                    classificacao_risco_2=_cell_to_optional_str(
+                        record.get("classificacao_risco_2")
                     ),
                     medidas_existentes=_cell_to_optional_str(
                         record.get("medidas_existentes")

@@ -843,6 +843,9 @@
 
     {# 4.x.6 Classificação do risco #}
     <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset + 3 }} Classificação do risco</h4>
+
+    {# Bloco 1 — Situação atual #}
+    <h5>Classificação do Risco — Situação Atual</h5>
     <table class="risk-table">
       <tbody>
         <tr>
@@ -852,26 +855,95 @@
           </td>
         </tr>
         <tr>
-          <td class="risk-label">Categoria do Risco:</td>
+          <td class="risk-label">Categoria da Probabilidade:</td>
           <td>
-            {% set risco_txt = eq.risco | default("N/I") %}
-            {% if risco_txt == "Intolerável" %}
-              <span class="risk-badge" style="background-color: #dc3545;">{{ risco_txt }}</span>
-            {% elif risco_txt == "Substancial" %}
-              <span class="risk-badge" style="background-color: #fd7e14;">{{ risco_txt }}</span>
-            {% elif risco_txt == "Moderado" %}
-              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ risco_txt }}</span>
-            {% elif risco_txt == "Tolerável" %}
-              <span class="risk-badge" style="background-color: #28a745;">{{ risco_txt }}</span>
-            {% elif risco_txt == "Trivial" %}
-              <span class="risk-badge" style="background-color: #28a745;">{{ risco_txt }}</span>
+            <span class="risk-value">{{ eq.probabilidade | default(eq.risco | default("N/I")) }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Classificação do Risco:</td>
+          <td>
+            {% set classif_txt = eq.classificacao | default(eq.risco | default("N/I")) %}
+            {% if classif_txt == "Muito Alto" %}
+              <span class="risk-badge" style="background-color: #dc3545;">{{ classif_txt }}</span>
+            {% elif classif_txt == "Alto" %}
+              <span class="risk-badge" style="background-color: #fd7e14;">{{ classif_txt }}</span>
+            {% elif classif_txt == "Médio" or classif_txt == "Medio" %}
+              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ classif_txt }}</span>
+            {% elif classif_txt == "Baixo" %}
+              <span class="risk-badge" style="background-color: #28a745;">{{ classif_txt }}</span>
             {% else %}
-              <span class="risk-value">{{ risco_txt }}</span>
+              <span class="risk-value">{{ classif_txt }}</span>
             {% endif %}
           </td>
         </tr>
       </tbody>
     </table>
+
+    {# Bloco 2 — Pós-implementação (condicional) #}
+    {% if eq.classificacao_residual %}
+    <h5 class="residual-risk-title">Classificação Pós-Implementação das Medidas Preventivas</h5>
+    <table class="risk-table risk-table-residual">
+      <tbody>
+        <tr>
+          <td class="risk-label">Severidade Residual:</td>
+          <td>
+            {% set sev_r = eq.severidade_residual or "N/I" %}
+            {% set sev_r_low = sev_r | lower %}
+            {% if "muito alt" in sev_r_low %}
+              <span class="risk-badge" style="background-color: #dc3545;">{{ sev_r }}</span>
+            {% elif "alta" in sev_r_low or "alto" in sev_r_low %}
+              <span class="risk-badge" style="background-color: #fd7e14;">{{ sev_r }}</span>
+            {% elif "média para alta" in sev_r_low or "media para alta" in sev_r_low %}
+              <span class="risk-badge" style="background-color: #fd7e14;">{{ sev_r }}</span>
+            {% elif "médi" in sev_r_low or "medi" in sev_r_low %}
+              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ sev_r }}</span>
+            {% elif "baix" in sev_r_low %}
+              <span class="risk-badge" style="background-color: #28a745;">{{ sev_r }}</span>
+            {% else %}
+              <span class="risk-value">{{ sev_r }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Probabilidade Residual:</td>
+          <td>
+            {% set prob_r = eq.probabilidade_residual or "N/I" %}
+            {% set prob_r_low = prob_r | lower %}
+            {% if "muito alt" in prob_r_low %}
+              <span class="risk-badge" style="background-color: #dc3545;">{{ prob_r }}</span>
+            {% elif "alt" in prob_r_low %}
+              <span class="risk-badge" style="background-color: #fd7e14;">{{ prob_r }}</span>
+            {% elif "médi" in prob_r_low or "medi" in prob_r_low %}
+              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ prob_r }}</span>
+            {% elif "baix" in prob_r_low %}
+              <span class="risk-badge" style="background-color: #28a745;">{{ prob_r }}</span>
+            {% else %}
+              <span class="risk-value">{{ prob_r }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td class="risk-label">Classificação Residual:</td>
+          <td>
+            {% set classif_r = eq.classificacao_residual or "N/I" %}
+            {% set classif_r_low = classif_r | lower %}
+            {% if "muito alt" in classif_r_low %}
+              <span class="risk-badge" style="background-color: #dc3545;">{{ classif_r }}</span>
+            {% elif "alt" in classif_r_low %}
+              <span class="risk-badge" style="background-color: #fd7e14;">{{ classif_r }}</span>
+            {% elif "médi" in classif_r_low or "medi" in classif_r_low %}
+              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ classif_r }}</span>
+            {% elif "baix" in classif_r_low %}
+              <span class="risk-badge" style="background-color: #28a745;">{{ classif_r }}</span>
+            {% else %}
+              <span class="risk-value">{{ classif_r }}</span>
+            {% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    {% endif %}
 
     {# 4.x.7 Medidas preventivas existentes #}
     <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset + 4 }} Medidas preventivas existentes</h4>
@@ -990,23 +1062,23 @@
         {% if eq.recomendacoes_tecnicas %}
           {% for rec in eq.recomendacoes_tecnicas %}
             {% set rec_ns.counter = rec_ns.counter + 1 %}
-            {# Determinar prioridade com base no risco #}
-            {% set risco_txt = eq.risco | default("") %}
-            {% if risco_txt == "Intolerável" %}
+            {# Determinar prioridade com base na classificação de risco V3 #}
+            {% set classif_txt = eq.classificacao | default(eq.risco | default("")) %}
+            {% if classif_txt == "Muito Alto" %}
               {% set prioridade = "Urgente" %}
               {% set prazo = "Imediato (0–30 dias)" %}
               {% set pclass = "priority-urgente" %}
-            {% elif risco_txt == "Substancial" %}
+            {% elif classif_txt == "Alto" %}
               {% set prioridade = "Alta" %}
               {% set prazo = "Curto prazo (30–90 dias)" %}
               {% set pclass = "priority-alta" %}
-            {% elif risco_txt == "Moderado" %}
+            {% elif classif_txt == "Médio" or classif_txt == "Medio" %}
               {% set prioridade = "Média" %}
-              {% set prazo = "Médio prazo (90–180 dias)" %}
+              {% set prazo = "Programado (90–180 dias)" %}
               {% set pclass = "priority-media" %}
             {% else %}
               {% set prioridade = "Baixa" %}
-              {% set prazo = "Programado (> 180 dias)" %}
+              {% set prazo = "Monitoramento contínuo" %}
               {% set pclass = "priority-baixa" %}
             {% endif %}
             <tr>
@@ -1040,15 +1112,14 @@
 
   <h3>{{ sec_classif }}.1 Distribuição por Nível de Risco</h3>
 
-  {# Contar equipamentos por nível de risco #}
-  {% set risk_counts = namespace(intoleravel=0, substancial=0, moderado=0, toleravel=0, trivial=0) %}
+  {# Contar equipamentos por nível de risco (vocabulário V3: Baixo/Médio/Alto/Muito Alto) #}
+  {% set risk_counts = namespace(muito_alto=0, alto=0, medio=0, baixo=0) %}
   {% for eq in equipments %}
-    {% set r = eq.risco | default("") %}
-    {% if r == "Intolerável" %}{% set risk_counts.intoleravel = risk_counts.intoleravel + 1 %}
-    {% elif r == "Substancial" %}{% set risk_counts.substancial = risk_counts.substancial + 1 %}
-    {% elif r == "Moderado" %}{% set risk_counts.moderado = risk_counts.moderado + 1 %}
-    {% elif r == "Tolerável" %}{% set risk_counts.toleravel = risk_counts.toleravel + 1 %}
-    {% else %}{% set risk_counts.trivial = risk_counts.trivial + 1 %}
+    {% set r = (eq.classificacao | default(eq.risco | default(""))) | title %}
+    {% if r == "Muito Alto" %}{% set risk_counts.muito_alto = risk_counts.muito_alto + 1 %}
+    {% elif r == "Alto" %}{% set risk_counts.alto = risk_counts.alto + 1 %}
+    {% elif r == "Médio" or r == "Medio" %}{% set risk_counts.medio = risk_counts.medio + 1 %}
+    {% else %}{% set risk_counts.baixo = risk_counts.baixo + 1 %}
     {% endif %}
   {% endfor %}
 
@@ -1063,41 +1134,105 @@
         </tr>
       </thead>
       <tbody>
-        {% if risk_counts.intoleravel > 0 %}
+        {% if risk_counts.muito_alto > 0 %}
         <tr>
-          <td><span class="risk-badge" style="background-color: #dc3545;">Intolerável</span></td>
-          <td>{{ risk_counts.intoleravel }}</td>
-          <td>{{ ((risk_counts.intoleravel / equipments|length) * 100) | round(0) | int }}%</td>
+          <td><span class="risk-badge" style="background-color: #dc3545;">Muito Alto</span></td>
+          <td>{{ risk_counts.muito_alto }}</td>
+          <td>{{ ((risk_counts.muito_alto / equipments|length) * 100) | round(0) | int }}%</td>
           <td>Intervenção imediata obrigatória (0–30 dias)</td>
         </tr>
         {% endif %}
-        {% if risk_counts.substancial > 0 %}
+        {% if risk_counts.alto > 0 %}
         <tr>
-          <td><span class="risk-badge" style="background-color: #fd7e14;">Substancial</span></td>
-          <td>{{ risk_counts.substancial }}</td>
-          <td>{{ ((risk_counts.substancial / equipments|length) * 100) | round(0) | int }}%</td>
+          <td><span class="risk-badge" style="background-color: #fd7e14;">Alto</span></td>
+          <td>{{ risk_counts.alto }}</td>
+          <td>{{ ((risk_counts.alto / equipments|length) * 100) | round(0) | int }}%</td>
           <td>Ação em curto prazo (30–90 dias)</td>
         </tr>
         {% endif %}
-        {% if risk_counts.moderado > 0 %}
+        {% if risk_counts.medio > 0 %}
         <tr>
-          <td><span class="risk-badge" style="background-color: #ffc107; color: #333;">Moderado</span></td>
-          <td>{{ risk_counts.moderado }}</td>
-          <td>{{ ((risk_counts.moderado / equipments|length) * 100) | round(0) | int }}%</td>
+          <td><span class="risk-badge" style="background-color: #ffc107; color: #333;">Médio</span></td>
+          <td>{{ risk_counts.medio }}</td>
+          <td>{{ ((risk_counts.medio / equipments|length) * 100) | round(0) | int }}%</td>
           <td>Ação programada (90–180 dias)</td>
         </tr>
         {% endif %}
-        {% if risk_counts.toleravel > 0 %}
+        {% if risk_counts.baixo > 0 %}
         <tr>
-          <td><span class="risk-badge" style="background-color: #28a745;">Tolerável</span></td>
-          <td>{{ risk_counts.toleravel }}</td>
-          <td>{{ ((risk_counts.toleravel / equipments|length) * 100) | round(0) | int }}%</td>
+          <td><span class="risk-badge" style="background-color: #28a745;">Baixo</span></td>
+          <td>{{ risk_counts.baixo }}</td>
+          <td>{{ ((risk_counts.baixo / equipments|length) * 100) | round(0) | int }}%</td>
           <td>Monitoramento contínuo</td>
         </tr>
         {% endif %}
       </tbody>
     </table>
   </div>
+
+  {# Distribuição Pós-Implementação (V3) #}
+  {% set has_residual = [] %}
+  {% for eq in equipments %}
+    {% if eq.classificacao_residual %}{% set _ = has_residual.append(1) %}{% endif %}
+  {% endfor %}
+  {% if has_residual | length > 0 %}
+  <h3>{{ sec_classif }}.1.1 Distribuição Pós-Implementação das Medidas Preventivas</h3>
+
+  {% set res_counts = namespace(muito_alto=0, alto=0, medio=0, baixo=0) %}
+  {% for eq in equipments %}
+    {% if eq.classificacao_residual %}
+      {% set rr = eq.classificacao_residual | title %}
+      {% if rr == "Muito Alto" %}{% set res_counts.muito_alto = res_counts.muito_alto + 1 %}
+      {% elif rr == "Alto" %}{% set res_counts.alto = res_counts.alto + 1 %}
+      {% elif rr == "Médio" or rr == "Medio" %}{% set res_counts.medio = res_counts.medio + 1 %}
+      {% else %}{% set res_counts.baixo = res_counts.baixo + 1 %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="risk-distribution">
+    <table>
+      <thead>
+        <tr>
+          <th>Nível de Risco Residual</th>
+          <th>Quantidade</th>
+          <th>Percentual</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set total_residual = res_counts.muito_alto + res_counts.alto + res_counts.medio + res_counts.baixo %}
+        {% if res_counts.muito_alto > 0 %}
+        <tr>
+          <td><span class="risk-badge" style="background-color: #dc3545;">Muito Alto</span></td>
+          <td>{{ res_counts.muito_alto }}</td>
+          <td>{{ ((res_counts.muito_alto / total_residual) * 100) | round(0) | int }}%</td>
+        </tr>
+        {% endif %}
+        {% if res_counts.alto > 0 %}
+        <tr>
+          <td><span class="risk-badge" style="background-color: #fd7e14;">Alto</span></td>
+          <td>{{ res_counts.alto }}</td>
+          <td>{{ ((res_counts.alto / total_residual) * 100) | round(0) | int }}%</td>
+        </tr>
+        {% endif %}
+        {% if res_counts.medio > 0 %}
+        <tr>
+          <td><span class="risk-badge" style="background-color: #ffc107; color: #333;">Médio</span></td>
+          <td>{{ res_counts.medio }}</td>
+          <td>{{ ((res_counts.medio / total_residual) * 100) | round(0) | int }}%</td>
+        </tr>
+        {% endif %}
+        {% if res_counts.baixo > 0 %}
+        <tr>
+          <td><span class="risk-badge" style="background-color: #28a745;">Baixo</span></td>
+          <td>{{ res_counts.baixo }}</td>
+          <td>{{ ((res_counts.baixo / total_residual) * 100) | round(0) | int }}%</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 
   <h3>{{ sec_classif }}.2 Resumo</h3>
 
@@ -1109,23 +1244,23 @@
     <p>
       Dos <strong>{{ equipments | length }}</strong> equipamentos avaliados na unidade
       <strong>{{ metadata.site | default("—") }}</strong>,
-      {% if risk_counts.intoleravel > 0 %}
-        <strong>{{ risk_counts.intoleravel }}</strong> apresentam risco
-        <strong>Intolerável</strong> e requerem intervenção imediata{{ ", " if risk_counts.substancial > 0 else "." }}
+      {% if risk_counts.muito_alto > 0 %}
+        <strong>{{ risk_counts.muito_alto }}</strong> apresentam risco
+        <strong>Muito Alto</strong> e requerem intervenção imediata{{ ", " if risk_counts.alto > 0 else "." }}
       {% endif %}
-      {% if risk_counts.substancial > 0 %}
-        <strong>{{ risk_counts.substancial }}</strong> apresentam risco
-        <strong>Substancial</strong> com ação requerida em até 90 dias{{ ", " if risk_counts.moderado > 0 else "." }}
+      {% if risk_counts.alto > 0 %}
+        <strong>{{ risk_counts.alto }}</strong> apresentam risco
+        <strong>Alto</strong> com ação requerida em até 90 dias{{ ", " if risk_counts.medio > 0 else "." }}
       {% endif %}
-      {% if risk_counts.moderado > 0 %}
-        e <strong>{{ risk_counts.moderado }}</strong>
-        apresentam risco <strong>Moderado</strong> com ação programada.
+      {% if risk_counts.medio > 0 %}
+        e <strong>{{ risk_counts.medio }}</strong>
+        apresentam risco <strong>Médio</strong> com ação programada.
       {% endif %}
     </p>
     <p>
       Recomenda-se a implementação prioritária das medidas para os equipamentos
-      classificados como risco Intolerável, seguidos dos equipamentos com risco
-      Substancial, conforme cronograma detalhado na seção de Recomendações Consolidadas.
+      classificados como risco Muito Alto, seguidos dos equipamentos com risco
+      Alto, conforme cronograma detalhado na seção de Recomendações Consolidadas.
     </p>
   {% endif %}
 </div>
@@ -1289,10 +1424,13 @@
         <th>Causas</th>
         <th>Consequências</th>
         <th>Severidade</th>
-        <th>Cat. Risco</th>
+        <th>Probabilidade</th>
+        <th>Classificação</th>
         <th>Medidas Existentes</th>
         <th>Medidas a Implementar</th>
-        <th>Obs.</th>
+        <th>Sev. Residual</th>
+        <th>Prob. Residual</th>
+        <th>Class. Residual</th>
       </tr>
     </thead>
     <tbody>
@@ -1315,21 +1453,26 @@
             {{ sev }}
           {% endif %}
         </td>
+        <td>{{ row.categoria_probabilidade | default(row.categoria_risco | default("—")) }}</td>
         <td>
-          {% set risk = row.categoria_risco | default("—") %}
-          {% if risk == "Intolerável" %}
+          {% set risk = row.classificacao_risco | default(row.categoria_risco | default("—")) %}
+          {% if risk == "Muito Alto" %}
             <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% elif risk == "Substancial" %}
+          {% elif risk == "Alto" %}
             <span class="risk-badge" style="background-color: #fd7e14; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% elif risk == "Moderado" %}
+          {% elif risk == "Médio" or risk == "Medio" %}
             <span class="risk-badge" style="background-color: #ffc107; color: #333; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
+          {% elif risk == "Baixo" %}
+            <span class="risk-badge" style="background-color: #28a745; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
           {% else %}
             {{ risk }}
           {% endif %}
         </td>
         <td>{{ row.medidas_existentes | default("—") }}</td>
         <td>{{ row.medidas_implementar | default("—") }}</td>
-        <td>{{ row.observacoes | default("—") }}</td>
+        <td>{{ row.categoria_severidade_2 | default("—") }}</td>
+        <td>{{ row.categoria_probabilidade_2 | default("—") }}</td>
+        <td>{{ row.classificacao_risco_2 | default("—") }}</td>
       </tr>
       {% endfor %}
     </tbody>

@@ -86,6 +86,7 @@ def build_equipment_user_prompt(
             user_prompt = build_equipment_user_prompt(llm_input)
     """
     risco = llm_input.classificacao_do_risco
+    residual = getattr(llm_input, 'classificacao_risco_residual', None)
 
     # ── Blocos de contexto do equipamento ─────────────────────────
     sections: list[str] = [
@@ -104,9 +105,25 @@ def build_equipment_user_prompt(
         "### Consequências Potenciais ###",
         _format_bullet_list(llm_input.consequencias_potenciais, "Nenhuma consequência informada."),
         "",
-        "### Classificação do Risco ###",
+        "### Classificação do Risco — Situação Atual ###",
         f"Categoria de Severidade: {risco.categoria_severidade}",
-        f"Categoria do Risco: {risco.categoria_risco}",
+        f"Categoria da Probabilidade: {risco.categoria_probabilidade}",
+        f"Classificação do Risco: {risco.classificacao_risco}",
+    ]
+
+    # Bloco residual (condicional)
+    if residual is not None and any([
+        residual.categoria_severidade,
+        residual.categoria_probabilidade,
+        residual.classificacao_risco,
+    ]):
+        sections.append("")
+        sections.append("### Classificação do Risco — Pós Implementação das Medidas Preventivas ###")
+        sections.append(f"Categoria de Severidade Residual: {residual.categoria_severidade or 'N/I'}")
+        sections.append(f"Categoria da Probabilidade Residual: {residual.categoria_probabilidade or 'N/I'}")
+        sections.append(f"Classificação do Risco Residual: {residual.classificacao_risco or 'N/I'}")
+
+    sections.extend([
         "",
         "### Medidas Preventivas Existentes ###",
         _format_bullet_list(llm_input.medidas_preventivas_existentes, "Nenhuma medida existente informada."),
@@ -116,7 +133,7 @@ def build_equipment_user_prompt(
         "",
         "### Normas Aplicáveis ###",
         _format_bullet_list(llm_input.normas_aplicaveis),
-    ]
+    ])
 
     # ── Blocos opcionais de contexto externo ────────────────────
     # Mescla dados do model + parâmetros keyword (retrocompatível)
