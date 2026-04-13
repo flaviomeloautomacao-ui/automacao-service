@@ -162,7 +162,12 @@ class OpenRouterClient:
     # Método público — porta LLMPort
     # ------------------------------------------------------------------
 
-    async def generate_sections(self, context: dict[str, Any]) -> dict[str, Any]:
+    async def generate_sections(
+        self,
+        context: dict[str, Any],
+        *,
+        model_override: str | None = None,
+    ) -> dict[str, Any]:
         """Gera seções narrativas do laudo a partir do contexto.
 
         Fluxo:
@@ -174,6 +179,8 @@ class OpenRouterClient:
         Args:
             context: Dicionário com ``company``, ``rows``, ``profile``,
                      ``grouped_equipment``, etc.
+            model_override: Modelo específico para esta chamada (CP-01).
+                Se ``None``, usa o modelo padrão do client.
 
         Returns:
             Dicionário com chaves ``introducao``, ``metodologia``, ``conclusao``
@@ -187,9 +194,10 @@ class OpenRouterClient:
         user_prompt = build_user_prompt(context)
         system_prompt = build_system_prompt(profile)
 
+        effective_model = model_override or self._model
         logger.info(
             "Gerando seções do laudo | model={} | profile={} | linhas_de_risco={}",
-            self._model,
+            effective_model,
             profile or "default",
             len(context.get("rows", [])),
         )
@@ -198,6 +206,7 @@ class OpenRouterClient:
         raw_content = await self._call_chat(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
+            model_override=model_override,
         )
 
         parsed = self._try_parse_json(raw_content)
@@ -213,6 +222,7 @@ class OpenRouterClient:
         raw_content_retry = await self._call_chat(
             system_prompt=retry_system,
             user_prompt=user_prompt,
+            model_override=model_override,
         )
 
         parsed_retry = self._try_parse_json(raw_content_retry)
@@ -228,15 +238,19 @@ class OpenRouterClient:
         self,
         system_prompt: str,
         user_prompt: str,
+        *,
+        model_override: str | None = None,
     ) -> str:
         """Chamada pública ao LLM — interface para uso per-equipment.
 
-        Expõe ``_call_chat`` com assinatura posicional compatível com
+        Expõe ``_call_chat`` com assinatura compatível com
         ``LLMCallFn = Callable[[str, str], Awaitable[str]]``.
 
         Args:
             system_prompt: Prompt de sistema.
             user_prompt: Prompt do usuário.
+            model_override: Modelo específico a usar nesta chamada.
+                Se ``None``, usa o modelo padrão do client (``self._model``).
 
         Returns:
             Conteúdo textual cru da resposta do LLM.
@@ -247,6 +261,7 @@ class OpenRouterClient:
         return await self._call_chat(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
+            model_override=model_override,
         )
 
     # ------------------------------------------------------------------
@@ -258,14 +273,22 @@ class OpenRouterClient:
         *,
         system_prompt: str,
         user_prompt: str,
+        model_override: str | None = None,
     ) -> str:
         """Executa chamada POST ao endpoint de chat completions.
+
+        Args:
+            system_prompt: Prompt de sistema.
+            user_prompt: Prompt do usuário.
+            model_override: Modelo específico para esta chamada.
+                Se ``None``, usa ``self._model``.
 
         Retorna o conteúdo textual da primeira ``choice``.
 
         Raises:
             LLMError: Após esgotar retries ou em caso de erro inesperado.
         """
+        effective_model = model_override or self._model
 
         @retry(
             retry=retry_if_exception_type(_RetryableHTTPError),
@@ -280,7 +303,7 @@ class OpenRouterClient:
                 "Content-Type": "application/json",
             }
             payload: dict[str, Any] = {
-                "model": self._model,
+                "model": effective_model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -292,7 +315,7 @@ class OpenRouterClient:
             logger.debug(
                 "POST {} | model={} | prompt_len={}",
                 url,
-                self._model,
+                effective_model,
                 len(user_prompt),
             )
 
@@ -376,7 +399,7 @@ class OpenRouterClient:
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),
                 provider="openrouter",
-                model=self._model,
+                model=effective_model,
                 prompt_text=system_prompt + user_prompt,
                 response_text=content_result,
                 duration_ms=timer.duration_ms,
@@ -394,7 +417,7 @@ class OpenRouterClient:
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),
                 provider="openrouter",
-                model=self._model,
+                model=effective_model,
                 prompt_text=system_prompt + user_prompt,
                 duration_ms=timer.duration_ms,
                 success=False,
@@ -412,7 +435,7 @@ class OpenRouterClient:
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),
                 provider="openrouter",
-                model=self._model,
+                model=effective_model,
                 prompt_text=system_prompt + user_prompt,
                 duration_ms=timer.duration_ms,
                 success=False,
@@ -430,7 +453,7 @@ class OpenRouterClient:
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),
                 provider="openrouter",
-                model=self._model,
+                model=effective_model,
                 prompt_text=system_prompt + user_prompt,
                 duration_ms=timer.duration_ms,
                 success=False,
@@ -448,7 +471,7 @@ class OpenRouterClient:
                 flow=ctx.get("flow", "unknown"),
                 step=ctx.get("step", "unknown"),
                 provider="openrouter",
-                model=self._model,
+                model=effective_model,
                 prompt_text=system_prompt + user_prompt,
                 duration_ms=timer.duration_ms,
                 success=False,

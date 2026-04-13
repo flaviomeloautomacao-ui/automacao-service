@@ -139,9 +139,11 @@ def build_equipment_user_prompt(
     # Mescla dados do model + parâmetros keyword (retrocompatível)
     all_normative: list[str] = []
     for exc in llm_input.normative_context:
+        # Usar apenas o nome da norma como label.
+        # exc.section contém apenas posição no arquivo ("linhas X–Y"),
+        # NÃO seções reais da norma — incluí-lo induziria o LLM a
+        # inventar referências de seção inexistentes.
         label = f"{exc.source}"
-        if exc.section:
-            label += f", seção {exc.section}"
         all_normative.append(f"{label}: {exc.text}")
     if normative_excerpts:
         all_normative.extend(normative_excerpts)
@@ -179,9 +181,9 @@ def build_equipment_user_prompt(
         sections.append(
             "REGRAS DE REFERÊNCIA NORMATIVA:\n"
             "• Use PRIORITARIAMENTE os trechos normativos recuperados acima como base para as recomendações e justificativas.\n"
-            "• Em \"norma_referencia\", cite a norma exatamente como aparece no campo fonte dos trechos acima (ex.: o título do documento).\n"
-            "• NÃO invente norma, seção ou obrigação técnica que não esteja suportada pelos trechos normativos fornecidos ou pela lista de normas aplicáveis.\n"
-            "• Quando o contexto normativo recuperado não for suficiente para uma recomendação, use uma das normas da lista de Normas Aplicáveis e indique isso claramente.\n"
+            "• Em \"norma_referencia\", cite SOMENTE o nome da norma exatamente como aparece no campo fonte dos trechos acima (ex.: o título do documento). NÃO adicione seções, capítulos ou cláusulas que não estejam explicitamente escritas nos trechos.\n"
+            "• NÃO invente norma, seção, capítulo ou obrigação técnica que não esteja explicitamente presente nos trechos normativos fornecidos ou na lista de normas aplicáveis.\n"
+            "• Quando o contexto normativo recuperado não for suficiente para uma recomendação, use uma das normas da lista de Normas Aplicáveis (apenas o nome, sem seção).\n"
             "• Cada justificativa deve referenciar ao menos um dos trechos normativos fornecidos, quando disponível."
         )
     else:

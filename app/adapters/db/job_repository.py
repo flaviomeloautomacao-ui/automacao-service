@@ -37,6 +37,8 @@ _COLUMN_NORMALIZE_MAP: dict[str, str] = {
     "Classificação do Risco": "classificacao_risco",
     "Categoria da Severidade 2": "categoria_severidade_2",
     "Categoria da Probabilidade 2": "categoria_probabilidade_2",
+    "Categoria do Risco 2": "categoria_probabilidade_2",     # alias V1 residual
+    "Categoria de Probabilidade 2": "categoria_probabilidade_2",  # variação "de"
     "Classificação do Risco 2": "classificacao_risco_2",
     "Medidas Preventivas Existentes": "medidas_existentes",
     "Medidas Preventivas a Implementar": "medidas_implementar",

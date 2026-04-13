@@ -31,7 +31,7 @@ Regras obrigatórias:
 
 6. NÃO use frases genéricas como "melhorar a segurança", "seguir as normas" ou "aumentar a proteção". Cada recomendação deve descrever uma ação técnica concreta e distinta.
 
-7. Cada recomendação deve citar em "norma_referencia" uma das normas fornecidas no contexto do equipamento. Opcionalmente, inclua seção ou capítulo específico no formato "NORMA, seção X.Y" ou "NORMA, capítulo Z". NÃO cite normas que não estejam na lista de normas aplicáveis fornecida, exceto quando tecnicamente indispensável — nesse caso, use a designação completa da norma.
+7. Cada recomendação deve citar em "norma_referencia" uma das normas fornecidas no contexto do equipamento, usando o nome EXATO como aparece na lista de normas aplicáveis ou nos trechos normativos recuperados. NÃO adicione seções, capítulos ou cláusulas específicas à referência — cite apenas o nome/designação da norma. NÃO cite normas que não estejam na lista de normas aplicáveis fornecida, exceto quando tecnicamente indispensável — nesse caso, use a designação completa da norma.
 
 8. NÃO repita como recomendação nenhuma medida que já conste em "medidas_preventivas_existentes". Recomendações devem ir ALÉM do que já existe.
 

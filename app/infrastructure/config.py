@@ -32,7 +32,13 @@ class Settings(BaseSettings):
         SUPABASE_BUCKET: Nome do bucket de storage no Supabase.
         OPENROUTER_API_KEY: Chave de API do OpenRouter.
         OPENROUTER_BASE_URL: URL base da API do OpenRouter.
-        LLM_MODEL: Identificador do modelo LLM a ser utilizado.
+        LLM_MODEL: Identificador do modelo LLM padrão (fallback geral).
+        LLM_MODEL_GLOBAL: Modelo para seções globais (CP-01).
+        LLM_MODEL_PER_EQUIPMENT: Modelo para equipamentos risco médio/baixo (CP-02).
+        LLM_MODEL_PER_EQUIPMENT_HIGH: Modelo para equipamentos risco alto (CP-02).
+        LLM_MODEL_FALLBACK: Modelo de fallback se o primário falhar.
+        LLM_HIGH_RISK_KEYWORDS: Palavras-chave (vírgula-separadas) que indicam risco alto.
+        LLM_TIERED_ROUTING_ENABLED: Habilita roteamento por risco (False = modelo único).
     """
 
     model_config = SettingsConfigDict(
@@ -57,7 +63,15 @@ class Settings(BaseSettings):
     # ── LLM / OpenRouter ────────────────────────────────────────
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    LLM_MODEL: str = "openai/gpt-4o"
+    LLM_MODEL: str = "openai/gpt-4.1-mini"
+
+    # ── Roteamento multi-modelo (tiered) ────────────────────────
+    LLM_MODEL_GLOBAL: str = "openai/gpt-4.1-mini"
+    LLM_MODEL_PER_EQUIPMENT: str = "openai/gpt-4.1-mini"
+    LLM_MODEL_PER_EQUIPMENT_HIGH: str = "openai/gpt-4.1"
+    LLM_MODEL_FALLBACK: str = "openai/gpt-4.1-mini"
+    LLM_HIGH_RISK_KEYWORDS: str = "muito alto,intolerável,substancial"
+    LLM_TIERED_ROUTING_ENABLED: bool = True
 
     # ── RAG / Embedding (normas ABNT) ───────────────────────────
     EMBEDDING_API_KEY: str = ""
@@ -66,7 +80,7 @@ class Settings(BaseSettings):
     RAG_ENABLED: bool = True
     RAG_TOP_K: int = 8
     RAG_MAX_CHUNKS: int = 5
-    RAG_MIN_SCORE: float = 0.15
+    RAG_MIN_SCORE: float = 0.35
     RAG_NORM_TABLE: str = "konis_db"
 
     # ── Dev / Teste ─────────────────────────────────────────────

@@ -13,6 +13,7 @@ com o layout real da planilha padrão de análise de risco:
 from __future__ import annotations
 
 import io
+import re
 from typing import Any
 
 import pandas as pd
@@ -20,6 +21,11 @@ from loguru import logger
 
 from app.domain.entities import MachineRiskRow
 from app.domain.errors import ValidationError
+
+
+def _normalize_ws(text: str) -> str:
+    """Normaliza whitespace: troca NBSP/tabs/newlines por espaço, colapsa múltiplos, trim."""
+    return re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip()
 
 
 # ---------------------------------------------------------------------------
@@ -38,16 +44,15 @@ COLUMN_MAP: dict[str, str] = {
     "consequências": "consequencias",
     "consequencias": "consequencias",
     "categoria da severidade": "categoria_severidade",
-    "categoria da severidade ": "categoria_severidade",
     "categoria do risco": "categoria_risco",
-    "categoria do risco ": "categoria_risco",
     # V3 — novos campos
     "categoria da probabilidade": "categoria_probabilidade",
-    "categoria da probabilidade ": "categoria_probabilidade",  # trailing space
     "classificação do risco": "classificacao_risco",
     "classificacao do risco": "classificacao_risco",           # sem acento
     "categoria da severidade 2": "categoria_severidade_2",
     "categoria da probabilidade 2": "categoria_probabilidade_2",
+    "categoria do risco 2": "categoria_probabilidade_2",       # alias V1 residual
+    "categoria de probabilidade 2": "categoria_probabilidade_2", # variação "de"
     "classificação do risco 2": "classificacao_risco_2",
     "classificacao do risco 2": "classificacao_risco_2",       # sem acento
     "medidas preventivas existentes": "medidas_existentes",
@@ -110,7 +115,7 @@ def _is_empty_row(row: pd.Series) -> bool:
 def _detect_header_row(df_raw: pd.DataFrame) -> int:
     """Encontra o índice da linha que contém os tokens do cabeçalho.
 
-    Procura a primeira linha cujas células (convertidas para lower/strip)
+    Procura a primeira linha cujas células (normalizadas: lower + whitespace robusto)
     contêm simultaneamente todos os tokens em ``_HEADER_TOKENS``.
 
     Returns:
@@ -123,7 +128,7 @@ def _detect_header_row(df_raw: pd.DataFrame) -> int:
         cells = set()
         for v in df_raw.iloc[row_idx]:
             if isinstance(v, str):
-                cells.add(v.strip().lower())
+                cells.add(_normalize_ws(v).lower())
         if _HEADER_TOKENS.issubset(cells):
             logger.debug("Cabeçalho detectado na linha {} (0-based)", row_idx)
             return row_idx
@@ -139,10 +144,11 @@ def _normalize_columns(columns: list[str]) -> dict[str, str]:
     """Retorna mapa {nome_original → campo_normalizado} a partir de ``COLUMN_MAP``.
 
     Colunas que não batem no mapa são ignoradas (ex.: ``Coluna1``).
+    Usa normalização robusta de whitespace (NBSP, tabs, múltiplos espaços).
     """
     mapping: dict[str, str] = {}
     for col in columns:
-        key = col.strip().lower()
+        key = _normalize_ws(col).lower()
         canonical = COLUMN_MAP.get(key)
         if canonical is not None:
             mapping[col] = canonical
@@ -231,9 +237,9 @@ class PandasSpreadsheetParser:
         """Detecta a linha de cabeçalho e retorna DataFrame com dados abaixo dela."""
         header_idx = _detect_header_row(df_raw)
 
-        # Usa a linha detectada como nomes de coluna
+        # Usa a linha detectada como nomes de coluna (normaliza whitespace)
         header_values = [
-            str(v).strip() if pd.notna(v) else f"__empty_{i}"
+            _normalize_ws(str(v)) if pd.notna(v) else f"__empty_{i}"
             for i, v in enumerate(df_raw.iloc[header_idx])
         ]
         df = df_raw.iloc[header_idx + 1:].copy()
@@ -257,7 +263,7 @@ class PandasSpreadsheetParser:
         cols_to_drop: list[str] = []
 
         for col in df.columns:
-            col_str = str(col).strip().lower()
+            col_str = _normalize_ws(str(col)).lower()
 
             # Coluna auxiliar "Coluna1"
             if col_str == "coluna1":

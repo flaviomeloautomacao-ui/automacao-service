@@ -282,6 +282,13 @@ def filter_quality_chunks(
         # Filtro de score mínimo
         if min_score is not None and chunk.relevance_score is not None:
             if chunk.relevance_score < min_score:
+                logger.info(
+                    "Chunk descartado (score baixo) | id={} | title={} | score={:.3f} | min_score={}",
+                    chunk.chunk_id,
+                    chunk.source_title,
+                    chunk.relevance_score,
+                    min_score,
+                )
                 continue
 
         # Filtro de ruído editorial

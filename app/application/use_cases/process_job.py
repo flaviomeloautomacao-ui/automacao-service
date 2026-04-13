@@ -43,6 +43,7 @@ from app.domain.services.equipment_narrative_generator import (
 from app.domain.services.input_hasher import compute_input_hash
 from app.domain.services.version_snapshot import compute_version_fingerprint
 from app.infrastructure.llm_cost_tracker import get_tracker
+from app.infrastructure.model_router import get_model_router
 
 if TYPE_CHECKING:
     from app.adapters.db.llm_cost_repository import LLMCostRepository
@@ -345,11 +346,20 @@ class ProcessJobUseCase:
                     job_id=job_id,
                 )
 
+            # ── Resolver modelo para seções globais (CP-01) ──
+            model_router = get_model_router()
+            global_decision = model_router.resolve_global()
+            logger.info(
+                "Job {} | MODEL_ROUTER CP-01 | model={} | reason={}",
+                job_id, global_decision.model, global_decision.reason,
+            )
+
             llm_sections = await self._uc._generate_llm_sections(
                 rows_dicts,
                 company_metadata,
                 profile=profile,
                 grouped_equipment=grouped_equipment,
+                model_override=global_decision.model,
             )
 
             llm_sections_html = self._uc._normalize_llm_sections(llm_sections)
@@ -380,10 +390,23 @@ class ProcessJobUseCase:
                     step="per_equipment_narrative",
                     job_id=job_id,
                 )
-                llm_call_fn = llm_client.call_chat
+
+                # ── Wrapper que aceita model_override como 3º argumento ──
+                async def llm_call_fn(
+                    system: str,
+                    user: str,
+                    model_override: str | None = None,
+                ) -> str:
+                    return await llm_client.call_chat(
+                        system, user, model_override=model_override,
+                    )
             else:
                 # Fallback: wrap generate_sections (shouldn't happen in prod)
-                async def llm_call_fn(system: str, user: str) -> str:  # type: ignore[misc]
+                async def llm_call_fn(  # type: ignore[misc]
+                    system: str,
+                    user: str,
+                    model_override: str | None = None,
+                ) -> str:
                     import json as _json  # noqa: PLC0415
                     ctx = {"rows": rows_dicts, "profile": profile}
                     result = await llm_client.generate_sections(ctx)
@@ -395,6 +418,7 @@ class ProcessJobUseCase:
                 max_concurrency=1,
                 on_progress=_on_equipment_progress,
                 profile=profile,
+                model_router=model_router,
             )
 
             # 3c) Attach results to grouped_equipment for template rendering

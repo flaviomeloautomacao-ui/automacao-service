@@ -51,6 +51,13 @@ from app.adapters.llm.prompts import get_profile_config
 LLMCallFn = Callable[[str, str], Awaitable[str]]
 """async (system_prompt, user_prompt) -> raw_content"""
 
+LLMCallFnWithModel = Callable[[str, str, str | None], Awaitable[str]]
+"""async (system_prompt, user_prompt, model_override) -> raw_content
+
+Variante que aceita model_override como 3º argumento opcional.
+Usada internamente pelo narrative generator para roteamento tiered.
+"""
+
 
 # ---------------------------------------------------------------------------
 # System prompt (carregado uma vez por processo)
@@ -146,7 +153,7 @@ def _build_retry_system_prompt(profile: str | None = None) -> str:
 class EquipmentGenerationResult:
     """Resultado da geração para um equipamento."""
 
-    __slots__ = ("equipment_name", "output", "source", "attempts")
+    __slots__ = ("equipment_name", "output", "source", "attempts", "model_used")
 
     def __init__(
         self,
@@ -154,18 +161,21 @@ class EquipmentGenerationResult:
         output: EquipmentLLMOutput,
         source: str,
         attempts: int,
+        model_used: str = "",
     ) -> None:
         self.equipment_name = equipment_name
         self.output = output
         self.source = source  # "llm", "llm_retry", "fallback"
         self.attempts = attempts
+        self.model_used = model_used  # modelo efetivamente utilizado
 
 
 async def generate_equipment_narrative(
     llm_input: EquipmentLLMInput,
-    llm_call: LLMCallFn,
+    llm_call: LLMCallFn | LLMCallFnWithModel,
     *,
     profile: str | None = None,
+    model_override: str | None = None,
 ) -> EquipmentGenerationResult:
     """Gera narrativas (recomendações + justificativas) para um equipamento.
 
@@ -176,8 +186,11 @@ async def generate_equipment_narrative(
 
     Args:
         llm_input: Payload validado e bounded do equipamento.
-        llm_call: Callable assíncrono ``(system, user) -> raw_content``.
+        llm_call: Callable assíncrono ``(system, user) -> raw_content``
+            ou ``(system, user, model_override) -> raw_content``.
         profile: Perfil de análise ('dust', 'gas', 'vapors').
+        model_override: Modelo específico para este equipamento
+            (roteado pelo ModelRouter). Se ``None``, usa o padrão do client.
 
     Returns:
         ``EquipmentGenerationResult`` — sempre retorna output, nunca falha.
@@ -186,22 +199,34 @@ async def generate_equipment_narrative(
     user_prompt = build_equipment_user_prompt(llm_input)
     system_prompt = _load_system_prompt(profile)
 
+    # Wrapper p/ compatibilidade: se llm_call aceita 3 args, passa model_override
+    async def _do_call(sys_p: str, usr_p: str) -> str:
+        if model_override is not None:
+            try:
+                return await llm_call(sys_p, usr_p, model_override)  # type: ignore[call-arg]
+            except TypeError:
+                pass
+        return await llm_call(sys_p, usr_p)
+
+    model_label = model_override or "default"
+
     # ── Attempt 1: chamada padrão ─────────────────────────────────
-    logger.info("LLM per-equipment | equip={} | attempt=1", equip)
+    logger.info("LLM per-equipment | equip={} | model={} | attempt=1", equip, model_label)
     try:
-        raw = await llm_call(system_prompt, user_prompt)
+        raw = await _do_call(system_prompt, user_prompt)
         result = validate_llm_output(raw, llm_input)
 
         if result.success and result.output is not None:
             logger.info(
-                "LLM per-equipment OK | equip={} | recs={} | attempt=1",
-                equip, len(result.output.recomendacoes_tecnicas),
+                "LLM per-equipment OK | equip={} | model={} | recs={} | attempt=1",
+                equip, model_label, len(result.output.recomendacoes_tecnicas),
             )
             return EquipmentGenerationResult(
                 equipment_name=equip,
                 output=result.output,
                 source="llm",
                 attempts=1,
+                model_used=model_override or "",
             )
 
         logger.warning(
@@ -210,33 +235,33 @@ async def generate_equipment_narrative(
         )
 
         if not result.needs_retry:
-            # Validação falhou sem possibilidade de retry → fallback direto
             return _make_fallback_result(llm_input, attempts=1)
 
     except Exception as exc:
         logger.warning(
-            "LLM per-equipment erro | equip={} | attempt=1 | {}",
-            equip, str(exc),
+            "LLM per-equipment erro | equip={} | model={} | attempt=1 | {}",
+            equip, model_label, str(exc),
         )
 
     # ── Attempt 2: retry com prompt reforçado ─────────────────────
-    logger.info("LLM per-equipment | equip={} | attempt=2 (retry)", equip)
+    logger.info("LLM per-equipment | equip={} | model={} | attempt=2 (retry)", equip, model_label)
     retry_system = _build_retry_system_prompt(profile)
 
     try:
-        raw_retry = await llm_call(retry_system, user_prompt)
+        raw_retry = await _do_call(retry_system, user_prompt)
         result_retry = validate_llm_output(raw_retry, llm_input)
 
         if result_retry.success and result_retry.output is not None:
             logger.info(
-                "LLM per-equipment OK (retry) | equip={} | recs={} | attempt=2",
-                equip, len(result_retry.output.recomendacoes_tecnicas),
+                "LLM per-equipment OK (retry) | equip={} | model={} | recs={} | attempt=2",
+                equip, model_label, len(result_retry.output.recomendacoes_tecnicas),
             )
             return EquipmentGenerationResult(
                 equipment_name=equip,
                 output=result_retry.output,
                 source="llm_retry",
                 attempts=2,
+                model_used=model_override or "",
             )
 
         logger.warning(
@@ -245,8 +270,8 @@ async def generate_equipment_narrative(
         )
     except Exception as exc:
         logger.warning(
-            "LLM per-equipment erro | equip={} | attempt=2 | {}",
-            equip, str(exc),
+            "LLM per-equipment erro | equip={} | model={} | attempt=2 | {}",
+            equip, model_label, str(exc),
         )
 
     # ── Attempt 3: fallback determinístico ────────────────────────
@@ -255,11 +280,12 @@ async def generate_equipment_narrative(
 
 async def generate_all_equipment_narratives(
     llm_inputs: list[EquipmentLLMInput],
-    llm_call: LLMCallFn,
+    llm_call: LLMCallFn | LLMCallFnWithModel,
     *,
     max_concurrency: int = 1,
     on_progress: Callable[[int, int], Awaitable[None]] | None = None,
     profile: str | None = None,
+    model_router: Any | None = None,
 ) -> list[EquipmentGenerationResult]:
     """Gera narrativas para todos os equipamentos.
 
@@ -269,6 +295,9 @@ async def generate_all_equipment_narratives(
         max_concurrency: Máximo de chamadas paralelas (default 1 = sequencial).
         on_progress: Callback opcional ``(completed, total) -> None``
             para atualização de progresso.
+        profile: Perfil de análise ('dust', 'gas', 'vapors').
+        model_router: Instância de ``ModelRouter`` para roteamento
+            tiered por risco. Se ``None``, usa o modelo padrão do client.
 
     Returns:
         Lista de ``EquipmentGenerationResult``, na mesma ordem dos inputs.
@@ -287,9 +316,20 @@ async def generate_all_equipment_narratives(
             total - 1,
         )
 
+    # ── Resolve modelo por equipamento via ModelRouter ────────
+    def _resolve_model(inp: EquipmentLLMInput) -> str | None:
+        if model_router is None:
+            return None
+        decision = model_router.resolve_equipment(inp.classificacao_do_risco)
+        logger.debug(
+            "ModelRouter | equip={} | model={} | reason={}",
+            inp.equipment_name, decision.model, decision.reason,
+        )
+        return decision.model
+
     logger.info(
-        "Iniciando geração per-equipment | total={} | concurrency={}",
-        total, max_concurrency,
+        "Iniciando geração per-equipment | total={} | concurrency={} | tiered={}",
+        total, max_concurrency, model_router is not None,
     )
 
     if max_concurrency <= 1:
@@ -300,7 +340,10 @@ async def generate_all_equipment_narratives(
                 result = _make_fallback_result(inp, attempts=0)
                 result.source = "devllm_skip"
             else:
-                result = await generate_equipment_narrative(inp, llm_call, profile=profile)
+                model_for_equip = _resolve_model(inp)
+                result = await generate_equipment_narrative(
+                    inp, llm_call, profile=profile, model_override=model_for_equip,
+                )
             results.append(result)
             if on_progress:
                 await on_progress(idx + 1, total)
@@ -321,7 +364,10 @@ async def generate_all_equipment_narratives(
                 result = _make_fallback_result(inp, attempts=0)
                 result.source = "devllm_skip"
             else:
-                result = await generate_equipment_narrative(inp, llm_call, profile=profile)
+                model_for_equip = _resolve_model(inp)
+                result = await generate_equipment_narrative(
+                    inp, llm_call, profile=profile, model_override=model_for_equip,
+                )
             async with lock:
                 completed_count += 1
                 if on_progress:

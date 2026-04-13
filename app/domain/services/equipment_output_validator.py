@@ -20,6 +20,7 @@ Implementa as regras OV-01 … OV-14 definidas em
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from loguru import logger
@@ -45,6 +46,14 @@ _REC_NORMA_MAX = 150
 _JUST_TEXT_MIN = 80
 _JUST_TEXT_MAX = 1_000
 _TOTAL_OUTPUT_MAX = 15_000
+
+# Regex para extrair o código base de uma norma (ex: "NFPA 652", "NR-10",
+# "ABNT NBR IEC 60079-10-2"). Captura o identificador numérico completo,
+# parando antes de sufixos inventados como ", Seção 8.3.2".
+_NORM_BASE_RE = re.compile(
+    r"(NFPA\s*\d+|NR[\-\s]*\d+|(?:ABNT\s+)?NBR(?:\s+IEC)?\s*\d[\d\-\.]*)",
+    re.IGNORECASE,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +219,9 @@ def validate_llm_output(
         if src_lower.endswith(".pdf"):
             valid_norm_sources.add(src_lower[:-4].strip())
 
+    # Pré-computar códigos base das normas válidas para match robusto
+    valid_norm_bases = _build_valid_norm_bases(valid_norm_sources)
+
     has_normative_context = bool(llm_input.normative_context)
 
     final_recs: list[RecomendacaoTecnica] = []
@@ -222,33 +234,48 @@ def validate_llm_output(
             _REC_TEXT_MAX,
         )
 
-        # Norma referência (OV-12 — fortalecido)
+        # Norma referência (OV-12 — endurecido com match por código base)
         norma = (rec.get("norma_referencia") or "").strip()
         if len(norma) < _REC_NORMA_MIN:
             norma = default_norma
         else:
-            # Validar se a norma citada existe entre as fontes válidas
+            # Extrair código base da norma citada pelo LLM
+            norma_base = _extract_norm_base(norma)
             norma_lower = norma.strip().lower()
-            norm_is_valid = any(
-                valid_src in norma_lower or norma_lower in valid_src
-                for valid_src in valid_norm_sources
+
+            # Verificar se a norma é válida: match exato OU match por código base
+            norm_is_valid = (
+                norma_lower in valid_norm_sources
+                or (norma_base is not None and norma_base in valid_norm_bases)
             )
-            if not norm_is_valid and has_normative_context:
+
+            if norm_is_valid and norma_base is not None:
+                # Norma válida — mas strippear seções/cláusulas inventadas.
+                # Encontrar a fonte válida mais completa que contém o código base.
+                matched_source = _find_matching_source(
+                    norma_base, valid_norm_sources, llm_input.normas_aplicaveis,
+                    [e.source for e in llm_input.normative_context],
+                )
+                if matched_source:
+                    norma = matched_source
+            elif not norm_is_valid and has_normative_context:
                 # Fallback: usar a norma mais relevante do contexto RAG
                 best_source = llm_input.normative_context[0].source
                 logger.info(
-                    "OV-12 | equip={} | norma inventada '{}' → fallback para '{}' (RAG)",
+                    "OV-12 | equip={} | norma inventada '{}' (base={}) → fallback para '{}' (RAG)",
                     equip,
                     norma,
+                    norma_base,
                     best_source,
                 )
                 norma = best_source
             elif not norm_is_valid:
                 # Sem RAG: manter fallback para norma do perfil
                 logger.info(
-                    "OV-12 | equip={} | norma '{}' não reconhecida → fallback default",
+                    "OV-12 | equip={} | norma '{}' não reconhecida (base={}) → fallback default",
                     equip,
                     norma,
+                    norma_base,
                 )
                 norma = default_norma
 
@@ -302,6 +329,11 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
     Usa ``medidas_a_implementar`` do input como recomendações.
     Se vazio, usa uma recomendação genérica.
 
+    Melhorias sobre a versão original:
+    - Distribui normas entre recomendações por keyword heurístico.
+    - Usa fonte RAG como norma quando contexto normativo está disponível.
+    - Justificativas referenciam perigos e consequências do equipamento.
+
     Args:
         llm_input: Input original do equipamento.
 
@@ -326,15 +358,24 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
     risco = llm_input.classificacao_do_risco.categoria_risco
     equip_name = llm_input.equipment_name
 
+    # Perigos e consequências para enriquecer justificativas
+    perigos_resumo = ", ".join(llm_input.identificacao_dos_perigos[:3]) or "perigos identificados"
+    consequencias_resumo = ", ".join(llm_input.consequencias_potenciais[:2]) or "consequências potenciais"
+
     recs: list[RecomendacaoTecnica] = []
     justs: list[JustificativaTecnica] = []
 
     for i, medida in enumerate(items[:_MAX_RECS], start=1):
+        # Distribuir norma por keyword heurístico
+        norma = _match_norma_for_fallback(
+            medida, llm_input.normas_aplicaveis, llm_input.normative_context,
+        ) or default_norma
+
         recs.append(
             RecomendacaoTecnica(
                 numero=i,
                 texto=medida,
-                norma_referencia=default_norma,
+                norma_referencia=norma,
             )
         )
         justs.append(
@@ -342,7 +383,9 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
                 numero=i,
                 texto=(
                     f"Recomendação baseada na análise de risco do equipamento "
-                    f"{equip_name}, com severidade {sev} e risco {risco}."
+                    f"{equip_name} (severidade {sev}, risco {risco}), "
+                    f"considerando os perigos identificados: {perigos_resumo}; "
+                    f"e consequências potenciais: {consequencias_resumo}."
                 ),
             )
         )
@@ -361,6 +404,141 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _extract_norm_base(norma: str) -> str | None:
+    """Extrai o código base normalizado de uma referência normativa.
+
+    Exemplos::
+
+        _extract_norm_base("NFPA 652:2022 — Standard on...")  → "nfpa 652"
+        _extract_norm_base("ABNT NBR IEC 60079-10-2")         → "nbr iec 60079-10-2"
+        _extract_norm_base("NR-10, Seção 10.8.4")             → "nr-10"
+        _extract_norm_base("texto qualquer sem norma")         → None
+
+    Returns:
+        Código base normalizado (lowercase, sem ano/título) ou ``None``.
+    """
+    m = _NORM_BASE_RE.search(norma)
+    if not m:
+        return None
+    base = m.group(1).strip().lower()
+    # Normalizar espaços múltiplos
+    base = re.sub(r"\s+", " ", base)
+    # Remover sufixo de ano (":2022", ":2019", etc.)
+    base = re.sub(r":\d{4}$", "", base)
+    return base
+
+
+def _build_valid_norm_bases(valid_norm_sources: set[str]) -> set[str]:
+    """Pré-computa o conjunto de códigos base a partir das fontes válidas.
+
+    Args:
+        valid_norm_sources: Conjunto de normas válidas em lowercase.
+
+    Returns:
+        Conjunto de códigos base normalizados.
+    """
+    bases: set[str] = set()
+    for src in valid_norm_sources:
+        base = _extract_norm_base(src)
+        if base:
+            bases.add(base)
+    return bases
+
+
+def _find_matching_source(
+    norma_base: str,
+    valid_norm_sources: set[str],
+    normas_aplicaveis: list[str],
+    rag_sources: list[str],
+) -> str | None:
+    """Encontra a fonte válida mais completa que corresponde ao código base.
+
+    Prioriza normas_aplicaveis (nome oficial) sobre RAG sources (podem
+    ter extensão .pdf).
+
+    Args:
+        norma_base: Código base extraído da norma citada pelo LLM.
+        valid_norm_sources: Conjunto de normas válidas em lowercase.
+        normas_aplicaveis: Lista de normas do perfil (formato oficial).
+        rag_sources: Lista de fontes do contexto RAG.
+
+    Returns:
+        Nome oficial da norma correspondente, ou ``None`` se não encontrado.
+    """
+    # Prioridade 1: normas_aplicaveis (nome mais completo/oficial)
+    for na in normas_aplicaveis:
+        na_base = _extract_norm_base(na)
+        if na_base == norma_base:
+            return na
+    # Prioridade 2: RAG sources
+    for src in rag_sources:
+        src_base = _extract_norm_base(src)
+        if src_base == norma_base:
+            return src
+    return None
+
+
+# Tabela de keywords → padrão de norma para heurística do fallback.
+# Cada tupla: (lista de keywords no texto da medida, regex de norma a priorizar).
+_FALLBACK_NORM_KEYWORDS: list[tuple[list[str], str]] = [
+    (["aterr", "elétric", "instalação elétrica", "nbr 5410", "5410"], r"nbr\s*5410"),
+    (["nr-10", "nr 10", "segurança em instalações"], r"nr[\-\s]*10\b"),
+    (["nr-20", "nr 20", "inflamáve", "combustíve"], r"nr[\-\s]*20\b"),
+    (["inspeção", "inspecao", "manutenção", "manutencao"], r"60079[\-\s]*17"),
+    (["classificação de área", "classificacao de area", "zona classificada"], r"60079[\-\s]*10"),
+    (["equipamento ex", "invólucro", "involucro", "à prova de explosão"], r"60079[\-\s]*(0|1|31)"),
+    (["ventila", "exaust"], r"nfpa\s*(68|69|654)"),
+    (["poeira", "dust", "pó combustível"], r"nfpa\s*652"),
+    (["detecção", "deteccao", "alarme", "sensor"], r"60079"),
+    (["proteção contra incêndio", "proteção contra incendio", "spda"], r"nfpa"),
+]
+
+
+def _match_norma_for_fallback(
+    medida_texto: str,
+    normas_aplicaveis: list[str],
+    normative_context: list | None = None,
+) -> str | None:
+    """Atribui a norma mais adequada a uma medida pelo texto, via heurística.
+
+    Verifica keywords no texto da medida e retorna a norma correspondente
+    da lista ``normas_aplicaveis`` ou do contexto RAG. Mantém a natureza
+    determinística do fallback (sem chamadas externas).
+
+    Args:
+        medida_texto: Texto da medida/recomendação.
+        normas_aplicaveis: Normas do perfil.
+        normative_context: Trechos normativos RAG (opcional).
+
+    Returns:
+        Nome da norma correspondente ou ``None`` (usa default_norma).
+    """
+    texto_lower = medida_texto.lower()
+
+    # Montar pool de normas candidatas (profile + RAG sources)
+    pool: list[str] = list(normas_aplicaveis)
+    if normative_context:
+        for exc in normative_context:
+            src = exc.source if hasattr(exc, "source") else str(exc)
+            if src not in pool:
+                pool.append(src)
+
+    for keywords, norm_pattern in _FALLBACK_NORM_KEYWORDS:
+        if any(kw in texto_lower for kw in keywords):
+            # Procurar no pool a norma que faz match com o padrão
+            for norma in pool:
+                if re.search(norm_pattern, norma, re.IGNORECASE):
+                    return norma
+
+    # Se há contexto RAG, usar a fonte de maior relevância
+    if normative_context:
+        src = normative_context[0].source if hasattr(normative_context[0], "source") else None
+        if src:
+            return src
+
+    return None
 
 
 def _parse_json(raw: str) -> dict[str, Any] | None:

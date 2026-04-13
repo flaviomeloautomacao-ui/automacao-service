@@ -94,6 +94,15 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
         "input_per_1k": 0.000075,
         "output_per_1k": 0.0003,
     },
+    "google/gemini-2.5-flash": {
+        "input_per_1k": 0.0003,
+        "output_per_1k": 0.0025,
+    },
+    # ── DeepSeek ───────────────────────────────────────────────────
+    "deepseek/deepseek-chat-v3-0324": {
+        "input_per_1k": 0.0002,
+        "output_per_1k": 0.00077,
+    },
     # ── Embedding ──────────────────────────────────────────────────
     "text-embedding-3-small": {
         "input_per_1k": 0.00002,

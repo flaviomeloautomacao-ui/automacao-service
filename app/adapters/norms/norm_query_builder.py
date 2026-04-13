@@ -20,10 +20,25 @@ from app.domain.entities import EquipmentContext
 
 
 # ---------------------------------------------------------------------------
-# Termos técnicos do domínio — enriquecem a query quando compatíveis
+# Termos técnicos do domínio — enriquecem a query semântica
 # ---------------------------------------------------------------------------
 
-_DOMAIN_TERMS: list[str] = [
+# Termos fundamentais de DHA — SEMPRE injetados na query independente
+# dos dados da planilha, pois são transversais a qualquer equipamento DHA.
+_CORE_DOMAIN_TERMS: list[str] = [
+    "classificação de área",
+    "atmosfera explosiva",
+    "fonte de ignição",
+    "alívio de explosão",
+    "detecção",
+    "aterramento",
+    "equipamentos Ex",
+    "prevenção de deflagração",
+]
+
+# Termos condicionais — injetados somente se já aparecem no contexto
+# do equipamento (reforço de sinal, sem adição de ruído).
+_CONTEXTUAL_DOMAIN_TERMS: list[str] = [
     "poeira combustível",
     "ignição",
     "explosão",
@@ -31,19 +46,11 @@ _DOMAIN_TERMS: list[str] = [
     "ventilação",
     "exaustão",
     "segregação",
-    "detecção",
-    "aterramento",
-    "classificação de área",
-    "atmosfera explosiva",
-    "equipamentos Ex",
     "inspeção",
     "manutenção",
     "proteção contra incêndio",
-    "prevenção de deflagração",
-    "fonte de ignição",
     "integridade estrutural",
     "proteção elétrica",
-    "alívio de explosão",
 ]
 
 # ---------------------------------------------------------------------------
@@ -115,17 +122,20 @@ def build_equipment_norm_query(
     )
 
     # ── Termos técnicos relevantes do domínio ─────────────────────
-    # Detecta quais termos do domínio aparecem no contexto
     contexto_lower = " ".join(parts).lower()
-    termos_relevantes = [
-        t for t in _DOMAIN_TERMS
-        if t.lower() in contexto_lower
-    ]
 
-    # Adicionar termos do perfil se não já presentes
+    # 1. Termos core — sempre presentes (fundamentais para DHA)
+    termos_relevantes: list[str] = list(_CORE_DOMAIN_TERMS)
+
+    # 2. Termos contextuais — só se já aparecem nos dados do equipamento
+    for t in _CONTEXTUAL_DOMAIN_TERMS:
+        if t.lower() in contexto_lower and t not in termos_relevantes:
+            termos_relevantes.append(t)
+
+    # 3. Termos do perfil — gap-filling (adicionados se ausentes)
     profile_terms = _get_profile_terms(profile)
     for pt in profile_terms:
-        if pt.lower() not in contexto_lower:
+        if pt.lower() not in contexto_lower and pt not in termos_relevantes:
             termos_relevantes.append(pt)
 
     if termos_relevantes:

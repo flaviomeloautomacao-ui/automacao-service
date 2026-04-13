@@ -454,17 +454,28 @@ def build_all_equipment_prompt_contexts(
     Returns:
         Lista de ``EquipmentLLMInput`` válidos, prontos para serialização.
     """
-    norm_map = normative_contexts or {}
-    lit_map = literature_contexts or {}
+    norm_map = {k.strip().lower(): v for k, v in (normative_contexts or {}).items()}
+    lit_map = {k.strip().lower(): v for k, v in (literature_contexts or {}).items()}
     results: list[EquipmentLLMInput] = []
 
     for ctx in equipment_contexts:
         eq_name = ctx.equipment_name
+        normalized_name = eq_name.strip().lower()
+        norm_ctx = norm_map.get(normalized_name)
+        lit_ctx = lit_map.get(normalized_name)
+
+        if norm_map and norm_ctx is None:
+            logger.warning(
+                "RAG | norm_map lookup miss | equip='{}' | chaves_disponíveis={}",
+                eq_name,
+                list(norm_map.keys())[:5],
+            )
+
         llm_input = build_equipment_prompt_context(
             ctx,
             normas_aplicaveis,
-            normative_context=norm_map.get(eq_name),
-            literature_context=lit_map.get(eq_name),
+            normative_context=norm_ctx,
+            literature_context=lit_ctx,
         )
         if llm_input is not None:
             results.append(llm_input)

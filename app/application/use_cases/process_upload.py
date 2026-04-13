@@ -360,8 +360,13 @@ class ProcessUploadUseCase:
         *,
         profile: str | None = None,
         grouped_equipment: list[dict[str, Any]] | None = None,
+        model_override: str | None = None,
     ) -> dict[str, Any]:
         """Etapa 5 — gera seções narrativas via LLM.
+
+        Args:
+            model_override: Modelo específico para esta chamada (CP-01).
+                Se ``None``, usa o modelo padrão do client.
 
         Returns:
             Dicionário com seções geradas (``introducao``, ``metodologia``,
@@ -379,8 +384,9 @@ class ProcessUploadUseCase:
         }
 
         logger.info(
-            "Gerando seções via LLM | profile={} | linhas_de_risco={}",
+            "Gerando seções via LLM | profile={} | model={} | linhas_de_risco={}",
             profile or "default",
+            model_override or "default",
             len(rows_dicts),
         )
 
@@ -391,7 +397,9 @@ class ProcessUploadUseCase:
                 step="global_sections",
             )
 
-        sections = await self._llm.generate_sections(context)
+        sections = await self._llm.generate_sections(
+            context, model_override=model_override,
+        )
         logger.info("Seções LLM geradas com sucesso")
         return sections
 

@@ -66,7 +66,7 @@ DEFAULT_TOP_K = 8
 DEFAULT_MAX_CHUNKS = 5
 """Quantidade máxima de chunks após filtragem de qualidade."""
 
-DEFAULT_MIN_SCORE = 0.15
+DEFAULT_MIN_SCORE = 0.35
 """Score mínimo de similaridade para aceitar um chunk."""
 
 
@@ -379,7 +379,7 @@ class ABNTRetriever:
             retrieval_results.append(result)
 
             if result.excerpts:
-                norm_map[equip_name] = result.excerpts
+                norm_map[equip_name.strip().lower()] = result.excerpts
                 logger.info(
                     "RAG | [{}/{}] equip='{}' | OK — {} chunks recuperados | "
                     "fontes: {}",

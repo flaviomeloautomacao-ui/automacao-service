@@ -54,12 +54,18 @@ SEVERITY_ORDER: dict[str, int] = {
 }
 
 #: Hierarquia de risco (índice maior = mais grave).
+#: Inclui formas masculinas e femininas para lidar com variações da planilha.
 RISK_ORDER: dict[str, int] = {
     "baixo": 0,
+    "baixa": 0,
     "médio": 1,
     "medio": 1,
+    "média": 1,
+    "media": 1,
     "alto": 2,
+    "alta": 2,
     "muito alto": 3,
+    "muito alta": 3,
 }
 
 # ---------------------------------------------------------------------------
