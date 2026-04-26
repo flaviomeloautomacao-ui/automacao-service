@@ -234,6 +234,10 @@ def validate_llm_output(
             _REC_TEXT_MAX,
         )
 
+        # Tipo de recomendação (novo — normativa | boa_pratica)
+        raw_tipo = (rec.get("tipo") or "").strip().lower()
+        raw_trecho = (rec.get("trecho_normativo") or "").strip() or None
+
         # Norma referência (OV-12 — endurecido com match por código base)
         norma = (rec.get("norma_referencia") or "").strip()
         if len(norma) < _REC_NORMA_MIN:
@@ -281,6 +285,26 @@ def validate_llm_output(
 
         norma = _truncate(norma, _REC_NORMA_MAX)
 
+        # ── Classificar tipo (inferir se não fornecido) ────────────
+        if raw_tipo == "normativa" and raw_trecho:
+            tipo = "normativa"
+            trecho = _truncate(raw_trecho, 2000)
+        elif raw_tipo == "normativa" and not raw_trecho:
+            # LLM disse normativa mas não forneceu trecho → reclassificar
+            tipo = "boa_pratica"
+            trecho = None
+            logger.info(
+                "OV-12 | equip={} | rec {} marcada normativa sem trecho → reclassificada boa_pratica",
+                equip, idx,
+            )
+        elif raw_trecho:
+            # Trecho fornecido mas tipo não é normativa → inferir normativa
+            tipo = "normativa"
+            trecho = _truncate(raw_trecho, 2000)
+        else:
+            tipo = "boa_pratica"
+            trecho = None
+
         # Texto da justificativa
         jst_text = _truncate(
             (jst.get("texto") or "").strip(),
@@ -288,7 +312,13 @@ def validate_llm_output(
         )
 
         final_recs.append(
-            RecomendacaoTecnica(numero=idx, texto=rec_text, norma_referencia=norma)
+            RecomendacaoTecnica(
+                numero=idx,
+                texto=rec_text,
+                norma_referencia=norma,
+                tipo=tipo,
+                trecho_normativo=trecho,
+            )
         )
         final_justs.append(
             JustificativaTecnica(numero=idx, texto=jst_text)
@@ -376,6 +406,8 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
                 numero=i,
                 texto=medida,
                 norma_referencia=norma,
+                tipo="boa_pratica",
+                trecho_normativo=None,
             )
         )
         justs.append(

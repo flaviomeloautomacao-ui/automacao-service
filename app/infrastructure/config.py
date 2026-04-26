@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     LLM_HIGH_RISK_KEYWORDS: str = "muito alto,intolerável,substancial"
     LLM_TIERED_ROUTING_ENABLED: bool = True
 
+    # ── Parâmetros de geração LLM ───────────────────────────────
+    LLM_TEMPERATURE: float = 0.15
+    LLM_TOP_P: float = 0.85
+
     # ── RAG / Embedding (normas ABNT) ───────────────────────────
     EMBEDDING_API_KEY: str = ""
     EMBEDDING_BASE_URL: str = "https://api.openai.com/v1"

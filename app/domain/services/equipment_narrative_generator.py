@@ -35,6 +35,9 @@ from typing import Any, Awaitable, Callable
 from loguru import logger
 
 from app.domain.entities import EquipmentLLMInput, EquipmentLLMOutput
+from app.domain.services.equipment_hallucination_validator import (
+    validate_hallucinations,
+)
 from app.domain.services.equipment_output_validator import (
     ValidationResult,
     build_fallback,
@@ -217,13 +220,20 @@ async def generate_equipment_narrative(
         result = validate_llm_output(raw, llm_input)
 
         if result.success and result.output is not None:
+            # Pós-validação de alucinações (HV-01…HV-04)
+            hv_result = validate_hallucinations(result.output, llm_input)
+            if hv_result.has_issues:
+                logger.info(
+                    "Hallucination flags (attempt 1) | equip={} | flags={}",
+                    equip, len(hv_result.flags),
+                )
             logger.info(
                 "LLM per-equipment OK | equip={} | model={} | recs={} | attempt=1",
-                equip, model_label, len(result.output.recomendacoes_tecnicas),
+                equip, model_label, len(hv_result.output.recomendacoes_tecnicas),
             )
             return EquipmentGenerationResult(
                 equipment_name=equip,
-                output=result.output,
+                output=hv_result.output,
                 source="llm",
                 attempts=1,
                 model_used=model_override or "",
@@ -252,13 +262,20 @@ async def generate_equipment_narrative(
         result_retry = validate_llm_output(raw_retry, llm_input)
 
         if result_retry.success and result_retry.output is not None:
+            # Pós-validação de alucinações (HV-01…HV-04)
+            hv_result = validate_hallucinations(result_retry.output, llm_input)
+            if hv_result.has_issues:
+                logger.info(
+                    "Hallucination flags (attempt 2) | equip={} | flags={}",
+                    equip, len(hv_result.flags),
+                )
             logger.info(
                 "LLM per-equipment OK (retry) | equip={} | model={} | recs={} | attempt=2",
-                equip, model_label, len(result_retry.output.recomendacoes_tecnicas),
+                equip, model_label, len(hv_result.output.recomendacoes_tecnicas),
             )
             return EquipmentGenerationResult(
                 equipment_name=equip,
-                output=result_retry.output,
+                output=hv_result.output,
                 source="llm_retry",
                 attempts=2,
                 model_used=model_override or "",

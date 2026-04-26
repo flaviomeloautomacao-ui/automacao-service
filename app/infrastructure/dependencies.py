@@ -200,6 +200,8 @@ def get_llm() -> "OpenRouterClient":
         api_key=settings.OPENROUTER_API_KEY,
         base_url=settings.OPENROUTER_BASE_URL,
         model=settings.LLM_MODEL,
+        temperature=settings.LLM_TEMPERATURE,
+        top_p=settings.LLM_TOP_P,
     )
 
 

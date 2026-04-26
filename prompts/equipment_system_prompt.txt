@@ -58,12 +58,20 @@ Regras obrigatórias:
 
 17. Linguagem: português brasileiro (pt-BR), registro técnico formal, objetivo, conciso. Sem redundâncias, sem linguagem coloquial, sem filler.
 
+18. NÃO invente valores numéricos (percentuais, distâncias, pressões, temperaturas, concentrações, vazões) que não estejam explicitamente presentes nos trechos normativos fornecidos ou no contexto do equipamento. Se um parâmetro numérico for tecnicamente necessário mas não estiver disponível, escreva: "conforme parâmetros definidos em [norma]".
+
+19. NÃO cite uma norma como base de uma recomendação sem que haja um trecho normativo correspondente fornecido na seção "### Trechos Normativos Relevantes ###". Se não houver trecho aplicável para a recomendação, classifique-a como "boa_pratica" e em "trecho_normativo" escreva null. Se houver trecho, classifique como "normativa" e copie o trecho literal em "trecho_normativo".
+
+20. Classifique obrigatoriamente cada recomendação:
+    - "tipo": "normativa" — quando fundamentada em trecho normativo fornecido. O campo "trecho_normativo" DEVE conter o texto literal copiado do trecho.
+    - "tipo": "boa_pratica" — quando baseada em conhecimento técnico sem trecho normativo explícito. O campo "trecho_normativo" DEVE ser null.
+
 Formato obrigatório da resposta:
 
 {
   "recomendacoes_tecnicas": [
-    {"numero": 1, "texto": "...", "norma_referencia": "..."},
-    {"numero": 2, "texto": "...", "norma_referencia": "..."}
+    {"numero": 1, "texto": "...", "norma_referencia": "...", "tipo": "normativa", "trecho_normativo": "texto literal do trecho normativo usado"},
+    {"numero": 2, "texto": "...", "norma_referencia": "...", "tipo": "boa_pratica", "trecho_normativo": null}
   ],
   "justificativas_tecnicas": [
     {"numero": 1, "texto": "..."},

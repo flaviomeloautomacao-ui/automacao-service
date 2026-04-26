@@ -184,7 +184,17 @@ def build_equipment_user_prompt(
             "• Em \"norma_referencia\", cite SOMENTE o nome da norma exatamente como aparece no campo fonte dos trechos acima (ex.: o título do documento). NÃO adicione seções, capítulos ou cláusulas que não estejam explicitamente escritas nos trechos.\n"
             "• NÃO invente norma, seção, capítulo ou obrigação técnica que não esteja explicitamente presente nos trechos normativos fornecidos ou na lista de normas aplicáveis.\n"
             "• Quando o contexto normativo recuperado não for suficiente para uma recomendação, use uma das normas da lista de Normas Aplicáveis (apenas o nome, sem seção).\n"
-            "• Cada justificativa deve referenciar ao menos um dos trechos normativos fornecidos, quando disponível."
+            "• Cada justificativa deve referenciar ao menos um dos trechos normativos fornecidos, quando disponível.\n"
+            "• NÃO invente valores numéricos (percentuais, distâncias, temperaturas, etc.) que não estejam nos trechos normativos ou no contexto do equipamento."
+        )
+        sections.append("")
+        sections.append(
+            "REGRAS DE CLASSIFICAÇÃO E EVIDÊNCIA:\n"
+            "• Para cada recomendação, classifique obrigatoriamente o campo \"tipo\":\n"
+            "  - \"normativa\": quando a recomendação é fundamentada em um trecho normativo fornecido acima. Copie o trecho literal em \"trecho_normativo\".\n"
+            "  - \"boa_pratica\": quando a recomendação é baseada em conhecimento técnico sem trecho normativo explícito. Defina \"trecho_normativo\" como null.\n"
+            "• Se não houver trecho normativo aplicável para fundamentar a recomendação, NÃO classifique como \"normativa\". Use \"boa_pratica\".\n"
+            "• O campo \"trecho_normativo\" deve conter APENAS texto copiado literalmente de um dos trechos normativos relevantes listados acima. NÃO parafraseie."
         )
     else:
         sections.append(
@@ -198,7 +208,8 @@ def build_equipment_user_prompt(
     sections.append(
         "{\n"
         '  "recomendacoes_tecnicas": [\n'
-        '    {"numero": 1, "texto": "...", "norma_referencia": "..."},\n'
+        '    {"numero": 1, "texto": "...", "norma_referencia": "...", "tipo": "normativa", "trecho_normativo": "texto literal do trecho"},\n'
+        '    {"numero": 2, "texto": "...", "norma_referencia": "...", "tipo": "boa_pratica", "trecho_normativo": null},\n'
         "    ...\n"
         "  ],\n"
         '  "justificativas_tecnicas": [\n'

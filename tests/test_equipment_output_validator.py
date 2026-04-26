@@ -58,6 +58,8 @@ def _make_valid_output(n: int = 3) -> dict:
                 "numero": i,
                 "texto": f"Recomendação técnica detalhada número {i} com texto suficiente para validação.",
                 "norma_referencia": "NFPA 652:2022, seção 8.2",
+                "tipo": "boa_pratica",
+                "trecho_normativo": None,
             }
             for i in range(1, n + 1)
         ],
@@ -405,6 +407,74 @@ class TestFallback:
             assert rec.numero == idx
         for idx, jst in enumerate(output.justificativas_tecnicas, 1):
             assert jst.numero == idx
+
+    def test_fallback_tipo_is_boa_pratica(self):
+        """Fallback must always produce tipo='boa_pratica'."""
+        inp = _make_input()
+        output = build_fallback(inp)
+        for rec in output.recomendacoes_tecnicas:
+            assert rec.tipo == "boa_pratica"
+            assert rec.trecho_normativo is None
+
+
+# ---------------------------------------------------------------------------
+# Tipo / trecho_normativo classification
+# ---------------------------------------------------------------------------
+
+
+class TestTipoTrechoClassification:
+    def test_normativa_with_trecho_preserved(self):
+        """tipo='normativa' + trecho present → kept as normativa."""
+        inp = _make_input()
+        data = _make_valid_output(2)
+        data["recomendacoes_tecnicas"][0]["tipo"] = "normativa"
+        data["recomendacoes_tecnicas"][0]["trecho_normativo"] = "Trecho literal da norma NFPA 652."
+        result = validate_llm_output(json.dumps(data), inp)
+        assert result.success is True
+        assert result.output.recomendacoes_tecnicas[0].tipo == "normativa"
+        assert result.output.recomendacoes_tecnicas[0].trecho_normativo == "Trecho literal da norma NFPA 652."
+
+    def test_normativa_without_trecho_reclassified(self):
+        """tipo='normativa' but no trecho → reclassified to boa_pratica."""
+        inp = _make_input()
+        data = _make_valid_output(2)
+        data["recomendacoes_tecnicas"][0]["tipo"] = "normativa"
+        data["recomendacoes_tecnicas"][0]["trecho_normativo"] = None
+        result = validate_llm_output(json.dumps(data), inp)
+        assert result.success is True
+        assert result.output.recomendacoes_tecnicas[0].tipo == "boa_pratica"
+        assert result.output.recomendacoes_tecnicas[0].trecho_normativo is None
+
+    def test_missing_tipo_with_trecho_infers_normativa(self):
+        """No tipo field but trecho present → inferred as normativa."""
+        inp = _make_input()
+        data = _make_valid_output(2)
+        # Remove tipo, add trecho
+        data["recomendacoes_tecnicas"][0].pop("tipo", None)
+        data["recomendacoes_tecnicas"][0]["trecho_normativo"] = "Algum trecho normativo relevante."
+        result = validate_llm_output(json.dumps(data), inp)
+        assert result.success is True
+        assert result.output.recomendacoes_tecnicas[0].tipo == "normativa"
+
+    def test_missing_tipo_without_trecho_defaults_boa_pratica(self):
+        """No tipo, no trecho → defaults to boa_pratica."""
+        inp = _make_input()
+        data = _make_valid_output(2)
+        data["recomendacoes_tecnicas"][0].pop("tipo", None)
+        data["recomendacoes_tecnicas"][0].pop("trecho_normativo", None)
+        result = validate_llm_output(json.dumps(data), inp)
+        assert result.success is True
+        assert result.output.recomendacoes_tecnicas[0].tipo == "boa_pratica"
+
+    def test_boa_pratica_tipo_preserved(self):
+        """Explicit boa_pratica is preserved."""
+        inp = _make_input()
+        data = _make_valid_output(2)
+        data["recomendacoes_tecnicas"][0]["tipo"] = "boa_pratica"
+        data["recomendacoes_tecnicas"][0]["trecho_normativo"] = None
+        result = validate_llm_output(json.dumps(data), inp)
+        assert result.success is True
+        assert result.output.recomendacoes_tecnicas[0].tipo == "boa_pratica"
 
 
 # ---------------------------------------------------------------------------

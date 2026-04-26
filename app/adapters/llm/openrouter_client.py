@@ -107,6 +107,8 @@ class OpenRouterClient:
         model: str = "openai/gpt-4o",
         timeout: float = 120.0,
         max_retries: int = 3,
+        temperature: float = 0.15,
+        top_p: float = 0.85,
     ) -> None:
         if not api_key:
             raise LLMError("OPENROUTER_API_KEY não configurada.")
@@ -116,6 +118,8 @@ class OpenRouterClient:
         self._model = model
         self._timeout = timeout
         self._max_retries = max_retries
+        self._temperature = temperature
+        self._top_p = top_p
         self._tracker = get_tracker()
 
         # Contexto de tracking (setado externamente por quem chama)
@@ -308,7 +312,8 @@ class OpenRouterClient:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                "temperature": 0.3,
+                "temperature": self._temperature,
+                "top_p": self._top_p,
                 "response_format": {"type": "json_object"},
             }
 

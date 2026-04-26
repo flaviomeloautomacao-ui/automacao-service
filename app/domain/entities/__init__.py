@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -433,12 +433,28 @@ class RecomendacaoTecnica(BaseModel):
     """Uma recomendação técnica numerada com referência normativa.
 
     Contrato: ``docs/equipment_llm_contract.md``, §3.1.
+
+    Campos adicionais para rastreabilidade:
+        tipo: ``"normativa"`` se fundamentada em trecho normativo explícito,
+              ``"boa_pratica"`` se baseada em conhecimento técnico sem
+              evidência normativa literal.
+        trecho_normativo: Texto literal do trecho normativo que fundamenta
+              a recomendação. Obrigatório quando ``tipo == 'normativa'``.
     """
 
     numero: int = Field(..., ge=1, description="Número sequencial (1-based)")
     texto: str = Field(..., min_length=1, description="Texto da recomendação")
     norma_referencia: str = Field(
         ..., min_length=1, description="Norma que fundamenta a recomendação"
+    )
+    tipo: Literal["normativa", "boa_pratica"] = Field(
+        default="boa_pratica",
+        description="Classificação: 'normativa' (com trecho) ou 'boa_pratica' (sem evidência normativa)",
+    )
+    trecho_normativo: Optional[str] = Field(
+        None,
+        max_length=2000,
+        description="Texto literal do trecho normativo usado como fundamentação (obrigatório se tipo='normativa')",
     )
 
     model_config = {"frozen": True}
