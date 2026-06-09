@@ -86,6 +86,8 @@ class Settings(BaseSettings):
     RAG_MAX_CHUNKS: int = 5
     RAG_MIN_SCORE: float = 0.35
     RAG_NORM_TABLE: str = "konis_db"
+    RAG_NORM_TABLE_DHA: str = "konis_db_DHA"
+    RAG_NORM_TABLE_AREAS: str = "konis_db_ClassificacaoDeAreas"
 
     # ── Dev / Teste ─────────────────────────────────────────────
     DEVLLM: bool = False

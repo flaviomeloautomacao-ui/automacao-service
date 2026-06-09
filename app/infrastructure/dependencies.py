@@ -337,11 +337,12 @@ async def get_abnt_retriever() -> AsyncGenerator["ABNTRetriever | None", None]:
         return
 
     get_logger().info(
-        "RAG normativo — inicializando | model={} | base_url={} | table={} | "
-        "top_k={} | max_chunks={} | min_score={} | DEVLLM={}",
+        "RAG normativo — inicializando | model={} | base_url={} | "
+        "table_dha={} | table_areas={} | top_k={} | max_chunks={} | min_score={} | DEVLLM={}",
         settings.EMBEDDING_MODEL,
         settings.EMBEDDING_BASE_URL,
-        settings.RAG_NORM_TABLE,
+        settings.RAG_NORM_TABLE_DHA,
+        settings.RAG_NORM_TABLE_AREAS,
         settings.RAG_TOP_K,
         settings.RAG_MAX_CHUNKS,
         settings.RAG_MIN_SCORE,
@@ -360,7 +361,7 @@ async def get_abnt_retriever() -> AsyncGenerator["ABNTRetriever | None", None]:
     try:
         norm_repo = NormVectorRepository(
             rag_session,
-            table_name=settings.RAG_NORM_TABLE,
+            table_name=settings.RAG_NORM_TABLE_DHA,
         )
 
         yield ABNTRetriever(

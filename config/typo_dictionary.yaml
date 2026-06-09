@@ -1,0 +1,39 @@
+# Dicionário de typos / variantes a corrigir em saídas de LLM.
+# Aplicado case-insensitive como substituição de palavra inteira.
+# Key = forma incorreta (regex word-boundary), Value = forma correta canônica.
+substitutions:
+  # Termos técnicos
+  "exsplosao": "explosão"
+  "exsplosão": "explosão"
+  "explosao": "explosão"
+  "deflagracao": "deflagração"
+  "atmosféras": "atmosferas"
+  "ATEX": "ATEX"
+  "Inflamavel": "Inflamável"
+  "inflamavel": "inflamável"
+  "infamavel": "inflamável"
+  "infamável": "inflamável"
+  "concetracao": "concentração"
+  "concentracao": "concentração"
+  "particulas": "partículas"
+  "explosividade.": "explosividade."
+  "MEC": "MEC"  # Mínima Energia de Ignição (sigla preservada)
+  "EMI": "EMI"
+  # Equipamentos / instrumentos
+  "eletro static": "eletrostático"
+  "antistatic": "antiestático"
+  "anti-estatico": "antiestático"
+  # Normas (formatação)
+  "NBR-IEC": "ABNT NBR IEC"
+  "IEC60079": "IEC 60079"
+  "NFPA-654": "NFPA 654"
+  "NFPA68": "NFPA 68"
+  "NFPA69": "NFPA 69"
+  "NR10": "NR-10"
+  "NR20": "NR-20"
+  "NR33": "NR-33"
+  # Concordância comum
+  "afins de": "a fim de"
+  "afim de": "a fim de"
+  "haver de": "haver de"
+  "deveis": "deve-se"

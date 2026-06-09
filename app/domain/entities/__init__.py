@@ -178,7 +178,7 @@ class EquipmentContext(BaseModel):
 
     - Renderizar as sub-seções 4.N.1–4.N.7 do template PDF
     - Alimentar o LLM na geração per-equipment (Stage 5B)
-    - Montar a tabela de recomendações consolidadas
+    - Montar a tabela de recomendações
 
     Este objeto é **somente-leitura** após construção.
 

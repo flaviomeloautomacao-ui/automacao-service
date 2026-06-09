@@ -558,12 +558,12 @@
     {% for eq in equipments %}
     <li class="toc-sub"><a class="toc-link" href="#sec-equip-{{ eq.index }}"><span class="toc-number">{{ sec_equip }}.{{ eq.index }}.</span> {{ eq.nome }}</a></li>
     {% endfor %}
-    <li><a class="toc-link" href="#sec-recomendacoes"><span class="toc-number">{{ sec_recomendacoes }}.</span> Recomendações Consolidadas</a></li>
+    <li><a class="toc-link" href="#sec-recomendacoes"><span class="toc-number">{{ sec_recomendacoes }}.</span> Recomendações</a></li>
     <li><a class="toc-link" href="#sec-classif"><span class="toc-number">{{ sec_classif }}.</span> Classificação de Risco Geral</a></li>
-    <li><a class="toc-link" href="#sec-conclusao"><span class="toc-number">{{ sec_conclusao }}.</span> Conclusão Geral</a></li>
+    <li><a class="toc-link" href="#sec-conclusao"><span class="toc-number">{{ sec_conclusao }}.</span> Conclusão</a></li>
     <li><a class="toc-link" href="#sec-refs"><span class="toc-number">{{ sec_refs }}.</span> Referências Normativas</a></li>
     <li><a class="toc-link" href="#sec-encerramento"><span class="toc-number">{{ sec_encerramento }}.</span> Encerramento</a></li>
-    <li><a class="toc-link" href="#sec-anexo"><span class="toc-number">A.</span> Anexo — Inventário Completo de Riscos</a></li>
+    <li><a class="toc-link" href="#sec-anexo"><span class="toc-number">A.</span> Apêndice A — Itens de risco avaliados</a></li>
     {% else %}
     <li><a class="toc-link" href="#sec-metodo"><span class="toc-number">{{ sec_metodo }}.</span> Metodologia Aplicada à Avaliação</a></li>
     <li class="toc-sub"><a class="toc-link" href="#sec-metodo-1"><span class="toc-number">{{ sec_metodo }}.1.</span> Visão Geral do Método</a></li>
@@ -572,12 +572,12 @@
     {% for eq in equipments %}
     <li class="toc-sub"><a class="toc-link" href="#sec-equip-{{ eq.index }}"><span class="toc-number">{{ sec_equip }}.{{ eq.index }}.</span> {{ eq.nome }}</a></li>
     {% endfor %}
-    <li><a class="toc-link" href="#sec-recomendacoes"><span class="toc-number">{{ sec_recomendacoes }}.</span> Recomendações Consolidadas</a></li>
+    <li><a class="toc-link" href="#sec-recomendacoes"><span class="toc-number">{{ sec_recomendacoes }}.</span> Recomendações</a></li>
     <li><a class="toc-link" href="#sec-classif"><span class="toc-number">{{ sec_classif }}.</span> Classificação de Risco Geral</a></li>
-    <li><a class="toc-link" href="#sec-conclusao"><span class="toc-number">{{ sec_conclusao }}.</span> Conclusão Geral</a></li>
+    <li><a class="toc-link" href="#sec-conclusao"><span class="toc-number">{{ sec_conclusao }}.</span> Conclusão</a></li>
     <li><a class="toc-link" href="#sec-refs"><span class="toc-number">{{ sec_refs }}.</span> Referências Normativas</a></li>
     <li><a class="toc-link" href="#sec-encerramento"><span class="toc-number">{{ sec_encerramento }}.</span> Encerramento</a></li>
-    <li><a class="toc-link" href="#sec-anexo"><span class="toc-number">A.</span> Anexo — Inventário Completo de Riscos</a></li>
+    <li><a class="toc-link" href="#sec-anexo"><span class="toc-number">A.</span> Apêndice A — Itens de risco avaliados</a></li>
     {% endif %}
   </ul>
 </div>
@@ -1002,7 +1002,7 @@
     {# 4.x.11 Registro fotográfico (por último na seção do equipamento) #}
     {% if eq.images %}
     <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset + 8 }} Registro fotográfico</h4>
-    {% set visible_images = eq.images[:4] %}
+    {% set visible_images = (eq.images | sort(attribute='order_index', reverse=false))[:4] if eq.images and eq.images[0].order_index is defined else eq.images[:4] %}
     {% set img_count = visible_images | length %}
     <div class="equipment-images">
       {% set global_photo_ns = namespace(counter=0) %}
@@ -1032,16 +1032,16 @@
 
 
 {# ====================================================================
-   SEÇÃO 5: RECOMENDAÇÕES CONSOLIDADAS
+   SEÇÃO 5: RECOMENDAÇÕES
    ==================================================================== #}
 <div class="section" style="page-break-before: always;">
   <h2 id="sec-recomendacoes">
     <span class="section-number">{{ sec_recomendacoes }}.</span>
-    RECOMENDAÇÕES CONSOLIDADAS
+    RECOMENDAÇÕES
   </h2>
 
   <p>
-    A tabela abaixo consolida todas as recomendações técnicas por equipamento,
+    A tabela abaixo apresenta as recomendações técnicas por equipamento,
     organizadas por prioridade de implementação conforme a classificação de risco.
   </p>
 
@@ -1260,19 +1260,19 @@
     <p>
       Recomenda-se a implementação prioritária das medidas para os equipamentos
       classificados como risco Muito Alto, seguidos dos equipamentos com risco
-      Alto, conforme cronograma detalhado na seção de Recomendações Consolidadas.
+      Alto, conforme cronograma detalhado na seção de Recomendações.
     </p>
   {% endif %}
 </div>
 
 
 {# ====================================================================
-   SEÇÃO 7: CONCLUSÃO GERAL
+   SEÇÃO 7: CONCLUSÃO
    ==================================================================== #}
 <div class="section" style="page-break-before: always;">
   <h2 id="sec-conclusao">
     <span class="section-number">{{ sec_conclusao }}.</span>
-    CONCLUSÃO GERAL
+    CONCLUSÃO
   </h2>
 
   {% if llm_sections.conclusao %}
@@ -1390,12 +1390,15 @@
   <p class="encerramento-city">São Paulo, {{ mes_ano }}.</p>
 
   <div class="encerramento-contact">
-    <p class="contact-name">Flávio Cavalcante</p>
-    <p class="contact-role">Gerente técnico</p>
+    <p class="contact-name">{{ metadata.assinatura_nome | default(profile_config.assinatura_nome | default("Flávio Cavalcante")) }}</p>
+    <p class="contact-role">{{ metadata.assinatura_cargo | default(profile_config.assinatura_cargo | default("Gerente técnico")) }}</p>
+    {% if metadata.assinatura_registro or profile_config.assinatura_registro %}
+    <p class="contact-registro">{{ metadata.assinatura_registro | default(profile_config.assinatura_registro) }}</p>
+    {% endif %}
     <br>
-    <p class="contact-phone">M +55 (11) 94572 0000</p>
-    <p class="contact-phone">T +55 (11) 3046 3648</p>
-    <p class="contact-link"><a href="mailto:flavio.cavalcante@konis.com.br">flavio.cavalcante@konis.com.br</a></p>
+    <p class="contact-phone">M {{ metadata.assinatura_celular | default(profile_config.assinatura_celular | default("+55 (11) 94572 0000")) }}</p>
+    <p class="contact-phone">T {{ metadata.assinatura_telefone | default(profile_config.assinatura_telefone | default("+55 (11) 3046 3648")) }}</p>
+    <p class="contact-link"><a href="mailto:{{ metadata.assinatura_email | default(profile_config.assinatura_email | default('flavio.cavalcante@konis.com.br')) }}">{{ metadata.assinatura_email | default(profile_config.assinatura_email | default("flavio.cavalcante@konis.com.br")) }}</a></p>
     <p class="contact-link"><a href="https://www.konis.com.br" target="_blank">www.konis.com.br</a></p>
 
     <img src="konis_logo.png" class="encerramento-logo" alt="Konis - Segurança é essencial">
@@ -1404,15 +1407,14 @@
 
 
 {# ====================================================================
-   ANEXO A — INVENTÁRIO COMPLETO DE RISCOS
+   APÊNDICE A — Itens de risco avaliados
    ==================================================================== #}
 {% if rows %}
 <div class="section annex-landscape">
-  <h2 id="sec-anexo">ANEXO A — Inventário Completo de Riscos</h2>
+  <h2 id="sec-anexo">APÊNDICE A — Itens de risco avaliados na unidade {{ metadata.site | default("—") }}</h2>
 
-  <p>
-    Tabela consolidada com todos os itens de risco avaliados na unidade
-    <strong>{{ metadata.site | default("—") }}</strong>.
+  <p class="text-muted">
+    Tabela com todos os itens de risco avaliados na unidade {{ metadata.site | default("—") }}.
   </p>
 
   <table class="inventory-table">
@@ -1456,13 +1458,13 @@
         <td>{{ row.categoria_probabilidade | default(row.categoria_risco | default("—")) }}</td>
         <td>
           {% set risk = row.classificacao_risco | default(row.categoria_risco | default("—")) %}
-          {% if risk == "Muito Alto" %}
+          {% if risk in ["Muito Alto", "Muito Alta"] %}
             <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% elif risk == "Alto" %}
+          {% elif risk in ["Alto", "Alta"] %}
             <span class="risk-badge" style="background-color: #fd7e14; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% elif risk == "Médio" or risk == "Medio" %}
+          {% elif risk in ["Médio", "Medio", "Média", "Media"] %}
             <span class="risk-badge" style="background-color: #ffc107; color: #333; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% elif risk == "Baixo" %}
+          {% elif risk in ["Baixo", "Baixa"] %}
             <span class="risk-badge" style="background-color: #28a745; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
           {% else %}
             {{ risk }}
@@ -1470,9 +1472,33 @@
         </td>
         <td>{{ row.medidas_existentes | default("—") }}</td>
         <td>{{ row.medidas_implementar | default("—") }}</td>
-        <td>{{ row.categoria_severidade_2 | default("—") }}</td>
+        <td>
+          {% set sevr = row.categoria_severidade_2 | default("—") %}
+          {% if "Catastrófica" in sevr or "IV" in sevr %}
+            <span style="color: #dc3545; font-weight: 700;">{{ sevr }}</span>
+          {% elif "Alta" in sevr or "III" in sevr %}
+            <span style="color: #fd7e14; font-weight: 700;">{{ sevr }}</span>
+          {% elif "Média" in sevr or "II" in sevr %}
+            <span style="color: #ffc107; font-weight: 700;">{{ sevr }}</span>
+          {% else %}
+            {{ sevr }}
+          {% endif %}
+        </td>
         <td>{{ row.categoria_probabilidade_2 | default("—") }}</td>
-        <td>{{ row.classificacao_risco_2 | default("—") }}</td>
+        <td>
+          {% set riskr = row.classificacao_risco_2 | default("—") %}
+          {% if riskr in ["Muito Alto", "Muito Alta"] %}
+            <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">{{ riskr }}</span>
+          {% elif riskr in ["Alto", "Alta"] %}
+            <span class="risk-badge" style="background-color: #fd7e14; font-size: 7pt; padding: 1px 4px;">{{ riskr }}</span>
+          {% elif riskr in ["Médio", "Medio", "Média", "Media"] %}
+            <span class="risk-badge" style="background-color: #ffc107; color: #333; font-size: 7pt; padding: 1px 4px;">{{ riskr }}</span>
+          {% elif riskr in ["Baixo", "Baixa"] %}
+            <span class="risk-badge" style="background-color: #28a745; font-size: 7pt; padding: 1px 4px;">{{ riskr }}</span>
+          {% else %}
+            {{ riskr }}
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

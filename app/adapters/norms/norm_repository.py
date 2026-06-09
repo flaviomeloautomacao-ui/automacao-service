@@ -64,6 +64,10 @@ class NormVectorRepository:
         self._session = session
         self._table_name = table_name
 
+    def set_table_name(self, table_name: str) -> None:
+        """Atualiza a tabela vetorial alvo para o retrieval corrente."""
+        self._table_name = table_name
+
     async def search_by_embedding(
         self,
         query_embedding: list[float],
@@ -103,7 +107,7 @@ class NormVectorRepository:
                 {DEFAULT_CONTENT_COLUMN} AS content,
                 {DEFAULT_METADATA_COLUMN} AS metadata,
                 1 - ({DEFAULT_EMBEDDING_COLUMN} <=> (:query_embedding)::vector) AS similarity
-            FROM {self._table_name}
+            FROM "{self._table_name}"
             WHERE {DEFAULT_CONTENT_COLUMN} IS NOT NULL
               AND LENGTH({DEFAULT_CONTENT_COLUMN}) >= :min_len
             ORDER BY {DEFAULT_EMBEDDING_COLUMN} <=> (:query_embedding)::vector

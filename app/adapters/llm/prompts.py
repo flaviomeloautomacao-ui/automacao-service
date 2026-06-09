@@ -123,6 +123,37 @@ PROFILE_CONFIG: dict[str, dict[str, Any]] = {
         ),
         "tipo_atmosfera": "atmosferas explosivas por vapores de líquidos inflamáveis",
     },
+
+    # ── Classificação de Áreas (IEC 60079-10-1/10-2) ───────────────
+    "areas": {
+        "label": "Classificação de Áreas",
+        "titulo_relatorio": "RELATÓRIO TÉCNICO\nEstudo de Classificação de Áreas",
+        "subtitulo": "Atmosferas Explosivas — Gases, Vapores e Poeiras Combustíveis",
+        "normas_principais": [
+            "ABNT NBR IEC 60079-10-1 — Atmosferas explosivas: classificação de áreas — Gases e vapores inflamáveis",
+            "ABNT NBR IEC 60079-10-2 — Atmosferas explosivas: classificação de áreas — Atmosferas de poeiras combustíveis",
+            "ABNT NBR IEC 60079-14 — Projeto, seleção e montagem de instalações elétricas",
+            "ABNT NBR IEC 60079-0 — Equipamentos: requisitos gerais",
+            "ABNT NBR IEC 60079-17 — Inspeção e manutenção de instalações elétricas",
+            "NFPA 652 — Standard on the Fundamentals of Combustible Dust",
+            "NR-10 — Segurança em instalações e serviços em eletricidade",
+            "NR-20 — Segurança e Saúde no Trabalho com Inflamáveis e Combustíveis",
+            "ABNT NBR 5410 — Instalações elétricas de baixa tensão",
+        ],
+        "materiais_section": False,
+        "compound_table": True,
+        "sections_semi_static": True,
+        "foco": (
+            "classificação de áreas com atmosferas explosivas, segundo as normas "
+            "ABNT NBR IEC 60079-10-1 (gases e vapores inflamáveis) e "
+            "ABNT NBR IEC 60079-10-2 (poeiras combustíveis), incluindo identificação "
+            "e graduação de fontes de liberação, avaliação do grau e disponibilidade "
+            "de ventilação, definição de zonas (0/1/2 e 20/21/22) e suas extensões, "
+            "e seleção de equipamentos elétricos adequados (Grupo, Classe de "
+            "Temperatura e EPL)"
+        ),
+        "tipo_atmosfera": "atmosferas explosivas (gases, vapores e poeiras combustíveis)",
+    },
 }
 
 #: Perfil padrão quando não especificado.
@@ -324,9 +355,9 @@ def build_user_prompt(context: dict[str, Any]) -> str:
                 "de avaliação de risco."
             ),
             (
-                '"conclusao": Conclusão geral do relatório com resumo dos '
+                '"conclusao": Conclusão do relatório com resumo dos '
                 "achados críticos, urgência das recomendações e visão geral "
-                "do nível de risco da unidade."
+                "do nível de risco da unidade. NÃO use o termo 'conclusão geral'."
             ),
         ]
     )

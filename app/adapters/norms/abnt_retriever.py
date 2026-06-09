@@ -41,7 +41,9 @@ from typing import Any
 from loguru import logger
 
 from app.domain.entities import EquipmentContext, NormativeExcerpt
+from app.domain.entities.area_classification import AreaClassificationContext
 
+from .area_norm_query_builder import build_area_norm_query
 from .embedding_provider import EmbeddingError, EmbeddingProvider
 from .norm_query_builder import build_equipment_norm_query
 from .norm_repository import NormVectorRepository
@@ -97,6 +99,33 @@ class EquipmentRetrievalResult:
 
 
 # ---------------------------------------------------------------------------
+# Resultado do retrieval por área (Classificação de Áreas)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class AreaRetrievalResult:
+    """Resultado do retrieval normativo para uma área de classificação.
+
+    Attributes:
+        area_local: Identificação da área/local.
+        excerpts: Lista de strings formatadas (norma + trecho) prontas para
+            injeção em ``AreaClassificationContext.normative_context``.
+        citations: ``NormCitation[]`` para auditoria e rastreabilidade.
+        norm_context: Contexto completo com query, chunks e metadados.
+        query_text: Texto da query semântica usada.
+        chunk_count: Quantidade de chunks retornados (após filtragem).
+    """
+
+    area_local: str
+    excerpts: list[str] = field(default_factory=list)
+    citations: list[NormCitation] = field(default_factory=list)
+    norm_context: RetrievedNormContext | None = None
+    query_text: str = ""
+    chunk_count: int = 0
+
+
+# ---------------------------------------------------------------------------
 # Retriever principal
 # ---------------------------------------------------------------------------
 
@@ -136,6 +165,10 @@ class ABNTRetriever:
         self._top_k = top_k
         self._max_chunks = max_chunks
         self._min_score = min_score
+
+    def set_norm_table(self, table_name: str) -> None:
+        """Seleciona a base vetorial adequada ao documento atual."""
+        self._repo.set_table_name(table_name)
 
     async def retrieve_for_equipment(
         self,
@@ -469,6 +502,223 @@ class ABNTRetriever:
         """Constrói resultado vazio (graceful degradation)."""
         return EquipmentRetrievalResult(
             equipment_name=equip_name,
+            excerpts=[],
+            citations=[],
+            norm_context=None,
+            query_text=query_text,
+            chunk_count=0,
+        )
+
+    # =====================================================================
+    # ÁREAS — Classificação de Áreas (IEC 60079-10-1/10-2)
+    # =====================================================================
+
+    async def retrieve_for_area(
+        self,
+        area_context: AreaClassificationContext,
+        *,
+        profile: str | None = "areas",
+    ) -> AreaRetrievalResult:
+        """Recupera contexto normativo para uma única área.
+
+        Análogo a :meth:`retrieve_for_equipment`, porém orientado ao
+        domínio de Classificação de Áreas. Em caso de falha em qualquer
+        etapa, retorna resultado vazio sem propagar exceções.
+        """
+        area_name = area_context.area_local
+
+        # 1. Montar query semântica
+        try:
+            query_text = build_area_norm_query(area_context, profile=profile)
+            logger.debug(
+                "RAG-Area | area='{}' | query montada ({} chars): {}",
+                area_name,
+                len(query_text),
+                query_text[:200] + ("..." if len(query_text) > 200 else ""),
+            )
+        except Exception:
+            logger.exception(
+                "RAG-Area | ERRO ao montar query | area='{}'", area_name,
+            )
+            return self._empty_area_result(area_name)
+
+        # 2. Gerar embedding
+        try:
+            query_embedding = await self._embedding.embed_text(query_text)
+        except EmbeddingError as exc:
+            logger.warning(
+                "RAG-Area | ERRO embedding | area='{}' | erro={}",
+                area_name, str(exc),
+            )
+            return self._empty_area_result(area_name, query_text=query_text)
+        except Exception:
+            logger.exception(
+                "RAG-Area | ERRO inesperado no embedding | area='{}'", area_name,
+            )
+            return self._empty_area_result(area_name, query_text=query_text)
+
+        # 3. Consultar base vetorial
+        try:
+            raw_rows = await self._repo.search_by_embedding(
+                query_embedding, top_k=self._top_k,
+            )
+        except Exception:
+            logger.exception(
+                "RAG-Area | ERRO busca vetorial | area='{}'", area_name,
+            )
+            return self._empty_area_result(area_name, query_text=query_text)
+
+        if not raw_rows:
+            logger.info(
+                "RAG-Area | area='{}' | nenhum chunk retornado pelo pgvector",
+                area_name,
+            )
+            return self._empty_area_result(area_name, query_text=query_text)
+
+        # 4. Normalizar/filtrar
+        normalized = normalize_chunks(raw_rows)
+        filtered = filter_quality_chunks(
+            normalized,
+            max_chunks=self._max_chunks,
+            min_score=self._min_score,
+        )
+
+        if not filtered:
+            logger.info(
+                "RAG-Area | area='{}' | todos {} chunks descartados (min_score={})",
+                area_name, len(raw_rows), self._min_score,
+            )
+            return self._empty_area_result(area_name, query_text=query_text)
+
+        # 5. Converter chunks → strings legíveis para o prompt
+        excerpts_str: list[str] = []
+        for c in filtered:
+            line_info = ""
+            if c.line_from is not None and c.line_to is not None:
+                line_info = f" (linhas {c.line_from}-{c.line_to})"
+            excerpts_str.append(
+                f"[{c.source_title}{line_info}] {c.content.strip()}"
+            )
+
+        # 6. Citações para rastreabilidade
+        citations = chunks_to_citations(filtered)
+
+        norm_context = RetrievedNormContext(
+            equipment_name=area_name,
+            query_text=query_text,
+            chunks=filtered,
+            citations=citations,
+        )
+
+        for i, c in enumerate(filtered, 1):
+            score_str = (
+                f"{c.relevance_score:.3f}" if c.relevance_score is not None else "?"
+            )
+            logger.info(
+                "RAG-Area | area='{}' | chunk {}/{}: score={} fonte='{}' | trecho: '{}'",
+                area_name, i, len(filtered), score_str, c.source_title,
+                c.content[:120].replace("\n", " ") + ("..." if len(c.content) > 120 else ""),
+            )
+
+        return AreaRetrievalResult(
+            area_local=area_name,
+            excerpts=excerpts_str,
+            citations=citations,
+            norm_context=norm_context,
+            query_text=query_text,
+            chunk_count=len(filtered),
+        )
+
+    async def retrieve_for_all_areas(
+        self,
+        area_contexts: list[AreaClassificationContext],
+        *,
+        profile: str | None = "areas",
+    ) -> dict[str, list[str]]:
+        """Recupera contexto normativo para todas as áreas.
+
+        Retorna um mapa ``area_local → list[str]`` com os trechos formatados
+        prontos para preencher ``AreaClassificationContext.normative_context``.
+
+        Em ``DEVLLM=true``, apenas a 1ª área recebe retrieval real.
+        """
+        from app.infrastructure.config import get_settings  # noqa: PLC0415
+
+        norm_map: dict[str, list[str]] = {}
+        results: list[AreaRetrievalResult] = []
+        total = len(area_contexts)
+
+        devllm = get_settings().DEVLLM
+        if devllm:
+            logger.warning(
+                "RAG-Area | DEVLLM=true | Apenas a 1ª área usará retrieval RAG, "
+                "as demais {} serão ignoradas",
+                max(total - 1, 0),
+            )
+
+        logger.info(
+            "RAG-Area ── INÍCIO ── | áreas={} | profile={} | "
+            "top_k={} | max_chunks={} | min_score={}",
+            total, profile, self._top_k, self._max_chunks, self._min_score,
+        )
+
+        for idx, ctx in enumerate(area_contexts):
+            area_name = ctx.area_local
+
+            if devllm and idx > 0:
+                logger.info(
+                    "RAG-Area | [{}/{}] area='{}' | DEVLLM skip",
+                    idx + 1, total, area_name,
+                )
+                results.append(self._empty_area_result(area_name))
+                continue
+
+            logger.info(
+                "RAG-Area | [{}/{}] area='{}' | iniciando retrieval...",
+                idx + 1, total, area_name,
+            )
+            result = await self.retrieve_for_area(ctx, profile=profile)
+            results.append(result)
+
+            if result.excerpts:
+                norm_map[area_name.strip().lower()] = result.excerpts
+                logger.info(
+                    "RAG-Area | [{}/{}] area='{}' | OK — {} chunks",
+                    idx + 1, total, area_name, result.chunk_count,
+                )
+            else:
+                logger.info(
+                    "RAG-Area | [{}/{}] area='{}' | sem contexto normativo",
+                    idx + 1, total, area_name,
+                )
+
+        # Resumo
+        total_chunks = sum(r.chunk_count for r in results)
+        areas_with_ctx = sum(1 for r in results if r.chunk_count > 0)
+        all_sources: set[str] = set()
+        for r in results:
+            if r.norm_context:
+                for c in r.norm_context.chunks:
+                    all_sources.add(c.source_title)
+
+        logger.info(
+            "RAG-Area ── FIM ── | {}/{} áreas com contexto | "
+            "total_chunks={} | fontes_únicas={}",
+            areas_with_ctx, total, total_chunks,
+            sorted(all_sources) if all_sources else "(nenhuma)",
+        )
+
+        return norm_map
+
+    @staticmethod
+    def _empty_area_result(
+        area_name: str,
+        *,
+        query_text: str = "",
+    ) -> AreaRetrievalResult:
+        """Resultado vazio para retrieval de área (graceful degradation)."""
+        return AreaRetrievalResult(
+            area_local=area_name,
             excerpts=[],
             citations=[],
             norm_context=None,

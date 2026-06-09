@@ -204,6 +204,15 @@ def build_equipment_user_prompt(
             "As recomendações devem ir além das medidas existentes e usar as medidas a implementar como orientação."
         )
     sections.append("")
+    sections.append(
+        "REGRAS ANTI-DUPLICAÇÃO DE JUSTIFICATIVAS:\n"
+        "• NÃO emita justificativas com texto idêntico ou com mesmo conteúdo reformulado.\n"
+        "• Cada justificativa deve ser Única, vinculada à recomendação de mesmo número,\n"
+        "  trazendo elementos específicos (perigo distinto, trecho normativo distinto\n"
+        "  ou consequência específica) que a diferenciem das demais.\n"
+        "• Prefira uma única justificativa abrangente a várias justificativas repetidas."
+    )
+    sections.append("")
     sections.append("Responda EXCLUSIVAMENTE com o JSON no formato abaixo:")
     sections.append(
         "{\n"

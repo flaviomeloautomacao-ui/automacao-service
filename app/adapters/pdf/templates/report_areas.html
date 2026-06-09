@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Classificação de Áreas — {{ metadata.razao_social | default("Empresa") }}</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Cores dedicadas para zonas (Classificação de Áreas) */
+    .zona-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 8pt;
+      font-weight: 700;
+      color: #fff;
+      margin-right: 3px;
+    }
+    .zona-0  { background-color: #c0392b; }
+    .zona-1  { background-color: #e67e22; }
+    .zona-2  { background-color: #f1c40f; color: #333; }
+    .zona-2a { background-color: #f5b041; color: #333; }
+    .zona-20 { background-color: #6e2c00; }
+    .zona-21 { background-color: #a04000; }
+    .zona-22 { background-color: #ca6f1e; }
+
+    .area-classification-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.5pt;
+      page-break-inside: auto;
+    }
+    .area-classification-table th,
+    .area-classification-table td {
+      border: 1px solid #999;
+      padding: 4px 5px;
+      vertical-align: middle;
+      text-align: center;
+    }
+    .area-classification-table thead th {
+      background-color: #2c3e50;
+      color: #fff;
+      font-weight: 600;
+      font-size: 7pt;
+    }
+    .area-classification-table tbody tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+    .area-classification-table td.text-left { text-align: left; }
+    .area-classification-table .grupo-eq td {
+      background-color: #ecf0f1;
+      font-weight: 700;
+      text-align: left;
+      padding: 6px 8px;
+    }
+
+    .landscape-section {
+      page: landscape;
+      break-before: page;
+      break-after: page;
+    }
+
+    .area-block {
+      page-break-inside: avoid;
+      margin-bottom: 1.2em;
+      border: 1px solid #ddd;
+      border-left: 4px solid #2c3e50;
+      padding: 8px 12px;
+    }
+    .area-block h4 {
+      margin: 0 0 6px 0;
+      font-size: 11pt;
+      color: #2c3e50;
+    }
+    .area-block .area-meta {
+      font-size: 8.5pt;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    .area-rec-list {
+      margin: 4px 0 0 16px;
+      padding: 0;
+      font-size: 9pt;
+    }
+    .area-rec-list li {
+      margin-bottom: 3px;
+    }
+  </style>
+</head>
+<body>
+
+{# ======================== RUNNING HEADER ======================== #}
+<div class="running-header">
+  <img src="konis_logo.png" alt="Konis" />
+  <span class="running-header-title">
+    {{ profile_config.titulo_relatorio | default("Classificação de Áreas") | replace('\n',' — ') }}
+  </span>
+  <span class="running-header-rev">
+    {{ metadata.codigo_documento | default("") }}
+    {% if metadata.revisao %} — Rev. {{ metadata.revisao }}{% endif %}
+  </span>
+  <span class="running-header-page"></span>
+</div>
+
+
+{# ============================ CAPA ============================== #}
+<div class="cover">
+  <div class="cover-logo-topleft">
+    <img src="konis_logo.png" alt="Konis Safety Engenharia" />
+  </div>
+
+  <div class="cover-content">
+    <h1 class="cover-title">CLASSIFICAÇÃO DE ÁREAS</h1>
+    <p class="cover-subtitle-main">COM ATMOSFERAS EXPLOSIVAS</p>
+    <p class="cover-subtitle">
+      ABNT NBR IEC 60079-10-1 | ABNT NBR IEC 60079-10-2
+    </p>
+
+    <div class="cover-divider"></div>
+
+    {% if metadata.codigo_documento %}
+    <p class="cover-doc-code">
+      {{ metadata.codigo_documento }}
+      {% if metadata.revisao %} — Revisão {{ metadata.revisao }}{% endif %}
+    </p>
+    {% endif %}
+
+    <table class="cover-table">
+      <tbody>
+        <tr>
+          <td class="cover-label">Cliente:</td>
+          <td class="cover-value-bold">{{ metadata.razao_social | default("—") }}</td>
+        </tr>
+        {% if metadata.cnpj %}
+        <tr><td class="cover-label">CNPJ:</td><td>{{ metadata.cnpj }}</td></tr>
+        {% endif %}
+        {% if metadata.site %}
+        <tr><td class="cover-label">Unidade:</td><td>{{ metadata.site }}</td></tr>
+        {% endif %}
+        {% if metadata.local_vistoriado %}
+        <tr><td class="cover-label">Local vistoriado:</td><td>{{ metadata.local_vistoriado }}</td></tr>
+        {% endif %}
+        {% if metadata.data_avaliacao %}
+        <tr><td class="cover-label">Data da vistoria:</td><td>{{ metadata.data_avaliacao }}</td></tr>
+        {% endif %}
+        {% if metadata.contrato %}
+        <tr><td class="cover-label">Contrato:</td><td>{{ metadata.contrato }}</td></tr>
+        {% endif %}
+        {% if metadata.elaboracao %}
+        <tr><td class="cover-label">Elaboração:</td><td>{{ metadata.elaboracao }}</td></tr>
+        {% endif %}
+        {% if metadata.responsavel %}
+        <tr><td class="cover-label">Responsável Técnico:</td><td>{{ metadata.responsavel }}</td></tr>
+        {% endif %}
+        {% if metadata.registro_profissional %}
+        <tr><td class="cover-label">Registro Profissional:</td><td>{{ metadata.registro_profissional }}</td></tr>
+        {% endif %}
+        {% if metadata.art_numero %}
+        <tr><td class="cover-label">ART:</td><td>{{ metadata.art_numero }}</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {% if metadata.cover_image_url %}
+    <div class="cover-image">
+      <img src="{{ metadata.cover_image_url }}" alt="Imagem de capa do relatório" />
+    </div>
+    {% endif %}
+
+    <div class="cover-footer">
+      <p>Gerado em: {{ metadata.data_geracao | default("—") }}</p>
+    </div>
+  </div>
+</div>
+
+
+{# ==================== CONTROLE DE REVISÃO ===================== #}
+<div class="revision-control">
+  <h2 style="border-bottom: none; text-align: center; font-size: 14pt; letter-spacing: 0.5px; margin-bottom: 1em;">
+    CONTROLE DE REVISÃO DO DOCUMENTO
+  </h2>
+  <table class="revision-table">
+    <thead>
+      <tr>
+        <th style="width: 10%">Revisão</th>
+        <th style="width: 15%">Data</th>
+        <th style="width: 13%">Aprovação</th>
+        <th style="width: 27%">Responsável</th>
+        <th style="width: 35%">Descrição da Alteração</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rev in metadata.revisions | default([]) %}
+      <tr>
+        <td>{{ rev.version }}</td>
+        <td>{{ rev.date }}</td>
+        <td>&nbsp;</td>
+        <td>{{ rev.author }}</td>
+        <td>{{ rev.description }}</td>
+      </tr>
+      {% endfor %}
+      {% if (metadata.revisions | default([]) | length) == 0 %}
+      <tr>
+        <td class="revision-empty">&nbsp;</td>
+        <td class="revision-empty">&nbsp;</td>
+        <td class="revision-empty">&nbsp;</td>
+        <td class="revision-empty">&nbsp;</td>
+        <td class="revision-empty">&nbsp;</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+
+{# ====================== 1. INTRODUÇÃO ========================== #}
+<div class="content-section">
+  <h2>1. INTRODUÇÃO</h2>
+  {% set intro = llm_sections.introducao | default("") %}
+  {% for p in intro.split('\n\n') if p.strip() %}
+    <p>{{ p }}</p>
+  {% endfor %}
+</div>
+
+
+{# ===================== 2. ESCOPO DO ESTUDO ===================== #}
+<div class="content-section">
+  <h2>2. ESCOPO DO ESTUDO</h2>
+  {% set escopo = llm_sections.escopo | default("") %}
+  {% for p in escopo.split('\n\n') if p.strip() %}
+    <p>{{ p }}</p>
+  {% endfor %}
+
+  <h3>2.1 Definições Aplicáveis</h3>
+  <p>
+    Para os fins deste relatório, aplicam-se as definições estabelecidas pelas
+    normas ABNT NBR IEC 60079-10-1 (atmosferas explosivas — gases e vapores) e
+    ABNT NBR IEC 60079-10-2 (atmosferas explosivas — poeiras combustíveis).
+  </p>
+  <ul>
+    <li><strong>Atmosfera Explosiva:</strong> mistura, com o ar, sob condições atmosféricas, de
+      substâncias inflamáveis na forma de gás, vapor, neblina ou poeira, na qual, após a ignição,
+      a combustão se propaga através da mistura não consumida.</li>
+    <li><strong>Fonte de Liberação:</strong> ponto ou local do qual um gás, vapor, neblina ou
+      poeira inflamável pode ser liberado para a atmosfera, formando uma atmosfera explosiva.</li>
+    <li><strong>Grau da Fonte de Liberação:</strong> Contínua, Primária ou Secundária, definido
+      conforme a probabilidade e duração da liberação.</li>
+  </ul>
+
+  <h3>2.2 Classificação das Zonas</h3>
+  <table style="width:100%; border-collapse: collapse; font-size: 9pt; margin-top: 4px;">
+    <thead>
+      <tr style="background-color:#2c3e50; color:#fff;">
+        <th style="padding:5px; border:1px solid #999;">Zona</th>
+        <th style="padding:5px; border:1px solid #999; text-align:left;">Definição</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:4px; border:1px solid #999;"><span class="zona-badge zona-0">Zona 0</span></td>
+          <td style="padding:4px; border:1px solid #999;">Área onde a atmosfera explosiva (gás/vapor) está presente continuamente, ou por longos períodos.</td></tr>
+      <tr><td style="padding:4px; border:1px solid #999;"><span class="zona-badge zona-1">Zona 1</span></td>
+          <td style="padding:4px; border:1px solid #999;">Área onde uma atmosfera explosiva (gás/vapor) provavelmente ocorrerá em condição operacional normal.</td></tr>
+      <tr><td style="padding:4px; border:1px solid #999;"><span class="zona-badge zona-2">Zona 2</span></td>
+          <td style="padding:4px; border:1px solid #999;">Área onde uma atmosfera explosiva (gás/vapor) não é provável de ocorrer em operação normal e, se ocorrer, persistirá por curto período.</td></tr>
+      <tr><td style="padding:4px; border:1px solid #999;"><span class="zona-badge zona-20">Zona 20</span></td>
+          <td style="padding:4px; border:1px solid #999;">Área onde uma atmosfera explosiva (poeira combustível) está presente continuamente, ou por longos períodos.</td></tr>
+      <tr><td style="padding:4px; border:1px solid #999;"><span class="zona-badge zona-21">Zona 21</span></td>
+          <td style="padding:4px; border:1px solid #999;">Área onde uma atmosfera explosiva (poeira combustível) provavelmente ocorrerá em operação normal.</td></tr>
+      <tr><td style="padding:4px; border:1px solid #999;"><span class="zona-badge zona-22">Zona 22</span></td>
+          <td style="padding:4px; border:1px solid #999;">Área onde uma atmosfera explosiva (poeira combustível) não é provável de ocorrer em operação normal.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.3 Grupos e Classes de Temperatura</h3>
+  <p>
+    Os equipamentos elétricos para uso em atmosferas explosivas são classificados em
+    <strong>Grupo II</strong> (gases/vapores: IIA, IIB, IIC) e <strong>Grupo III</strong>
+    (poeiras combustíveis: IIIA, IIIB, IIIC), conforme ABNT NBR IEC 60079-0. As classes
+    de temperatura (T1 a T6 para gases; superfícies T<sub>x</sub> para poeiras) limitam
+    a temperatura máxima de superfície dos equipamentos para evitar ignição.
+  </p>
+</div>
+
+
+{# ============== 3. CONSIDERAÇÕES GERAIS (LLM) =================== #}
+<div class="content-section">
+  <h2>3. CONSIDERAÇÕES GERAIS</h2>
+  {% set cg = llm_sections.consideracoes_gerais | default("") %}
+  {% for p in cg.split('\n\n') if p.strip() %}
+    <p>{{ p }}</p>
+  {% endfor %}
+</div>
+
+
+{# ================== 4. NORMAS DE REFERÊNCIA ===================== #}
+<div class="content-section">
+  <h2>4. NORMAS DE REFERÊNCIA</h2>
+  <ul>
+    {% for n in profile_config.normas_principais | default([]) %}
+      <li>{{ n }}</li>
+    {% endfor %}
+  </ul>
+</div>
+
+
+{# ===================== 5. METODOLOGIA (LLM) ===================== #}
+<div class="content-section">
+  <h2>5. METODOLOGIA</h2>
+  {% set met = llm_sections.metodologia | default("") %}
+  {% for p in met.split('\n\n') if p.strip() %}
+    <p>{{ p }}</p>
+  {% endfor %}
+</div>
+
+
+{# ============= 6. TABELA DE CLASSIFICAÇÃO DE ÁREAS ============== #}
+<div class="content-section landscape-section">
+  <h2>6. TABELA DE CLASSIFICAÇÃO DE ÁREAS</h2>
+  <p>
+    A tabela abaixo consolida as áreas/locais avaliados, as fontes de liberação
+    registradas em cada área, as condições de ventilação e a classificação
+    resultante das zonas, com suas respectivas extensões.
+  </p>
+
+  <table class="area-classification-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Área / Local</th>
+        <th>Descrição</th>
+        <th>Tags</th>
+        <th>Substância</th>
+        <th>Fonte de Liberação</th>
+        <th>Grau</th>
+        <th>Ventilação</th>
+        <th>Zona</th>
+        <th>Extensão</th>
+        <th>Grupo</th>
+        <th>Classe T</th>
+        <th>EPL</th>
+        <th>Temp. (°C)</th>
+        <th>Pressão (kPa)</th>
+        <th>Volume (m³)</th>
+        <th>Observações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for eq in equipments %}
+        <tr class="grupo-eq">
+          <td colspan="17">
+            {{ eq.index }}. {{ eq.area_local }}
+            {% if eq.area_descricao %} — {{ eq.area_descricao }}{% endif %}
+            {% if eq.tag_referencias %} — Tags: {{ eq.tag_referencias | join(", ") }}{% endif %}
+          </td>
+        </tr>
+        {% for fonte in eq.fontes %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="text-left">{{ eq.area_local }}</td>
+          <td class="text-left">{{ eq.area_descricao | default("—") }}</td>
+          <td class="text-left">{{ fonte.tag_referencia | default("—") }}</td>
+          <td class="text-left">{{ fonte.substancia | default("—") }}</td>
+          <td class="text-left">{{ fonte.descricao | default("—") }}</td>
+          <td>{{ fonte.grau | default("—") }}</td>
+          <td>{{ fonte.ventilacao_tipo | default("—") }} / {{ fonte.ventilacao_grau | default("—") }} / {{ fonte.ventilacao_disponibilidade | default("—") }}</td>
+          <td><span class="zona-badge zona-{{ fonte.zona }}">{{ fonte.zona }}</span></td>
+          <td>{{ fonte.extensao | default("—") }}</td>
+          <td>{{ fonte.grupo | default(eq.grupo) | default("—") }}</td>
+          <td>{{ fonte.classe_temperatura | default(eq.classe_temperatura) | default("—") }}</td>
+          <td>{{ fonte.epl | default(eq.epl) | default("—") }}</td>
+          <td>{{ fonte.temperatura_processo | default("—") }}</td>
+          <td>{{ fonte.pressao_processo | default("—") }}</td>
+          <td>{{ fonte.volume_processo | default("—") }}</td>
+          <td class="text-left">{{ fonte.observacoes | default("—") }}</td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="text-muted mt-1">
+    Total de áreas analisadas: <strong>{{ equipments | length }}</strong> |
+    Total de fontes de liberação:
+    <strong>{{ equipments | sum(attribute="row_count") }}</strong>
+  </p>
+</div>
+
+
+{# ==================== 7. SUBSTÂNCIAS ==================== #}
+<div class="content-section">
+  <h2>7. SUBSTÂNCIAS E PROPRIEDADES FÍSICO-QUÍMICAS</h2>
+  {% if metadata.substances | default([]) %}
+  <p>
+    A Tabela 1 abaixo consolida as propriedades físico-químicas relevantes para a
+    classificação de áreas (grupo, classe de temperatura, EPL e parâmetros
+    como ponto de fulgor, LII, densidade relativa, temperatura de auto-ignição
+    — TAI, concentração mínima de explosão — CME, MIT, TMAX e tensão
+    superficial — ST). Ausência de dados é indicada por “—”.
+  </p>
+  <table class="area-classification-table">
+    <thead>
+      <tr>
+        <th>Substância</th>
+        <th>Tipo</th>
+        <th>Grupo</th>
+        <th>Classe T</th>
+        <th>EPL</th>
+        <th>Ponto de Fulgor</th>
+        <th>LII</th>
+        <th>Densidade Relativa</th>
+        <th>TAI</th>
+        <th>CME</th>
+        <th>MIT</th>
+        <th>SIT camada</th>
+        <th>TMAX</th>
+        <th>ST</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for substance in metadata.substances %}
+      <tr>
+        <td class="text-left">{{ substance.substance_name | default("—") }}</td>
+        <td>{{ substance.tipo | default("—") }}</td>
+        <td>{{ substance.grupo | default("—") }}</td>
+        <td>{{ substance.classe_temperatura | default("—") }}</td>
+        <td>{{ substance.epl | default("—") }}</td>
+        <td>{{ substance.ponto_fulgor | default("—") }}</td>
+        <td>{{ substance.lii | default("—") }}</td>
+        <td>{{ substance.densidade_relativa | default("—") }}</td>
+        <td>{{ substance.tai | default("—") }}</td>
+        <td>{{ substance.cme | default("—") }}</td>
+        <td>{{ substance.mit | default("—") }}</td>
+        <td>{{ substance.sit_camada | default("—") }}</td>
+        <td>{{ substance.tmax | default("—") }}</td>
+        <td>{{ substance.st | default("—") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# Legendas / notas de substâncias (se houver) #}
+  {% set has_extra_notes = namespace(val=false) %}
+  {% for substance in metadata.substances %}
+    {% if substance.legend_notes or substance.notes or (substance.properties_json and substance.properties_json.resumo) %}
+      {% set has_extra_notes.val = true %}
+    {% endif %}
+  {% endfor %}
+  {% if has_extra_notes.val %}
+  <div class="substance-notes mt-1">
+    <strong>Observações complementares:</strong>
+    <ul>
+      {% for substance in metadata.substances %}
+        {% if substance.legend_notes %}
+          {% for note in substance.legend_notes %}
+          <li><strong>{{ substance.substance_name }}:</strong> {{ note }}</li>
+          {% endfor %}
+        {% endif %}
+        {% if substance.notes %}
+          <li><strong>{{ substance.substance_name }}:</strong> {{ substance.notes }}</li>
+        {% endif %}
+        {% if substance.properties_json and substance.properties_json.resumo %}
+          <li><strong>{{ substance.substance_name }}:</strong> {{ substance.properties_json.resumo }}</li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% else %}
+  <p>Não foram cadastradas propriedades complementares para as substâncias avaliadas.</p>
+  {% endif %}
+</div>
+
+
+{# ==================== 8. REFERÊNCIAS ==================== #}
+<div class="content-section">
+  <h2>8. DOCUMENTOS DE REFERÊNCIA E P&IDs</h2>
+  {% if metadata.references | default([]) %}
+  <ul>
+    {% for reference in metadata.references %}
+      <li>
+        <strong>{{ reference.title }}</strong>
+        {% if reference.document_code %} — {{ reference.document_code }}{% endif %}
+        {% if reference.document_url %} — {{ reference.document_url }}{% endif %}
+        {% if reference.notes %}<br/>{{ reference.notes }}{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Não foram informados documentos adicionais de referência.</p>
+  {% endif %}
+</div>
+
+
+{# ========== 9. ANÁLISE TÉCNICA POR ÁREA ========== #}
+<div class="content-section">
+  <h2>9. ANÁLISE TÉCNICA POR ÁREA</h2>
+  <p>
+    Para cada área/local listado, apresenta-se a justificativa técnica das
+    zonas resultantes, a análise das condições de ventilação e as recomendações
+    específicas aplicáveis.
+  </p>
+
+  {% for eq in equipments %}
+  <div class="area-block">
+    <h4>{{ eq.index }}. {{ eq.area_local }}</h4>
+    {% if eq.area_descricao %}
+      <p class="area-descricao text-muted"><em>{{ eq.area_descricao }}</em></p>
+    {% endif %}
+    <div class="area-meta">
+      <strong>Tags:</strong> {{ eq.tag_referencias | join(", ") if eq.tag_referencias else "—" }} |
+      <strong>Substâncias:</strong> {{ eq.substancias | join(", ") if eq.substancias else "—" }} |
+      <strong>Grupo/Classe-T:</strong> {{ eq.grupo | default("—") }} / {{ eq.classe_temperatura | default("—") }} |
+      <strong>EPL:</strong> {{ eq.epl | default("—") }}
+    </div>
+
+    {% if eq.operational_notes %}
+      <p><strong>Notas Operacionais:</strong> {{ eq.operational_notes }}</p>
+    {% endif %}
+
+    {% if eq.ventilation_premises %}
+      <p><strong>Premissas de Ventilação:</strong> {{ eq.ventilation_premises }}</p>
+    {% endif %}
+
+    {# ===== Fotos da área (uploads do operador) ===== #}
+    {% if eq.images %}
+      {% set visible_images = eq.images[:4] %}
+      <div class="equipment-images">
+        {% for img in visible_images %}
+          <figure class="equipment-image">
+            <img src="{{ img.secure_url }}"
+                 alt="{{ img.caption | default('Foto da área ' ~ eq.area_local) }}"
+                 {% if img.width %}width="{{ img.width }}"{% endif %}
+                 {% if img.height %}height="{{ img.height }}"{% endif %}/>
+            {% if img.caption %}
+              <figcaption>{{ img.caption }}</figcaption>
+            {% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+      {% if eq.images | length > 4 %}
+        <p class="text-muted"><em>+ {{ eq.images | length - 4 }} foto(s) adicional(is) anexada(s) ao dossiê da área.</em></p>
+      {% endif %}
+    {% endif %}
+
+    {% if eq.justificativa_zona %}
+      <p><strong>Justificativa da Classificação:</strong></p>
+      {% for p in eq.justificativa_zona.split('\n\n') if p.strip() %}
+        <p>{{ p }}</p>
+      {% endfor %}
+    {% endif %}
+
+    {% if eq.analise_ventilacao %}
+      <p><strong>Análise da Ventilação:</strong></p>
+      {% for p in eq.analise_ventilacao.split('\n\n') if p.strip() %}
+        <p>{{ p }}</p>
+      {% endfor %}
+    {% endif %}
+
+    {% if eq.recomendacoes_especificas %}
+      <p><strong>Recomendações Específicas:</strong></p>
+      <ol class="area-rec-list">
+        {% for r in eq.recomendacoes_especificas %}
+        <li>
+          {{ r.texto }}
+          {% if r.norma_referencia %}
+            <em>({{ r.norma_referencia }})</em>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+
+{# ===================== 10. RECOMENDAÇÕES (LLM) ==================== #}
+<div class="content-section">
+  <h2>10. RECOMENDAÇÕES GERAIS</h2>
+  {% set rec = llm_sections.recomendacoes | default("") %}
+  {% for p in rec.split('\n\n') if p.strip() %}
+    {% if p.startswith('• ') or p.startswith('- ') %}
+      <ul>
+        {% for line in p.split('\n') if line.strip() %}
+          <li>{{ line.lstrip('•- ').strip() }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>{{ p }}</p>
+    {% endif %}
+  {% endfor %}
+</div>
+
+
+{# ====================== 11. CONCLUSÃO (LLM) ====================== #}
+<div class="content-section">
+  <h2>11. CONCLUSÃO</h2>
+  {% set conc = llm_sections.conclusao | default("") %}
+  {% for p in conc.split('\n\n') if p.strip() %}
+    <p>{{ p }}</p>
+  {% endfor %}
+</div>
+
+
+{# ============= ASSINATURA / RESPONSÁVEL TÉCNICO ================== #}
+{% if metadata.responsavel %}
+<div class="content-section" style="margin-top: 4em; page-break-inside: avoid;">
+  <div style="text-align: center; margin-top: 6em;">
+    <div style="border-top: 1px solid #333; width: 60%; margin: 0 auto;"></div>
+    <p style="margin-top: 6px;">
+      <strong>{{ metadata.responsavel }}</strong>
+      {% if metadata.registro_profissional %}<br/>{{ metadata.registro_profissional }}{% endif %}
+      {% if metadata.art_numero %}<br/>ART nº {{ metadata.art_numero }}{% endif %}
+    </p>
+  </div>
+</div>
+{% endif %}
+
+</body>
+</html>

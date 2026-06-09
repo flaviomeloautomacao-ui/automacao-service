@@ -14,6 +14,12 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.db.job_models import (
+    AreaReferenceDocumentModel,
+    AreaReportAreaModel,
+    AreaReportSubstanceModel,
+    AreaSpreadsheetUploadModel,
+    DhaReportEquipmentModel,
+    DhaSpreadsheetUploadModel,
     Job,
     JobStep,
     ReportModel,
@@ -88,6 +94,8 @@ class JobRepository:
                 "id": str(job.id),
                 "filename": job.filename,
                 "profile": job.profile,
+                "document_type": job.document_type,
+                "document_schema_version": job.document_schema_version,
                 "status": job.status,
                 "progress": job.progress,
                 "current_step": job.current_step,
@@ -379,6 +387,50 @@ class JobRepository:
                 f"Falha ao buscar spreadsheet_rows do job {job_id}: {exc}"
             ) from exc
 
+    async def get_dha_spreadsheet_rows(self, job_id: str) -> list[dict[str, Any]]:
+        """Busca linhas DHA v2 persistidas em ``dha_spreadsheet_rows``."""
+        try:
+            stmt = (
+                select(DhaSpreadsheetUploadModel)
+                .where(DhaSpreadsheetUploadModel.job_id == uuid.UUID(job_id))
+            )
+            result = await self._session.execute(stmt)
+            upload = result.scalar_one_or_none()
+
+            if upload is None:
+                raise DBError(f"DhaSpreadsheetUpload não encontrado para job {job_id}")
+
+            sorted_rows = sorted(upload.rows, key=lambda r: r.row_index)
+            return [_normalize_row_keys(row.normalized_json) for row in sorted_rows]
+        except DBError:
+            raise
+        except Exception as exc:
+            raise DBError(
+                f"Falha ao buscar dha_spreadsheet_rows do job {job_id}: {exc}"
+            ) from exc
+
+    async def get_area_spreadsheet_rows(self, job_id: str) -> list[dict[str, Any]]:
+        """Busca linhas de Classificação de Áreas v2."""
+        try:
+            stmt = (
+                select(AreaSpreadsheetUploadModel)
+                .where(AreaSpreadsheetUploadModel.job_id == uuid.UUID(job_id))
+            )
+            result = await self._session.execute(stmt)
+            upload = result.scalar_one_or_none()
+
+            if upload is None:
+                raise DBError(f"AreaSpreadsheetUpload não encontrado para job {job_id}")
+
+            sorted_rows = sorted(upload.rows, key=lambda r: r.row_index)
+            return [row.normalized_json for row in sorted_rows]
+        except DBError:
+            raise
+        except Exception as exc:
+            raise DBError(
+                f"Falha ao buscar area_spreadsheet_rows do job {job_id}: {exc}"
+            ) from exc
+
     async def get_report_metadata(self, job_id: str) -> dict[str, Any] | None:
         """Busca os metadados do relatório (company_metadata) de um job.
 
@@ -477,4 +529,190 @@ class JobRepository:
         except Exception as exc:
             raise DBError(
                 f"Falha ao buscar report_equipments do job {job_id}: {exc}"
+            ) from exc
+
+    async def get_dha_report_equipments_with_images(
+        self, job_id: str
+    ) -> list[dict[str, Any]]:
+        """Busca equipamentos DHA v2 com imagens."""
+        try:
+            stmt = select(ReportModel).where(
+                ReportModel.job_id == uuid.UUID(job_id)
+            )
+            result = await self._session.execute(stmt)
+            report = result.scalar_one_or_none()
+            if report is None:
+                return []
+
+            stmt_equip = (
+                select(DhaReportEquipmentModel)
+                .where(DhaReportEquipmentModel.report_id == report.id)
+            )
+            eq_result = await self._session.execute(stmt_equip)
+            equipments_db = sorted(
+                eq_result.scalars().all(),
+                key=lambda equipment: equipment.order_index,
+            )
+
+            equipments: list[dict[str, Any]] = []
+            for eq in equipments_db:
+                images = [
+                    {
+                        "id": str(img.id),
+                        "secure_url": img.secure_url,
+                        "public_id": img.public_id,
+                        "width": img.width,
+                        "height": img.height,
+                    }
+                    for img in eq.images
+                ]
+                equipments.append({
+                    "id": str(eq.id),
+                    "equipment_name": eq.equipment_name,
+                    "equipment_description": eq.equipment_description,
+                    "order_index": eq.order_index,
+                    "local_instalacao": eq.local_instalacao,
+                    "funcao_operacional": eq.funcao_operacional,
+                    "observacoes_extras": eq.observacoes_extras,
+                    "extra_json": eq.extra_json,
+                    "images": images,
+                })
+
+            return equipments
+        except Exception as exc:
+            raise DBError(
+                f"Falha ao buscar dha_report_equipments do job {job_id}: {exc}"
+            ) from exc
+
+    async def get_area_report_context(self, job_id: str) -> dict[str, Any]:
+        """Busca complementação v2 de Classificação de Áreas."""
+        try:
+            stmt = select(ReportModel).where(
+                ReportModel.job_id == uuid.UUID(job_id)
+            )
+            result = await self._session.execute(stmt)
+            report = result.scalar_one_or_none()
+            if report is None:
+                return {
+                    "areas": [],
+                    "substances": [],
+                    "references": [],
+                }
+
+            area_result = await self._session.execute(
+                select(AreaReportAreaModel).where(
+                    AreaReportAreaModel.report_id == report.id,
+                ),
+            )
+            areas = sorted(
+                area_result.scalars().all(),
+                key=lambda area: area.order_index,
+            )
+
+            substance_result = await self._session.execute(
+                select(AreaReportSubstanceModel).where(
+                    AreaReportSubstanceModel.report_id == report.id,
+                ),
+            )
+            substances = sorted(
+                substance_result.scalars().all(),
+                key=lambda substance: substance.order_index,
+            )
+
+            reference_result = await self._session.execute(
+                select(AreaReferenceDocumentModel).where(
+                    AreaReferenceDocumentModel.report_id == report.id,
+                ),
+            )
+            references = sorted(
+                reference_result.scalars().all(),
+                key=lambda reference: reference.order_index,
+            )
+
+            return {
+                "areas": [
+                    {
+                        "id": str(area.id),
+                        "area_name": area.area_name,
+                        "description": area.description,
+                        "order_index": area.order_index,
+                        "operational_notes": area.operational_notes,
+                        "ventilation_premises": area.ventilation_premises,
+                        "extra_json": area.extra_json,
+                        "photos": [
+                            {
+                                "id": str(img.id),
+                                "public_id": img.public_id,
+                                "secure_url": img.secure_url,
+                                "width": img.width,
+                                "height": img.height,
+                                "caption": img.caption,
+                            }
+                            for img in sorted(
+                                area.photos, key=lambda p: p.created_at,
+                            )
+                        ],
+                        "sources": [
+                            {
+                                "id": str(source.id),
+                                "order_index": source.order_index,
+                                "tag_referencia": source.tag_referencia,
+                                "substance_name": source.substance_name,
+                                "source_name": source.source_name,
+                                "liberation_degree": source.liberation_degree,
+                                "ventilation_type": source.ventilation_type,
+                                "ventilation_degree": source.ventilation_degree,
+                                "ventilation_availability": source.ventilation_availability,
+                                "zone": source.zone,
+                                "extension": source.extension,
+                                "grupo": source.grupo,
+                                "classe_temperatura": source.classe_temperatura,
+                                "epl": source.epl,
+                                "temperatura_processo": source.temperatura_processo,
+                                "pressao_processo": source.pressao_processo,
+                                "volume_processo": source.volume_processo,
+                                "notes": source.notes,
+                            }
+                            for source in sorted(area.sources, key=lambda s: s.order_index)
+                        ],
+                    }
+                    for area in areas
+                ],
+                "substances": [
+                    {
+                        "substance_name": substance.substance_name,
+                        "order_index": substance.order_index,
+                        "grupo": substance.grupo,
+                        "classe_temperatura": substance.classe_temperatura,
+                        "epl": substance.epl,
+                        "properties_json": substance.properties_json,
+                        "notes": substance.notes,
+                        # ── Campos físico-químicos detalhados (Tabela 1) ──
+                        "tipo": substance.tipo,
+                        "ponto_fulgor": substance.ponto_fulgor,
+                        "lii": substance.lii,
+                        "densidade_relativa": substance.densidade_relativa,
+                        "tai": substance.tai,
+                        "cme": substance.cme,
+                        "mit": substance.mit,
+                        "sit_camada": substance.sit_camada,
+                        "tmax": substance.tmax,
+                        "st": substance.st,
+                        "legend_notes": substance.legend_notes or [],
+                    }
+                    for substance in substances
+                ],
+                "references": [
+                    {
+                        "title": reference.title,
+                        "document_code": reference.document_code,
+                        "document_url": reference.document_url,
+                        "notes": reference.notes,
+                    }
+                    for reference in references
+                ],
+            }
+        except Exception as exc:
+            raise DBError(
+                f"Falha ao buscar contexto de áreas do job {job_id}: {exc}"
             ) from exc

@@ -1,0 +1,24 @@
+# Padrões de "contaminação" (texto enxertado de RAG/normas em campos narrativos
+# onde não deveria aparecer). Frases que correspondem a estes regex são
+# removidas (substituídas por string vazia) e o restante é re-justificado.
+#
+# Categorias:
+#   abnt_boilerplate  — chamadas literais à norma sem contexto técnico
+#   tabela_normativa  — colagens de cabeçalhos de tabelas de norma
+#   meta_referencias  — referências meta ("nesta seção", "abaixo apresentamos")
+patterns:
+  - name: abnt_intro_literal
+    regex: '(?i)conforme\s+(a\s+)?(norma\s+)?(ABNT\s+)?NBR[- ]?(IEC[- ]?)?\d{4,5}(:\d{4})?\s*[,–-]\s+(estabelece|define|prescreve|determina|preconiza)[^.]{0,400}\.'
+    replacement: ''
+  - name: nfpa_intro_literal
+    regex: '(?i)conforme\s+(a\s+)?NFPA[- ]?\d{2,4}\s*[,–-]\s+(estabelece|define|prescreve|determina|preconiza)[^.]{0,400}\.'
+    replacement: ''
+  - name: norma_cita_para_si
+    regex: '(?i)esta\s+norma\s+(estabelece|define|aplica|prescreve|determina)[^.]{0,400}\.'
+    replacement: ''
+  - name: section_meta
+    regex: '(?i)\b(nesta seção|na seção a seguir|abaixo apresentamos|apresentaremos a seguir|conforme apresentado a seguir)\b[^.]{0,200}\.'
+    replacement: ''
+  - name: tabela_header_leak
+    regex: '(?i)\bTabela\s+\d+\s*[-–—]\s*[A-Z][^.]{0,80}\b(\s*\|\s*[A-Z][^|]+){2,}'
+    replacement: ''

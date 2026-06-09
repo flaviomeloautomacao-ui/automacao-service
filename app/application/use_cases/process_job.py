@@ -40,6 +40,11 @@ from app.domain.services.equipment_prompt_context import (
 from app.domain.services.equipment_narrative_generator import (
     generate_all_equipment_narratives,
 )
+from app.domain.services.area_context_builder import build_area_classification_contexts
+from app.domain.services.area_narrative_generator import (
+    generate_all_area_narratives,
+    generate_global_narrative,
+)
 from app.domain.services.input_hasher import compute_input_hash
 from app.domain.services.version_snapshot import compute_version_fingerprint
 from app.infrastructure.llm_cost_tracker import get_tracker
@@ -101,16 +106,21 @@ class ProcessJobUseCase:
             if job is None:
                 raise DomainError(f"Job {job_id} não encontrado")
 
-            profile = job.get("profile")
+            legacy_profile = job.get("profile")
+            document_type = job.get("document_type")
+            schema_version = job.get("document_schema_version") or "legacy"
 
-            # Validate profile is one of the expected values
-            valid_profiles = {"dust", "gas", "vapors"}
-            if not profile or profile not in valid_profiles:
-                logger.warning(
-                    "Job {} | Perfil inv\u00e1lido ou ausente: '{}' \u2014 usando 'dust' como default",
-                    job_id, profile,
-                )
+            if document_type not in {"dha", "areas"}:
+                document_type = "areas" if legacy_profile == "areas" else "dha"
+
+            if document_type == "areas":
+                profile = "areas"
+            elif legacy_profile in {"dust", "gas", "vapors"} and schema_version == "legacy":
+                profile = legacy_profile
+            else:
                 profile = "dust"
+
+            is_areas_profile = document_type == "areas"
 
             # ── Iniciar processamento ─────────────────────────────
             await self._job_repo.update_job(
@@ -130,7 +140,12 @@ class ProcessJobUseCase:
             )
 
             # 2a) Busca rows da planilha do banco
-            rows_dicts = await self._job_repo.get_spreadsheet_rows(job_id)
+            if schema_version == "v2" and document_type == "areas":
+                rows_dicts = await self._job_repo.get_area_spreadsheet_rows(job_id)
+            elif schema_version == "v2":
+                rows_dicts = await self._job_repo.get_dha_spreadsheet_rows(job_id)
+            else:
+                rows_dicts = await self._job_repo.get_spreadsheet_rows(job_id)
             logger.info(
                 "Job {} | Rows carregados do banco | total={}",
                 job_id,
@@ -217,9 +232,25 @@ class ProcessJobUseCase:
                 current_step="Carregando dados de equipamentos…",
             )
 
+            # ── BRANCH: Profile "areas" usa pipeline próprio ──
+            if is_areas_profile:
+                area_context_payload = (
+                    await self._job_repo.get_area_report_context(job_id)
+                    if schema_version == "v2"
+                    else {"areas": [], "substances": [], "references": []}
+                )
+                return await self._execute_areas_pipeline(
+                    job_id=job_id,
+                    rows_dicts=rows_dicts,
+                    company_metadata=company_metadata,
+                    area_context_payload=area_context_payload,
+                )
+
             # 2c) Busca equipamentos com imagens
-            report_equipments = await self._job_repo.get_report_equipments_with_images(
-                job_id
+            report_equipments = (
+                await self._job_repo.get_dha_report_equipments_with_images(job_id)
+                if schema_version == "v2"
+                else await self._job_repo.get_report_equipments_with_images(job_id)
             )
             logger.info(
                 "Job {} | Equipamentos carregados | total={}",
@@ -250,6 +281,12 @@ class ProcessJobUseCase:
             normative_contexts = None
             if self._abnt_retriever is not None:
                 try:
+                    from app.infrastructure.config import get_settings  # noqa: PLC0415
+
+                    settings = get_settings()
+                    self._abnt_retriever.set_norm_table(
+                        settings.RAG_NORM_TABLE_DHA,
+                    )
                     logger.info(
                         "Job {} | RAG normativo — iniciando retrieval para {} equipamentos | profile={}",
                         job_id,
@@ -427,6 +464,18 @@ class ProcessJobUseCase:
                 equipment_generation_results,
             )
 
+            # 3d) Pós-processamento determinístico (F2/F5):
+            #     remove contaminação RAG, corrige typos, formata normas,
+            #     normaliza listas, deduplica justificativas.
+            from app.application.services.equipment_post_processor import (  # noqa: PLC0415
+                post_process_all,
+            )
+            grouped_equipment = post_process_all(grouped_equipment)
+            logger.info(
+                "Job {} | post-processing aplicado (normalização + dedupe)",
+                job_id,
+            )
+
             logger.info(
                 "Job {} | Per-equipment geração concluída | total={} | fallbacks={}",
                 job_id,
@@ -510,6 +559,14 @@ class ProcessJobUseCase:
                 job_id,
                 progress=75,
                 current_step="Gerando PDF do laudo…",
+            )
+
+            # 4a) Preflight QA bloqueante (F6)
+            from app.application.services.pdf_preflight import run_preflight  # noqa: PLC0415
+            run_preflight(
+                equipments=grouped_equipment,
+                metadata=company_metadata,
+                raise_on_error=True,
             )
 
             pdf_bytes = self._uc._render_pdf(
@@ -828,3 +885,372 @@ class ProcessJobUseCase:
                     pass
         except Exception:
             return None
+
+    # ==================================================================
+    # Pipeline alternativo: Classificação de Áreas (IEC 60079-10-1/10-2)
+    # ==================================================================
+
+    async def _execute_areas_pipeline(
+        self,
+        *,
+        job_id: str,
+        rows_dicts: list[dict[str, Any]],
+        company_metadata: dict[str, Any],
+        area_context_payload: dict[str, Any],
+    ) -> dict[str, str]:
+        """Pipeline dedicado ao perfil 'areas' (Classificação de Áreas).
+
+        Substitui as etapas 2c–4 do pipeline padrão por lógica orientada
+        a áreas/equipamentos da planilha de classificação. Reaproveita
+        as etapas finais (storage + version snapshot).
+        """
+        from app.adapters.llm.openrouter_client import OpenRouterClient  # noqa: PLC0415
+        from app.adapters.pdf.renderer import WeasyPdfRenderer  # noqa: PLC0415
+        from app.adapters.llm.prompts import get_profile_config  # noqa: PLC0415
+        from app.domain.entities.area_classification import (  # noqa: PLC0415
+            AreaClassificationRow,
+        )
+
+        profile = "areas"
+        profile_cfg = get_profile_config(profile)
+
+        # ── 2c) Converte rows_dicts em AreaClassificationRow ──
+        area_rows: list[AreaClassificationRow] = []
+        for r in rows_dicts:
+            try:
+                area_rows.append(AreaClassificationRow.model_validate(r))
+            except Exception as exc:
+                logger.warning(
+                    "Job {} | linha de área inválida — ignorando | err={}",
+                    job_id, str(exc),
+                )
+
+        if not area_rows:
+            raise DomainError(
+                "Nenhuma linha válida de classificação de áreas encontrada"
+            )
+
+        logger.info(
+            "Job {} | Áreas | rows válidas={} de {}",
+            job_id, len(area_rows), len(rows_dicts),
+        )
+
+        # ── 2d) Agrupa por equipamento ──
+        area_contexts = build_area_classification_contexts(
+            area_rows,
+            area_complements=area_context_payload.get("areas"),
+            substance_complements=area_context_payload.get("substances"),
+            reference_documents=area_context_payload.get("references"),
+        )
+        logger.info(
+            "Job {} | AreaContexts construídos | total={}",
+            job_id, len(area_contexts),
+        )
+
+        # ── 2e) Recupera contexto normativo IEC 60079 via RAG (se disponível) ──
+        if self._abnt_retriever is not None and area_contexts:
+            try:
+                from app.infrastructure.config import get_settings  # noqa: PLC0415
+
+                settings = get_settings()
+                self._abnt_retriever.set_norm_table(
+                    settings.RAG_NORM_TABLE_AREAS,
+                )
+                logger.info(
+                    "Job {} | RAG-Area — iniciando retrieval para {} áreas | tabela={}",
+                    job_id, len(area_contexts), settings.RAG_NORM_TABLE_AREAS,
+                )
+                await self._job_repo.update_job(
+                    job_id,
+                    progress=28,
+                    current_step="Recuperando normas IEC 60079 relevantes…",
+                )
+
+                # Setar contexto de tracking no embedding provider
+                if hasattr(self._abnt_retriever, "_embedding") and hasattr(
+                    self._abnt_retriever._embedding, "set_tracking_context",
+                ):
+                    self._abnt_retriever._embedding.set_tracking_context(
+                        flow="process_job",
+                        step="rag_embedding_areas",
+                        job_id=job_id,
+                    )
+
+                norm_map = await self._abnt_retriever.retrieve_for_all_areas(
+                    area_contexts,
+                    profile="areas",
+                )
+
+                # Popular normative_context nos contextos frozen via model_copy
+                area_contexts = [
+                    ctx.model_copy(
+                        update={
+                            "normative_context": norm_map.get(
+                                ctx.area_local.strip().lower(), [],
+                            ),
+                        },
+                    )
+                    for ctx in area_contexts
+                ]
+
+                areas_com_ctx = sum(1 for c in area_contexts if c.normative_context)
+                total_excerpts = sum(len(c.normative_context) for c in area_contexts)
+                logger.info(
+                    "Job {} | RAG-Area — concluído | {}/{} áreas com contexto | total_excerpts={}",
+                    job_id, areas_com_ctx, len(area_contexts), total_excerpts,
+                )
+            except Exception:
+                logger.exception(
+                    "Job {} | RAG-Area — ERRO — pipeline segue sem contexto normativo",
+                    job_id,
+                )
+        else:
+            logger.info(
+                "Job {} | RAG-Area — desabilitado (retriever não configurado ou sem áreas)",
+                job_id,
+            )
+
+        await self._job_repo.complete_step(job_id, "data_processing")
+        await self._job_repo.update_job(
+            job_id,
+            progress=30,
+            current_step="Dados de classificação processados",
+        )
+
+        # ── 3) llm_analysis ──
+        await self._job_repo.start_step(job_id, "llm_analysis")
+        await self._job_repo.update_job(
+            job_id,
+            progress=35,
+            current_step="Gerando seções narrativas via IA…",
+        )
+
+        # Resolve modelo para chamada global
+        model_router = get_model_router()
+        global_decision = model_router.resolve_global()
+        logger.info(
+            "Job {} | MODEL_ROUTER (areas global) | model={} | reason={}",
+            job_id, global_decision.model, global_decision.reason,
+        )
+
+        llm_client = self._uc._llm
+
+        # Wrapper LLM call
+        if isinstance(llm_client, OpenRouterClient):
+            llm_client.set_tracking_context(
+                flow="process_job",
+                step="areas_global",
+                job_id=job_id,
+            )
+
+            async def llm_call_fn(
+                system: str, user: str, model_override: str | None = None,
+            ) -> str:
+                return await llm_client.call_chat(
+                    system, user, model_override=model_override,
+                )
+        else:
+            async def llm_call_fn(  # type: ignore[misc]
+                system: str, user: str, model_override: str | None = None,
+            ) -> str:
+                import json as _json  # noqa: PLC0415
+                ctx = {"profile": profile, "system": system, "user": user}
+                result = await llm_client.generate_sections(ctx)
+                return _json.dumps(result)
+
+        # 3a) Seções globais
+        global_result = await generate_global_narrative(
+            company_metadata=company_metadata,
+            area_contexts=area_contexts,
+            llm_call=llm_call_fn,
+            profile=profile,
+            model_override=global_decision.model,
+        )
+        logger.info(
+            "Job {} | Áreas | global narrative source={}",
+            job_id, global_result.source,
+        )
+
+        await self._job_repo.update_job(
+            job_id,
+            progress=50,
+            current_step="Gerando análise por área…",
+        )
+
+        # 3b) Per-área
+        async def _on_area_progress(completed: int, total: int) -> None:
+            pct = 50 + int((completed / max(total, 1)) * 20)
+            await self._job_repo.update_job(
+                job_id,
+                progress=pct,
+                current_step=f"Área {completed}/{total}…",
+            )
+
+        if isinstance(llm_client, OpenRouterClient):
+            llm_client.set_tracking_context(
+                flow="process_job",
+                step="areas_per_area",
+                job_id=job_id,
+            )
+
+        per_area_results = await generate_all_area_narratives(
+            area_contexts=area_contexts,
+            llm_call=llm_call_fn,
+            max_concurrency=1,
+            on_progress=_on_area_progress,
+            profile=profile,
+            model_router=model_router,
+        )
+
+        # Cost tracking persist + budget check
+        cost_tracker = get_tracker()
+        cost_tracker.persist_now()
+        job_records = [r for r in cost_tracker.records if r.job_id == job_id]
+        total_cost = 0.0
+        total_calls = 0
+        total_tokens_used = 0
+        if job_records:
+            total_cost = sum(r.estimated_cost_usd for r in job_records)
+            total_calls = len(job_records)
+            total_tokens_used = sum(r.total_tokens for r in job_records)
+            logger.info(
+                "Job {} | LLM_COST RESUMO (areas) | chamadas={} | custo=${:.6f}",
+                job_id, total_calls, total_cost,
+            )
+
+        if self._cost_repo is not None and job_records:
+            try:
+                await self._cost_repo.save_batch(cost_tracker.records, job_id)
+                await self._cost_repo.update_job_cost_summary(
+                    job_id=job_id,
+                    total_cost_usd=total_cost,
+                    total_tokens=total_tokens_used,
+                    call_count=total_calls,
+                )
+                cost_tracker.clear_records_for_job(job_id)
+            except Exception:
+                logger.warning("Job {} | COST_DB_FLUSH (areas) falhou", job_id)
+
+        if self._budget_guard is not None:
+            try:
+                self._budget_guard.check_job_budget(
+                    current_cost=total_cost,
+                    current_calls=total_calls,
+                    job_id=job_id,
+                )
+            except BudgetExceededError:
+                logger.warning(
+                    "Job {} | BUDGET_EXCEEDED pós-LLM (areas)", job_id,
+                )
+
+        await self._job_repo.complete_step(job_id, "llm_analysis")
+        await self._job_repo.update_job(
+            job_id,
+            progress=70,
+            current_step="Análise IA concluída",
+        )
+
+        # ── 4) pdf_rendering ──
+        await self._job_repo.start_step(job_id, "pdf_rendering")
+        await self._job_repo.update_job(
+            job_id,
+            progress=75,
+            current_step="Gerando PDF da classificação…",
+        )
+
+        # Monta dicts para o template
+        per_area_map = {r.identificacao: r for r in per_area_results}
+        equipments_template: list[dict[str, Any]] = []
+        for ctx in area_contexts:
+            ctx_dict = ctx.to_template_dict()
+            narrative = per_area_map.get(ctx.identificacao)
+            if narrative is not None:
+                ctx_dict["justificativa_zona"] = narrative.output.justificativa_zona
+                ctx_dict["analise_ventilacao"] = narrative.output.analise_ventilacao
+                ctx_dict["recomendacoes_especificas"] = [
+                    r.model_dump() for r in narrative.output.recomendacoes_especificas
+                ]
+                ctx_dict["narrative_source"] = narrative.source
+            else:
+                ctx_dict["justificativa_zona"] = ""
+                ctx_dict["analise_ventilacao"] = ""
+                ctx_dict["recomendacoes_especificas"] = []
+                ctx_dict["narrative_source"] = "none"
+            equipments_template.append(ctx_dict)
+
+        llm_sections = global_result.output.model_dump()
+
+        metadata: dict[str, Any] = {
+            "data_geracao": datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC"),
+        }
+        if company_metadata:
+            metadata.update(company_metadata)
+        revisions = company_metadata.get("revisions") or []
+        if revisions:
+            metadata["revisao"] = revisions[-1].get("version")
+        metadata["substances"] = area_context_payload.get("substances") or []
+        metadata["references"] = area_context_payload.get("references") or []
+
+        # Renderiza com o template específico
+        pdf_renderer = self._uc._pdf_renderer
+        if isinstance(pdf_renderer, WeasyPdfRenderer):
+            pdf_bytes = pdf_renderer.render_report(
+                metadata=metadata,
+                rows=rows_dicts,
+                llm_sections=llm_sections,
+                equipments=equipments_template,
+                profile_config=profile_cfg,
+                template_name="report_areas.html",
+            )
+        else:
+            raise DomainError(
+                "PDF renderer incompatível para perfil 'areas' (esperado WeasyPdfRenderer)"
+            )
+
+        await self._job_repo.complete_step(job_id, "pdf_rendering")
+        await self._job_repo.update_job(
+            job_id,
+            progress=85,
+            current_step="PDF gerado com sucesso",
+        )
+
+        logger.info(
+            "Job {} | pdf_rendering (areas) concluído | {} bytes",
+            job_id, len(pdf_bytes),
+        )
+
+        # ── 5) report_storage ──
+        await self._job_repo.start_step(job_id, "report_storage")
+        await self._job_repo.update_job(
+            job_id,
+            progress=90,
+            current_step="Armazenando relatório…",
+        )
+
+        report_id = str(uuid.uuid4())
+        pdf_path = report_pdf_path(report_id, version=1)
+        await self._uc._storage.put_bytes(
+            self._uc._bucket,
+            pdf_path,
+            pdf_bytes,
+            content_type="application/pdf",
+        )
+        pdf_url = await self._uc._storage.get_signed_url(
+            self._uc._bucket,
+            pdf_path,
+        )
+
+        await self._job_repo.complete_step(job_id, "report_storage")
+        await self._job_repo.mark_job_done(job_id, pdf_path)
+
+        logger.info(
+            "Job {} | Pipeline ÁREAS CONCLUÍDO | report_id={} | path={}",
+            job_id, report_id, pdf_path,
+        )
+
+        return {
+            "report_id": report_id,
+            "pdf_url": pdf_url,
+            "pdf_path": pdf_path,
+        }
+

@@ -27,7 +27,7 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import ENUM as PgEnum, JSON, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, ENUM as PgEnum, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # Enum nativo do PostgreSQL criado pelo Prisma
@@ -54,6 +54,10 @@ class Job(Base):
     )
     filename: Mapped[str | None] = mapped_column(String, nullable=True)
     profile: Mapped[str] = mapped_column(String, nullable=False)
+    document_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    document_schema_version: Mapped[str] = mapped_column(
+        String, nullable=False, default="legacy",
+    )
     status: Mapped[str] = mapped_column(_job_status_enum, nullable=False, default="queued")
     progress: Mapped[int | None] = mapped_column(Integer, nullable=True, default=0)
     current_step: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -352,6 +356,321 @@ class EquipmentImageModel(Base):
 
     def __repr__(self) -> str:
         return f"<EquipmentImageModel id={self.id} equipment_id={self.equipment_id}>"
+
+
+class DhaSpreadsheetUploadModel(Base):
+    __tablename__ = "dha_spreadsheet_uploads"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("jobs.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+    original_filename: Mapped[str] = mapped_column(String, nullable=False)
+    mime_type: Mapped[str] = mapped_column(String, nullable=False)
+    size: Mapped[int] = mapped_column(Integer, nullable=False)
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    rows: Mapped[list["DhaSpreadsheetRowModel"]] = relationship(
+        back_populates="upload", lazy="selectin",
+    )
+
+
+class DhaSpreadsheetRowModel(Base):
+    __tablename__ = "dha_spreadsheet_rows"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    upload_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("dha_spreadsheet_uploads.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    row_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    equipment_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    equipment_description: Mapped[str | None] = mapped_column(String, nullable=True)
+    raw_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    normalized_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    upload: Mapped["DhaSpreadsheetUploadModel"] = relationship(back_populates="rows")
+
+
+class DhaReportEquipmentModel(Base):
+    __tablename__ = "dha_report_equipments"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    report_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("reports.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    equipment_name: Mapped[str] = mapped_column(String, nullable=False)
+    equipment_description: Mapped[str | None] = mapped_column(String, nullable=True)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    local_instalacao: Mapped[str | None] = mapped_column(String, nullable=True)
+    funcao_operacional: Mapped[str | None] = mapped_column(String, nullable=True)
+    observacoes_extras: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extra_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(),
+        nullable=False,
+    )
+
+    images: Mapped[list["DhaEquipmentImageModel"]] = relationship(
+        back_populates="equipment", lazy="selectin",
+    )
+
+
+class DhaEquipmentImageModel(Base):
+    __tablename__ = "dha_equipment_images"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    equipment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("dha_report_equipments.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    public_id: Mapped[str] = mapped_column(String, nullable=False)
+    secure_url: Mapped[str] = mapped_column(String, nullable=False)
+    width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    equipment: Mapped["DhaReportEquipmentModel"] = relationship(back_populates="images")
+
+
+class AreaSpreadsheetUploadModel(Base):
+    __tablename__ = "area_spreadsheet_uploads"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("jobs.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+    original_filename: Mapped[str] = mapped_column(String, nullable=False)
+    mime_type: Mapped[str] = mapped_column(String, nullable=False)
+    size: Mapped[int] = mapped_column(Integer, nullable=False)
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    rows: Mapped[list["AreaSpreadsheetRowModel"]] = relationship(
+        back_populates="upload", lazy="selectin",
+    )
+
+
+class AreaSpreadsheetRowModel(Base):
+    __tablename__ = "area_spreadsheet_rows"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    upload_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("area_spreadsheet_uploads.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    row_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    area_local: Mapped[str] = mapped_column(String, nullable=False)
+    tag_referencia: Mapped[str | None] = mapped_column(String, nullable=True)
+    substancia: Mapped[str] = mapped_column(String, nullable=False)
+    fonte_liberacao: Mapped[str] = mapped_column(String, nullable=False)
+    grau_liberacao: Mapped[str] = mapped_column(String, nullable=False)
+    ventilacao_tipo: Mapped[str] = mapped_column(String, nullable=False)
+    grau_ventilacao: Mapped[str] = mapped_column(String, nullable=False)
+    disponibilidade_ventilacao: Mapped[str] = mapped_column(String, nullable=False)
+    zona: Mapped[str] = mapped_column(String, nullable=False)
+    extensao: Mapped[str] = mapped_column(String, nullable=False)
+    grupo: Mapped[str | None] = mapped_column(String, nullable=True)
+    classe_temperatura: Mapped[str | None] = mapped_column(String, nullable=True)
+    epl: Mapped[str | None] = mapped_column(String, nullable=True)
+    observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    raw_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    normalized_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    upload: Mapped["AreaSpreadsheetUploadModel"] = relationship(back_populates="rows")
+
+
+class AreaReportAreaModel(Base):
+    __tablename__ = "area_report_areas"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    report_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("reports.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    area_name: Mapped[str] = mapped_column(String, nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    operational_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ventilation_premises: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extra_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(),
+        nullable=False,
+    )
+
+    sources: Mapped[list["AreaReportSourceModel"]] = relationship(
+        back_populates="area", lazy="selectin",
+    )
+    photos: Mapped[list["AreaReportAreaImageModel"]] = relationship(
+        back_populates="area", lazy="selectin",
+    )
+
+
+class AreaReportAreaImageModel(Base):
+    __tablename__ = "area_report_area_images"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    area_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("area_report_areas.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    public_id: Mapped[str] = mapped_column(String, nullable=False)
+    secure_url: Mapped[str] = mapped_column(String, nullable=False)
+    width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    caption: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    area: Mapped["AreaReportAreaModel"] = relationship(back_populates="photos")
+
+
+class AreaReportSourceModel(Base):
+    __tablename__ = "area_report_sources"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    area_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("area_report_areas.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    tag_referencia: Mapped[str | None] = mapped_column(String, nullable=True)
+    substance_name: Mapped[str] = mapped_column(String, nullable=False)
+    source_name: Mapped[str] = mapped_column(String, nullable=False)
+    liberation_degree: Mapped[str] = mapped_column(String, nullable=False)
+    ventilation_type: Mapped[str] = mapped_column(String, nullable=False)
+    ventilation_degree: Mapped[str] = mapped_column(String, nullable=False)
+    ventilation_availability: Mapped[str] = mapped_column(String, nullable=False)
+    zone: Mapped[str] = mapped_column(String, nullable=False)
+    extension: Mapped[str] = mapped_column(String, nullable=False)
+    grupo: Mapped[str | None] = mapped_column(String, nullable=True)
+    classe_temperatura: Mapped[str | None] = mapped_column(String, nullable=True)
+    epl: Mapped[str | None] = mapped_column(String, nullable=True)
+    temperatura_processo: Mapped[str | None] = mapped_column(String, nullable=True)
+    pressao_processo: Mapped[str | None] = mapped_column(String, nullable=True)
+    volume_processo: Mapped[str | None] = mapped_column(String, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extra_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(),
+        nullable=False,
+    )
+
+    area: Mapped["AreaReportAreaModel"] = relationship(back_populates="sources")
+
+
+class AreaReportSubstanceModel(Base):
+    __tablename__ = "area_report_substances"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    report_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("reports.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    substance_name: Mapped[str] = mapped_column(String, nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    grupo: Mapped[str | None] = mapped_column(String, nullable=True)
+    classe_temperatura: Mapped[str | None] = mapped_column(String, nullable=True)
+    epl: Mapped[str | None] = mapped_column(String, nullable=True)
+    properties_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # ── Campos físico-químicos explícitos (Tabela 1 — Fase 2) ──
+    tipo: Mapped[str | None] = mapped_column(String, nullable=True)
+    ponto_fulgor: Mapped[str | None] = mapped_column(String, nullable=True)
+    lii: Mapped[str | None] = mapped_column(String, nullable=True)
+    densidade_relativa: Mapped[str | None] = mapped_column(String, nullable=True)
+    tai: Mapped[str | None] = mapped_column(String, nullable=True)
+    cme: Mapped[str | None] = mapped_column(String, nullable=True)
+    mit: Mapped[str | None] = mapped_column(String, nullable=True)
+    sit_camada: Mapped[str | None] = mapped_column(String, nullable=True)
+    tmax: Mapped[str | None] = mapped_column(String, nullable=True)
+    st: Mapped[str | None] = mapped_column(String, nullable=True)
+    legend_notes: Mapped[list[str] | None] = mapped_column(
+        ARRAY(String), nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class AreaReferenceDocumentModel(Base):
+    __tablename__ = "area_reference_documents"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    report_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("reports.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    document_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    document_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(),
+        nullable=False,
+    )
 
 
 # ======================================================================

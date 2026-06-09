@@ -1,0 +1,26 @@
+# Matriz de risco DHA (default 3x3). Estrutura permite trocar para 5x5 sem
+# alterar código — basta substituir as listas e a matriz.
+#
+# Cada célula = classificação resultante do cruzamento (Probabilidade × Severidade).
+# Valores válidos: "Baixo", "Médio", "Alto", "Muito Alto".
+
+dimension: 3
+severity_categories:   ["Baixa",  "Média",  "Alta"]
+probability_categories: ["Baixa", "Média",  "Alta"]
+
+# Linhas = severidade (na ordem acima); Colunas = probabilidade (na ordem acima).
+matrix:
+  - ["Baixo",  "Baixo",  "Médio"]      # severidade Baixa
+  - ["Baixo",  "Médio",  "Alto"]       # severidade Média
+  - ["Médio",  "Alto",   "Muito Alto"] # severidade Alta
+
+# Map de aliases aceitos (LLM pode emitir variantes).
+aliases:
+  severity:
+    "Baixa":     ["Baixa", "Menor", "I"]
+    "Média":     ["Média", "Medio", "Média", "Moderada", "II"]
+    "Alta":      ["Alta", "Severa", "Grave", "III"]
+  probability:
+    "Baixa":     ["Baixa", "Improvável", "I"]
+    "Média":     ["Média", "Medio", "Possível", "II"]
+    "Alta":      ["Alta", "Provável", "Frequente", "III"]

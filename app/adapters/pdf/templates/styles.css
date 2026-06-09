@@ -3,7 +3,7 @@
    ==========================================================================
    Controla 100% da aparência visual do relatório PDF.
    Inclui: logo no cabeçalho, tabelas de risco coloridas, matriz 5×5,
-   recomendações consolidadas, controle de revisões, etc.
+   recomendações, controle de revisões, etc.
    ========================================================================== */
 
 /* ---------- Reset & Base ---------- */
@@ -85,6 +85,11 @@
 @page landscape {
     size: A4 landscape;
     margin: 20mm 15mm 20mm 15mm;
+
+    @top-left {
+        content: element(pageHeader);
+        width: 100%;
+    }
 }
 
 
@@ -728,11 +733,26 @@ ol.detail-list {
     margin-top: 1em;
     font-size: 10pt;
     color: #555;
+    page-break-before: avoid;
+    break-before: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
+
+/* ==========================================================================
+   PRINT RULES — repetição de cabeçalho, quebra de tabelas/figuras
+   ========================================================================== */
+table { page-break-inside: auto; }
+thead { display: table-header-group; }
+tfoot { display: table-footer-group; }
+tr    { page-break-inside: avoid; break-inside: avoid; }
+figure, .equipment-photo { break-inside: avoid; page-break-inside: avoid; }
+h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+
 
 
 /* ==========================================================================
-   RECOMENDAÇÕES CONSOLIDADAS
+   RECOMENDAÇÕES
    ========================================================================== */
 
 table.consolidated-table {
