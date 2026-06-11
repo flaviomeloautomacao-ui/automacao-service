@@ -37,7 +37,7 @@
       text-align: center;
     }
     .area-classification-table thead th {
-      background-color: #2c3e50;
+      background-color: #0f3460;
       color: #fff;
       font-weight: 600;
       font-size: 7pt;
@@ -63,13 +63,13 @@
       page-break-inside: avoid;
       margin-bottom: 1.2em;
       border: 1px solid #ddd;
-      border-left: 4px solid #2c3e50;
+      border-left: 4px solid #0f3460;
       padding: 8px 12px;
     }
     .area-block h4 {
       margin: 0 0 6px 0;
       font-size: 11pt;
-      color: #2c3e50;
+      color: #0f3460;
     }
     .area-block .area-meta {
       font-size: 8.5pt;
@@ -88,6 +88,12 @@
 </head>
 <body>
 
+{% set responsavel_tecnico = metadata.responsavel | default(profile_config.responsavel_tecnico | default("Francisco Flávio Melo Cavalcante"), true) %}
+{% set registro_profissional = metadata.registro_profissional | default(profile_config.registro_profissional | default("CREA SP – 5060562076"), true) %}
+{% set rodape_endereco = metadata.rodape_endereco | default(profile_config.rodape_endereco | default("ENDERECO OFICIAL DA KONIS PENDENTE DE CONFIRMACAO"), true) %}
+{% set rodape_telefone = metadata.rodape_telefone | default(profile_config.rodape_telefone | default("+55 (11) 3046 3648"), true) %}
+{% set rodape_email = metadata.rodape_email | default(profile_config.rodape_email | default("flavio.cavalcante@konis.com.br"), true) %}
+
 {# ======================== RUNNING HEADER ======================== #}
 <div class="running-header">
   <img src="konis_logo.png" alt="Konis" />
@@ -101,6 +107,13 @@
   <span class="running-header-page"></span>
 </div>
 
+<div class="running-footer">
+  <strong>Konis Ex do Brasil Ltda.</strong>
+  | {{ rodape_endereco }}
+  | T {{ rodape_telefone }}
+  | {{ rodape_email }}
+</div>
+
 
 {# ============================ CAPA ============================== #}
 <div class="cover">
@@ -109,13 +122,17 @@
   </div>
 
   <div class="cover-content">
-    <h1 class="cover-title">CLASSIFICAÇÃO DE ÁREAS</h1>
-    <p class="cover-subtitle-main">COM ATMOSFERAS EXPLOSIVAS</p>
-    <p class="cover-subtitle">
-      ABNT NBR IEC 60079-10-1 | ABNT NBR IEC 60079-10-2
-    </p>
+    {% for line in (profile_config.titulo_relatorio | default("CLASSIFICAÇÃO DE ÁREAS")).split('\n') %}
+      {% if loop.first %}
+        <h1 class="cover-title">{{ line }}</h1>
+      {% else %}
+        <p class="cover-subtitle-main">{{ line }}</p>
+      {% endif %}
+    {% endfor %}
 
-    <div class="cover-divider"></div>
+    {% if profile_config.subtitulo %}
+      <p class="cover-subtitle">{{ profile_config.subtitulo }}</p>
+    {% endif %}
 
     {% if metadata.codigo_documento %}
     <p class="cover-doc-code">
@@ -148,11 +165,11 @@
         {% if metadata.elaboracao %}
         <tr><td class="cover-label">Elaboração:</td><td>{{ metadata.elaboracao }}</td></tr>
         {% endif %}
-        {% if metadata.responsavel %}
-        <tr><td class="cover-label">Responsável Técnico:</td><td>{{ metadata.responsavel }}</td></tr>
+        {% if responsavel_tecnico %}
+        <tr><td class="cover-label">Responsável Técnico:</td><td>{{ responsavel_tecnico }}</td></tr>
         {% endif %}
-        {% if metadata.registro_profissional %}
-        <tr><td class="cover-label">Registro Profissional:</td><td>{{ metadata.registro_profissional }}</td></tr>
+        {% if registro_profissional %}
+        <tr><td class="cover-label">CREA:</td><td>{{ registro_profissional }}</td></tr>
         {% endif %}
         {% if metadata.art_numero %}
         <tr><td class="cover-label">ART:</td><td>{{ metadata.art_numero }}</td></tr>
@@ -165,10 +182,6 @@
       <img src="{{ metadata.cover_image_url }}" alt="Imagem de capa do relatório" />
     </div>
     {% endif %}
-
-    <div class="cover-footer">
-      <p>Gerado em: {{ metadata.data_geracao | default("—") }}</p>
-    </div>
   </div>
 </div>
 
@@ -249,7 +262,7 @@
   <h3>2.2 Classificação das Zonas</h3>
   <table style="width:100%; border-collapse: collapse; font-size: 9pt; margin-top: 4px;">
     <thead>
-      <tr style="background-color:#2c3e50; color:#fff;">
+      <tr style="background-color:#0f3460; color:#fff;">
         <th style="padding:5px; border:1px solid #999;">Zona</th>
         <th style="padding:5px; border:1px solid #999; text-align:left;">Definição</th>
       </tr>
@@ -513,11 +526,13 @@
     </div>
 
     {% if eq.operational_notes %}
-      <p><strong>Notas Operacionais:</strong> {{ eq.operational_notes }}</p>
+      <p><strong>Notas Operacionais:</strong></p>
+      {{ eq.operational_notes | format_paragraphs }}
     {% endif %}
 
     {% if eq.ventilation_premises %}
-      <p><strong>Premissas de Ventilação:</strong> {{ eq.ventilation_premises }}</p>
+      <p><strong>Premissas de Ventilação:</strong></p>
+      {{ eq.ventilation_premises | format_paragraphs }}
     {% endif %}
 
     {# ===== Fotos da área (uploads do operador) ===== #}
@@ -527,12 +542,9 @@
         {% for img in visible_images %}
           <figure class="equipment-image">
             <img src="{{ img.secure_url }}"
-                 alt="{{ img.caption | default('Foto da área ' ~ eq.area_local) }}"
+                 alt="Imagem da área {{ eq.area_local }}"
                  {% if img.width %}width="{{ img.width }}"{% endif %}
                  {% if img.height %}height="{{ img.height }}"{% endif %}/>
-            {% if img.caption %}
-              <figcaption>{{ img.caption }}</figcaption>
-            {% endif %}
           </figure>
         {% endfor %}
       </div>
@@ -543,16 +555,12 @@
 
     {% if eq.justificativa_zona %}
       <p><strong>Justificativa da Classificação:</strong></p>
-      {% for p in eq.justificativa_zona.split('\n\n') if p.strip() %}
-        <p>{{ p }}</p>
-      {% endfor %}
+      {{ eq.justificativa_zona | format_paragraphs }}
     {% endif %}
 
     {% if eq.analise_ventilacao %}
       <p><strong>Análise da Ventilação:</strong></p>
-      {% for p in eq.analise_ventilacao.split('\n\n') if p.strip() %}
-        <p>{{ p }}</p>
-      {% endfor %}
+      {{ eq.analise_ventilacao | format_paragraphs }}
     {% endif %}
 
     {% if eq.recomendacoes_especificas %}
@@ -560,7 +568,7 @@
       <ol class="area-rec-list">
         {% for r in eq.recomendacoes_especificas %}
         <li>
-          {{ r.texto }}
+          {{ r.texto | clean_bullet_text }}
           {% if r.norma_referencia %}
             <em>({{ r.norma_referencia }})</em>
           {% endif %}
@@ -576,16 +584,16 @@
 {# ===================== 10. RECOMENDAÇÕES (LLM) ==================== #}
 <div class="content-section">
   <h2>10. RECOMENDAÇÕES GERAIS</h2>
-  {% set rec = llm_sections.recomendacoes | default("") %}
+{% set rec = llm_sections.recomendacoes | default("") %}
   {% for p in rec.split('\n\n') if p.strip() %}
     {% if p.startswith('• ') or p.startswith('- ') %}
       <ul>
         {% for line in p.split('\n') if line.strip() %}
-          <li>{{ line.lstrip('•- ').strip() }}</li>
+          <li>{{ line | clean_bullet_text }}</li>
         {% endfor %}
       </ul>
     {% else %}
-      <p>{{ p }}</p>
+      {{ p | format_paragraphs }}
     {% endif %}
   {% endfor %}
 </div>
@@ -594,26 +602,41 @@
 {# ====================== 11. CONCLUSÃO (LLM) ====================== #}
 <div class="content-section">
   <h2>11. CONCLUSÃO</h2>
-  {% set conc = llm_sections.conclusao | default("") %}
-  {% for p in conc.split('\n\n') if p.strip() %}
-    <p>{{ p }}</p>
+{% set conc = llm_sections.conclusao | default("") %}
+{% for p in conc.split('\n\n') if p.strip() %}
+    {{ p | format_paragraphs }}
   {% endfor %}
 </div>
 
 
 {# ============= ASSINATURA / RESPONSÁVEL TÉCNICO ================== #}
-{% if metadata.responsavel %}
-<div class="content-section" style="margin-top: 4em; page-break-inside: avoid;">
-  <div style="text-align: center; margin-top: 6em;">
-    <div style="border-top: 1px solid #333; width: 60%; margin: 0 auto;"></div>
-    <p style="margin-top: 6px;">
-      <strong>{{ metadata.responsavel }}</strong>
-      {% if metadata.registro_profissional %}<br/>{{ metadata.registro_profissional }}{% endif %}
-      {% if metadata.art_numero %}<br/>ART nº {{ metadata.art_numero }}{% endif %}
-    </p>
+<div class="section encerramento" style="page-break-before: always;">
+  <h2>12. ENCERRAMENTO</h2>
+  <p>
+    Este relatório foi elaborado com base nos dados fornecidos, na avaliação técnica
+    das fontes de liberação e nas normas aplicáveis à classificação de áreas com
+    atmosferas explosivas.
+  </p>
+
+  <p class="encerramento-city">São Paulo, {{ mes_ano }}.</p>
+
+  <div class="encerramento-contact">
+    <img src="assinatura.jpeg" class="encerramento-assinatura" alt="Assinatura">
+    <p class="contact-name">{{ metadata.assinatura_nome | default(profile_config.assinatura_nome | default("Flávio Cavalcante"), true) }}</p>
+    <p class="contact-role">{{ metadata.assinatura_cargo | default(profile_config.assinatura_cargo | default("Gerente técnico"), true) }}</p>
+    {% if metadata.assinatura_registro or profile_config.assinatura_registro %}
+    <p class="contact-registro">{{ metadata.assinatura_registro | default(profile_config.assinatura_registro, true) }}</p>
+    {% endif %}
+    {% if metadata.art_numero %}<p class="contact-registro">ART nº {{ metadata.art_numero }}</p>{% endif %}
+    <br>
+    <p class="contact-phone">M {{ metadata.assinatura_celular | default(profile_config.assinatura_celular | default("+55 (11) 94572 0000"), true) }}</p>
+    <p class="contact-phone">T {{ metadata.assinatura_telefone | default(profile_config.assinatura_telefone | default("+55 (11) 3046 3648"), true) }}</p>
+    <p class="contact-link"><a href="mailto:{{ metadata.assinatura_email | default(profile_config.assinatura_email | default('flavio.cavalcante@konis.com.br'), true) }}">{{ metadata.assinatura_email | default(profile_config.assinatura_email | default("flavio.cavalcante@konis.com.br"), true) }}</a></p>
+    <p class="contact-link"><a href="https://www.konis.com.br" target="_blank">www.konis.com.br</a></p>
+
+    <img src="konis_logo.png" class="encerramento-logo" alt="Konis - Segurança é essencial">
   </div>
 </div>
-{% endif %}
 
 </body>
 </html>

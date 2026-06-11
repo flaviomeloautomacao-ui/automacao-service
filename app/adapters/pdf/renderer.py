@@ -5,11 +5,13 @@ Implementa ``PdfRendererPort`` definido em ``app.domain.ports``.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from markupsafe import Markup, escape
 
 _MESES_PT = {
     1: "janeiro", 2: "fevereiro", 3: "março", 4: "abril",
@@ -22,6 +24,77 @@ from app.domain.errors import TemplateError
 
 # Diretório onde ficam os templates Jinja2 (.html, .css)
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+
+# Quebra de parágrafo: linha em branco OU início de item enumerado ("1-", "2 -", "3)", "4.")
+_PARAGRAPH_SPLIT_RE = re.compile(r"\n\s*\n|\n(?=\s*\d+\s*[-–.\)])")
+_LIST_MARKER_RE = re.compile(r"^\s*(?:[-•]\s*|\d+\s*[-–.)]\s*)+")
+
+
+def _format_paragraphs(value: Any) -> Markup:
+    """Converte texto com itens enumerados/quebras em parágrafos HTML.
+
+    Regras:
+        - Escapa o conteúdo (segurança contra HTML/injeção).
+        - Itens enumerados (``1-``, ``2 -``, ``3)``, ``4.``) separados por
+          quebra de linha simples são promovidos a parágrafos independentes.
+        - Parágrafos separados por ``\\n\\n`` também viram parágrafos.
+
+    Args:
+        value: Texto bruto (tipicamente vindo da LLM).
+
+    Returns:
+        ``Markup`` seguro com cada bloco envolvido em ``<p>``.
+    """
+    if value is None:
+        return Markup("")
+    text = str(value).strip()
+    if not text:
+        return Markup("")
+    blocks = _PARAGRAPH_SPLIT_RE.split(text)
+    parts = [escape(b.strip()) for b in blocks if b.strip()]
+    if not parts:
+        return Markup("")
+    return Markup("".join(f"<p>{p}</p>" for p in parts))
+
+
+def _clean_bullet_text(value: Any) -> str:
+    """Remove numeração/marcadores duplicados no início de itens de lista."""
+    if value is None:
+        return ""
+    return _LIST_MARKER_RE.sub("", str(value)).strip()
+
+
+def _build_normas_por_equipamento(
+    equipments: list[dict[str, Any]],
+) -> dict[str, str]:
+    """Agrega as normas de referência das recomendações por equipamento.
+
+    Usado pela tabela do Apêndice A para exibir a coluna "Base Normativa",
+    já que as normas vêm das recomendações (por equipamento) e a tabela
+    itera por linha de perigo.
+
+    Args:
+        equipments: Lista de equipamentos com ``recomendacoes_tecnicas``.
+
+    Returns:
+        Mapa ``{nome_equipamento: "Norma A; Norma B"}`` (normas únicas,
+        preservando a ordem de aparição).
+    """
+    resultado: dict[str, str] = {}
+    for eq in equipments:
+        nome = (eq.get("nome") or "").strip()
+        if not nome:
+            continue
+        normas: list[str] = []
+        for rec in eq.get("recomendacoes_tecnicas") or []:
+            norma = (rec.get("norma_referencia") or "").strip()
+            if norma and norma not in normas:
+                normas.append(norma)
+        if normas:
+            resultado[nome] = "; ".join(normas)
+    return resultado
+
+
 
 
 class WeasyPdfRenderer:
@@ -45,6 +118,8 @@ class WeasyPdfRenderer:
             loader=FileSystemLoader(str(tpl_dir)),
             autoescape=select_autoescape(["html"]),
         )
+        self._env.filters["format_paragraphs"] = _format_paragraphs
+        self._env.filters["clean_bullet_text"] = _clean_bullet_text
         self._base_url = str(tpl_dir)
 
     # ------------------------------------------------------------------
@@ -81,6 +156,7 @@ class WeasyPdfRenderer:
             template = self._env.get_template(template_name)
             now = datetime.now()
             mes_ano = f"{_MESES_PT[now.month]} de {now.year}"
+            normas_por_equipamento = _build_normas_por_equipamento(equipments or [])
             return template.render(
                 metadata=metadata,
                 rows=rows,
@@ -88,6 +164,7 @@ class WeasyPdfRenderer:
                 equipments=equipments or [],
                 profile_config=profile_config or {},
                 mes_ano=mes_ano,
+                normas_por_equipamento=normas_por_equipamento,
             )
         except Exception as exc:
             raise TemplateError(

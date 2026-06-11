@@ -395,15 +395,19 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
     recs: list[RecomendacaoTecnica] = []
     justs: list[JustificativaTecnica] = []
 
-    # Justificativa nica compartilhada: no path determinístico todas as
-    # recomendações têm a mesma base de análise (mesmo equipamento, perigos
-    # e consequências). Emitir uma justificativa por recomendação gera
-    # 100% de duplicatas — emitimos UMA vinculada ao item #1.
-    shared_justificativa_texto = (
+    # No path determinístico, geramos DUAS justificativas para satisfazer
+    # o min_length=2 do EquipmentLLMOutput:
+    #   1. Foco no risco (severidade + perigos identificados)
+    #   2. Foco nas consequências potenciais + referência normativa
+    just1_texto = (
         f"Recomendações baseadas na análise de risco do equipamento "
         f"{equip_name} (severidade {sev}, risco {risco}), "
-        f"considerando os perigos identificados: {perigos_resumo}; "
-        f"e consequências potenciais: {consequencias_resumo}."
+        f"considerando os perigos identificados: {perigos_resumo}."
+    )
+    just2_texto = (
+        f"A adoção das medidas preventivas é justificada pelas consequências "
+        f"potenciais: {consequencias_resumo}. "
+        f"As ações propostas estão alinhadas com os requisitos de {default_norma}."
     )
 
     for i, medida in enumerate(items[:_MAX_RECS], start=1):
@@ -423,12 +427,8 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
         )
 
     if recs:
-        justs.append(
-            JustificativaTecnica(
-                numero=1,
-                texto=shared_justificativa_texto,
-            )
-        )
+        justs.append(JustificativaTecnica(numero=1, texto=just1_texto))
+        justs.append(JustificativaTecnica(numero=2, texto=just2_texto))
 
     logger.info(
         "Fallback determinístico gerado | equip={} | recs={}",
