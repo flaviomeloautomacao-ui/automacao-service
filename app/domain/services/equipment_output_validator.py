@@ -395,17 +395,6 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
     recs: list[RecomendacaoTecnica] = []
     justs: list[JustificativaTecnica] = []
 
-    # Justificativa nica compartilhada: no path determinístico todas as
-    # recomendações têm a mesma base de análise (mesmo equipamento, perigos
-    # e consequências). Emitir uma justificativa por recomendação gera
-    # 100% de duplicatas — emitimos UMA vinculada ao item #1.
-    shared_justificativa_texto = (
-        f"Recomendações baseadas na análise de risco do equipamento "
-        f"{equip_name} (severidade {sev}, risco {risco}), "
-        f"considerando os perigos identificados: {perigos_resumo}; "
-        f"e consequências potenciais: {consequencias_resumo}."
-    )
-
     for i, medida in enumerate(items[:_MAX_RECS], start=1):
         # Distribuir norma por keyword heurístico
         norma = _match_norma_for_fallback(
@@ -421,12 +410,16 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
                 trecho_normativo=None,
             )
         )
-
-    if recs:
         justs.append(
             JustificativaTecnica(
-                numero=1,
-                texto=shared_justificativa_texto,
+                numero=i,
+                texto=(
+                    f"A recomendação técnica nº {i} é necessária para o equipamento "
+                    f"{equip_name}, pois os perigos identificados ({perigos_resumo}) "
+                    f"podem resultar em {consequencias_resumo}. Considerando a "
+                    f"severidade {sev} e o risco {risco}, a medida deve ser "
+                    f"implementada e acompanhada conforme {norma}."
+                ),
             )
         )
 

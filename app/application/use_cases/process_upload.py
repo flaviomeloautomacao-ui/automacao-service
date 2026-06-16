@@ -474,6 +474,11 @@ class ProcessUploadUseCase:
             )
         else:
             # Fallback genérico via PdfRendererPort
+            from app.adapters.pdf.renderer import (  # noqa: PLC0415
+                _build_normas_por_equipamento,
+                _clean_bullet_text,
+                _format_paragraphs,
+            )
             from jinja2 import Environment, FileSystemLoader, select_autoescape  # noqa: PLC0415
             from pathlib import Path  # noqa: PLC0415
 
@@ -482,6 +487,8 @@ class ProcessUploadUseCase:
                 loader=FileSystemLoader(str(tpl_dir)),
                 autoescape=select_autoescape(["html"]),
             )
+            env.filters["format_paragraphs"] = _format_paragraphs
+            env.filters["clean_bullet_text"] = _clean_bullet_text
             template = env.get_template("report.html")
             html = template.render(
                 metadata=metadata,
@@ -489,6 +496,7 @@ class ProcessUploadUseCase:
                 llm_sections=llm_sections,
                 equipments=equipments,
                 profile_config=profile_config,
+                normas_por_equipamento=_build_normas_por_equipamento(equipments),
             )
             pdf_bytes = self._pdf_renderer.render(html)
 

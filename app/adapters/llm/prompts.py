@@ -36,6 +36,23 @@ from __future__ import annotations
 
 from typing import Any
 
+_KONIS_DEFAULTS: dict[str, str] = {
+    "responsavel_tecnico": "Francisco Flávio Melo Cavalcante",
+    "registro_profissional": "CREA SP – 5060562076",
+    "assinatura_nome": "Flávio Cavalcante",
+    "assinatura_cargo": "Gerente técnico",
+    "assinatura_registro": "CREA SP – 5060562076",
+    "assinatura_celular": "+55 (11) 94572 0000",
+    "assinatura_telefone": "+55 (11) 3046 3648",
+    "assinatura_email": "flavio.cavalcante@konis.com.br",
+    "rodape_endereco": (
+        "Gomes de Carvalho, 1255, sobreloja, Vila Olímpia, "
+        "São Paulo/SP - CEP 04547-005"
+    ),
+    "rodape_telefone": "+55 (11) 3046-3648",
+    "rodape_email": "flavio.cavalcante@konis.com.br",
+}
+
 # ---------------------------------------------------------------------------
 # Configuração de Perfis
 # ---------------------------------------------------------------------------
@@ -52,9 +69,10 @@ from typing import Any
 PROFILE_CONFIG: dict[str, dict[str, Any]] = {
     # ── DHA – Dust Hazard Analysis (Poeiras Combustíveis) ──────────
     "dust": {
+        **_KONIS_DEFAULTS,
         "label": "DHA — Dust Hazard Analysis",
         "titulo_relatorio": "RELATÓRIO TÉCNICO\nDHA (Dust Hazard Analysis)",
-        "subtitulo": "Análise de Perigos por Poeira Combustível",
+        "subtitulo": "",
         "normas_principais": [
             "NFPA 652:2022 — Standard on the Fundamentals of Combustible Dust",
             "NFPA 654 — Prevention of Fire and Dust Explosions from Manufacturing, Processing, and Handling of Combustible Particulate Solids",
@@ -80,6 +98,7 @@ PROFILE_CONFIG: dict[str, dict[str, Any]] = {
 
     # ── Gases Inflamáveis ──────────────────────────────────────────
     "gas": {
+        **_KONIS_DEFAULTS,
         "label": "Análise de Riscos — Gases Inflamáveis",
         "titulo_relatorio": "RELATÓRIO TÉCNICO\nAnálise de Riscos de Gases Inflamáveis",
         "subtitulo": "Avaliação de Perigos em Atmosferas com Gases Inflamáveis",
@@ -104,6 +123,7 @@ PROFILE_CONFIG: dict[str, dict[str, Any]] = {
 
     # ── Vapores Inflamáveis ────────────────────────────────────────
     "vapors": {
+        **_KONIS_DEFAULTS,
         "label": "Análise de Riscos — Vapores Inflamáveis",
         "titulo_relatorio": "RELATÓRIO TÉCNICO\nAnálise de Riscos de Vapores Inflamáveis",
         "subtitulo": "Avaliação de Perigos em Atmosferas com Vapores Inflamáveis",
@@ -126,6 +146,7 @@ PROFILE_CONFIG: dict[str, dict[str, Any]] = {
 
     # ── Classificação de Áreas (IEC 60079-10-1/10-2) ───────────────
     "areas": {
+        **_KONIS_DEFAULTS,
         "label": "Classificação de Áreas",
         "titulo_relatorio": "RELATÓRIO TÉCNICO\nEstudo de Classificação de Áreas",
         "subtitulo": "Atmosferas Explosivas — Gases, Vapores e Poeiras Combustíveis",

@@ -377,8 +377,26 @@ class TestFallback:
         output = build_fallback(inp)
         assert isinstance(output, EquipmentLLMOutput)
         assert len(output.recomendacoes_tecnicas) == 3
+        assert len(output.justificativas_tecnicas) == 3
         assert output.recomendacoes_tecnicas[0].texto == "Instalar X"
         assert output.recomendacoes_tecnicas[0].norma_referencia == "NFPA 652:2022"
+
+    def test_fallback_keeps_recommendations_and_justifications_one_to_one(self):
+        inp = _make_input(
+            medidas_a_implementar=["Instalar X", "Revisar Y", "Adequar Z"],
+        )
+        output = build_fallback(inp)
+
+        assert len(output.recomendacoes_tecnicas) == len(
+            output.justificativas_tecnicas
+        )
+        for rec, just in zip(
+            output.recomendacoes_tecnicas,
+            output.justificativas_tecnicas,
+        ):
+            assert just.numero == rec.numero
+            assert f"nº {rec.numero}" in just.texto
+            assert rec.norma_referencia in just.texto
 
     def test_fallback_empty_medidas_gets_generic(self):
         inp = _make_input(medidas_a_implementar=[])

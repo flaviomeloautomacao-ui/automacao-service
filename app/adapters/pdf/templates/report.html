@@ -7,6 +7,29 @@
 </head>
 <body>
 
+{% macro risk_badge(value, small=False) -%}
+  {% set text = (value | default("—", true)) | string | trim %}
+  {% set normalized = text | lower %}
+  {% set compact_style = " font-size: 7pt; padding: 1px 4px;" if small else "" %}
+  {% if "muito alt" in normalized or "catastr" in normalized or normalized == "iv" or "iv " in normalized %}
+    <span class="risk-badge" style="background-color: #dc3545;{{ compact_style }}">{{ text }}</span>
+  {% elif "alt" in normalized or normalized == "iii" or "iii " in normalized %}
+    <span class="risk-badge" style="background-color: #fd7e14;{{ compact_style }}">{{ text }}</span>
+  {% elif "médi" in normalized or "medi" in normalized or normalized == "ii" or "ii " in normalized %}
+    <span class="risk-badge" style="background-color: #ffc107; color: #333;{{ compact_style }}">{{ text }}</span>
+  {% elif "baix" in normalized or normalized == "i" or "i " in normalized %}
+    <span class="risk-badge" style="background-color: #28a745;{{ compact_style }}">{{ text }}</span>
+  {% else %}
+    {{ text }}
+  {% endif %}
+{%- endmacro %}
+
+{% set responsavel_tecnico = metadata.responsavel | default(profile_config.responsavel_tecnico | default("Francisco Flávio Melo Cavalcante"), true) %}
+{% set registro_profissional = metadata.registro_profissional | default(profile_config.registro_profissional | default("CREA SP – 5060562076"), true) %}
+{% set rodape_endereco = metadata.rodape_endereco | default(profile_config.rodape_endereco | default("Gomes de Carvalho, 1255, sobreloja, Vila Olímpia, São Paulo/SP - CEP 04547-005"), true) %}
+{% set rodape_telefone = metadata.rodape_telefone | default(profile_config.rodape_telefone | default("+55 (11) 3046-3648"), true) %}
+{% set rodape_email = metadata.rodape_email | default(profile_config.rodape_email | default("flavio.cavalcante@konis.com.br"), true) %}
+
 {# ====================================================================
    RUNNING HEADER — Logo + título + revisão em TODAS as páginas
    (exceto a capa, controlado via @page :first no CSS)
@@ -21,6 +44,13 @@
     {% if metadata.revisao %} — Rev. {{ metadata.revisao }}{% endif %}
   </span>
   <span class="running-header-page"></span>
+</div>
+
+<div class="running-footer">
+  <strong>Konis Ex do Brasil Ltda.</strong>
+  | {{ rodape_endereco }}
+  | T {{ rodape_telefone }}
+  | {{ rodape_email }}
 </div>
 
 
@@ -46,8 +76,6 @@
     {% if profile_config.subtitulo %}
       <p class="cover-subtitle">{{ profile_config.subtitulo }}</p>
     {% endif %}
-
-    <div class="cover-divider"></div>
 
     {% if metadata.codigo_documento %}
     <p class="cover-doc-code">
@@ -98,16 +126,16 @@
           <td>{{ metadata.elaboracao }}</td>
         </tr>
         {% endif %}
-        {% if metadata.responsavel %}
+        {% if responsavel_tecnico %}
         <tr>
           <td class="cover-label">Responsável Técnico:</td>
-          <td>{{ metadata.responsavel }}</td>
+          <td>{{ responsavel_tecnico }}</td>
         </tr>
         {% endif %}
-        {% if metadata.registro_profissional %}
+        {% if registro_profissional %}
         <tr>
-          <td class="cover-label">Registro Profissional:</td>
-          <td>{{ metadata.registro_profissional }}</td>
+          <td class="cover-label">CREA:</td>
+          <td>{{ registro_profissional }}</td>
         </tr>
         {% endif %}
         {% if metadata.art_numero %}
@@ -124,10 +152,6 @@
       <img src="{{ metadata.cover_image_url }}" alt="Imagem de capa do relatório" />
     </div>
     {% endif %}
-
-    <div class="cover-footer">
-      <p>Gerado em: {{ metadata.data_geracao | default("—") }}</p>
-    </div>
   </div>
 </div>
 
@@ -619,7 +643,7 @@
     <ul class="detail-list">
     {% for item in items %}
       {% if item %}
-        <li>{{ item }}</li>
+        <li>{{ item | clean_bullet_text }}</li>
       {% endif %}
     {% endfor %}
     </ul>
@@ -821,7 +845,7 @@
     {# 4.x.1 Descrição da operação #}
     <h4>{{ sec_equip }}.{{ eq.index }}.1 Descrição da operação</h4>
     {% if eq.descricao %}
-      <p>{{ eq.descricao }}</p>
+      {{ eq.descricao | format_paragraphs }}
     {% else %}
       <p class="text-muted">Descrição não informada na planilha.</p>
     {% endif %}
@@ -864,13 +888,14 @@
           <td class="risk-label">Classificação do Risco:</td>
           <td>
             {% set classif_txt = eq.classificacao | default(eq.risco | default("N/I")) %}
-            {% if classif_txt == "Muito Alto" %}
+            {% set classif_low = classif_txt | lower %}
+            {% if "muito alt" in classif_low %}
               <span class="risk-badge" style="background-color: #dc3545;">{{ classif_txt }}</span>
-            {% elif classif_txt == "Alto" %}
+            {% elif "alt" in classif_low %}
               <span class="risk-badge" style="background-color: #fd7e14;">{{ classif_txt }}</span>
-            {% elif classif_txt == "Médio" or classif_txt == "Medio" %}
+            {% elif "médi" in classif_low or "medi" in classif_low %}
               <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ classif_txt }}</span>
-            {% elif classif_txt == "Baixo" %}
+            {% elif "baix" in classif_low %}
               <span class="risk-badge" style="background-color: #28a745;">{{ classif_txt }}</span>
             {% else %}
               <span class="risk-value">{{ classif_txt }}</span>
@@ -955,7 +980,7 @@
       <ol class="detail-list">
       {% for rec in eq.recomendacoes_tecnicas %}
         <li value="{{ rec.numero }}">
-          {{ rec.texto }}
+          {{ rec.texto | format_paragraphs }}
           {% if rec.norma_referencia %}
             <br/><span class="norma-ref"><em>Ref.: {{ rec.norma_referencia }}</em></span>
           {% endif %}
@@ -967,7 +992,7 @@
       <ol class="detail-list">
       {% for item in eq.medidas_implementar %}
         {% if item %}
-          <li>{{ item }}</li>
+          <li>{{ item | clean_bullet_text }}</li>
         {% endif %}
       {% endfor %}
       </ol>
@@ -980,7 +1005,7 @@
     {% if eq.justificativas_tecnicas %}
       <ol class="detail-list">
       {% for jst in eq.justificativas_tecnicas %}
-        <li value="{{ jst.numero }}">{{ jst.texto | e | replace('\n\n', '</p><p>') | safe }}</li>
+        <li value="{{ jst.numero }}">{{ jst.texto | format_paragraphs }}</li>
       {% endfor %}
       </ol>
     {% elif eq.observacoes %}
@@ -996,7 +1021,7 @@
     {# 4.x.10 Observações extras (complementação) #}
     {% if eq.observacoes_extras %}
     <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset + 7 }} Observações complementares</h4>
-    <p>{{ eq.observacoes_extras }}</p>
+    {{ eq.observacoes_extras | format_paragraphs }}
     {% endif %}
 
     {# 4.x.11 Registro fotográfico (por último na seção do equipamento) #}
@@ -1005,16 +1030,10 @@
     {% set visible_images = (eq.images | sort(attribute='order_index', reverse=false))[:4] if eq.images and eq.images[0].order_index is defined else eq.images[:4] %}
     {% set img_count = visible_images | length %}
     <div class="equipment-images">
-      {% set global_photo_ns = namespace(counter=0) %}
       {% for img in visible_images %}
-        {% set global_photo_ns.counter = global_photo_ns.counter + 1 %}
         <div class="equipment-photo photo-count-{{ img_count }}">
           <img src="{{ img.secure_url }}"
-               alt="Foto do equipamento {{ eq.nome }}" />
-          <p class="photo-caption">
-            Foto {{ global_photo_ns.counter }}
-            {% if img.legenda %} — {{ img.legenda }}{% endif %}
-          </p>
+               alt="Imagem do equipamento {{ eq.nome }}" />
         </div>
       {% endfor %}
     </div>
@@ -1064,15 +1083,16 @@
             {% set rec_ns.counter = rec_ns.counter + 1 %}
             {# Determinar prioridade com base na classificação de risco V3 #}
             {% set classif_txt = eq.classificacao | default(eq.risco | default("")) %}
-            {% if classif_txt == "Muito Alto" %}
+            {% set classif_low = classif_txt | lower %}
+            {% if "muito alt" in classif_low %}
               {% set prioridade = "Urgente" %}
               {% set prazo = "Imediato (0–30 dias)" %}
               {% set pclass = "priority-urgente" %}
-            {% elif classif_txt == "Alto" %}
+            {% elif "alt" in classif_low %}
               {% set prioridade = "Alta" %}
               {% set prazo = "Curto prazo (30–90 dias)" %}
               {% set pclass = "priority-alta" %}
-            {% elif classif_txt == "Médio" or classif_txt == "Medio" %}
+            {% elif "médi" in classif_low or "medi" in classif_low %}
               {% set prioridade = "Média" %}
               {% set prazo = "Programado (90–180 dias)" %}
               {% set pclass = "priority-media" %}
@@ -1084,7 +1104,7 @@
             <tr>
               <td>{{ rec_ns.counter }}</td>
               <td>{{ eq.nome }}</td>
-              <td>{{ rec.texto }}</td>
+              <td>{{ rec.texto | format_paragraphs }}</td>
               <td>{{ rec.norma_referencia | default("—") }}</td>
               <td><span class="{{ pclass }}">{{ prioridade }}</span></td>
               <td>{{ prazo }}</td>
@@ -1115,10 +1135,10 @@
   {# Contar equipamentos por nível de risco (vocabulário V3: Baixo/Médio/Alto/Muito Alto) #}
   {% set risk_counts = namespace(muito_alto=0, alto=0, medio=0, baixo=0) %}
   {% for eq in equipments %}
-    {% set r = (eq.classificacao | default(eq.risco | default(""))) | title %}
-    {% if r == "Muito Alto" %}{% set risk_counts.muito_alto = risk_counts.muito_alto + 1 %}
-    {% elif r == "Alto" %}{% set risk_counts.alto = risk_counts.alto + 1 %}
-    {% elif r == "Médio" or r == "Medio" %}{% set risk_counts.medio = risk_counts.medio + 1 %}
+    {% set r = (eq.classificacao | default(eq.risco | default(""))) | lower %}
+    {% if "muito alt" in r %}{% set risk_counts.muito_alto = risk_counts.muito_alto + 1 %}
+    {% elif "alt" in r %}{% set risk_counts.alto = risk_counts.alto + 1 %}
+    {% elif "médi" in r or "medi" in r %}{% set risk_counts.medio = risk_counts.medio + 1 %}
     {% else %}{% set risk_counts.baixo = risk_counts.baixo + 1 %}
     {% endif %}
   {% endfor %}
@@ -1181,10 +1201,10 @@
   {% set res_counts = namespace(muito_alto=0, alto=0, medio=0, baixo=0) %}
   {% for eq in equipments %}
     {% if eq.classificacao_residual %}
-      {% set rr = eq.classificacao_residual | title %}
-      {% if rr == "Muito Alto" %}{% set res_counts.muito_alto = res_counts.muito_alto + 1 %}
-      {% elif rr == "Alto" %}{% set res_counts.alto = res_counts.alto + 1 %}
-      {% elif rr == "Médio" or rr == "Medio" %}{% set res_counts.medio = res_counts.medio + 1 %}
+      {% set rr = eq.classificacao_residual | lower %}
+      {% if "muito alt" in rr %}{% set res_counts.muito_alto = res_counts.muito_alto + 1 %}
+      {% elif "alt" in rr %}{% set res_counts.alto = res_counts.alto + 1 %}
+      {% elif "médi" in rr or "medi" in rr %}{% set res_counts.medio = res_counts.medio + 1 %}
       {% else %}{% set res_counts.baixo = res_counts.baixo + 1 %}
       {% endif %}
     {% endif %}
@@ -1390,6 +1410,7 @@
   <p class="encerramento-city">São Paulo, {{ mes_ano }}.</p>
 
   <div class="encerramento-contact">
+    <img src="assinatura.png" class="encerramento-assinatura" alt="Assinatura">
     <p class="contact-name">{{ metadata.assinatura_nome | default(profile_config.assinatura_nome | default("Flávio Cavalcante")) }}</p>
     <p class="contact-role">{{ metadata.assinatura_cargo | default(profile_config.assinatura_cargo | default("Gerente técnico")) }}</p>
     {% if metadata.assinatura_registro or profile_config.assinatura_registro %}
@@ -1430,6 +1451,8 @@
         <th>Classificação</th>
         <th>Medidas Existentes</th>
         <th>Medidas a Implementar</th>
+        <th>Base Normativa</th>
+        <th>Prazo</th>
         <th>Sev. Residual</th>
         <th>Prob. Residual</th>
         <th>Class. Residual</th>
@@ -1445,59 +1468,36 @@
         <td>{{ row.consequencias | default("—") }}</td>
         <td>
           {% set sev = row.categoria_severidade | default("—") %}
-          {% if "Catastrófica" in sev or "IV" in sev %}
-            <span style="color: #dc3545; font-weight: 700;">{{ sev }}</span>
-          {% elif "Alta" in sev or "III" in sev %}
-            <span style="color: #fd7e14; font-weight: 700;">{{ sev }}</span>
-          {% elif "Média" in sev or "II" in sev %}
-            <span style="color: #ffc107; font-weight: 700;">{{ sev }}</span>
-          {% else %}
-            {{ sev }}
-          {% endif %}
+          {{ risk_badge(sev, small=True) }}
         </td>
-        <td>{{ row.categoria_probabilidade | default(row.categoria_risco | default("—")) }}</td>
+        <td>
+          {{ risk_badge(row.categoria_probabilidade | default(row.categoria_risco | default("—")), small=True) }}
+        </td>
         <td>
           {% set risk = row.classificacao_risco | default(row.categoria_risco | default("—")) %}
-          {% if risk in ["Muito Alto", "Muito Alta"] %}
-            <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% elif risk in ["Alto", "Alta"] %}
-            <span class="risk-badge" style="background-color: #fd7e14; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% elif risk in ["Médio", "Medio", "Média", "Media"] %}
-            <span class="risk-badge" style="background-color: #ffc107; color: #333; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% elif risk in ["Baixo", "Baixa"] %}
-            <span class="risk-badge" style="background-color: #28a745; font-size: 7pt; padding: 1px 4px;">{{ risk }}</span>
-          {% else %}
-            {{ risk }}
-          {% endif %}
+          {{ risk_badge(risk, small=True) }}
         </td>
         <td>{{ row.medidas_existentes | default("—") }}</td>
         <td>{{ row.medidas_implementar | default("—") }}</td>
+        <td>{{ normas_por_equipamento.get(row.equipamento) or "—" }}</td>
+        <td>
+          {% set classif_anexo = (row.classificacao_risco | default(row.categoria_risco | default(""))) | lower %}
+          {% if "muito alt" in classif_anexo %}Imediato (0–30 dias)
+          {% elif "alt" in classif_anexo %}Curto prazo (30–90 dias)
+          {% elif "médi" in classif_anexo or "medi" in classif_anexo %}Programado (90–180 dias)
+          {% elif "baix" in classif_anexo %}Monitoramento contínuo
+          {% else %}—{% endif %}
+        </td>
         <td>
           {% set sevr = row.categoria_severidade_2 | default("—") %}
-          {% if "Catastrófica" in sevr or "IV" in sevr %}
-            <span style="color: #dc3545; font-weight: 700;">{{ sevr }}</span>
-          {% elif "Alta" in sevr or "III" in sevr %}
-            <span style="color: #fd7e14; font-weight: 700;">{{ sevr }}</span>
-          {% elif "Média" in sevr or "II" in sevr %}
-            <span style="color: #ffc107; font-weight: 700;">{{ sevr }}</span>
-          {% else %}
-            {{ sevr }}
-          {% endif %}
+          {{ risk_badge(sevr, small=True) }}
         </td>
-        <td>{{ row.categoria_probabilidade_2 | default("—") }}</td>
+        <td>
+          {{ risk_badge(row.categoria_probabilidade_2 | default("—"), small=True) }}
+        </td>
         <td>
           {% set riskr = row.classificacao_risco_2 | default("—") %}
-          {% if riskr in ["Muito Alto", "Muito Alta"] %}
-            <span class="risk-badge" style="background-color: #dc3545; font-size: 7pt; padding: 1px 4px;">{{ riskr }}</span>
-          {% elif riskr in ["Alto", "Alta"] %}
-            <span class="risk-badge" style="background-color: #fd7e14; font-size: 7pt; padding: 1px 4px;">{{ riskr }}</span>
-          {% elif riskr in ["Médio", "Medio", "Média", "Media"] %}
-            <span class="risk-badge" style="background-color: #ffc107; color: #333; font-size: 7pt; padding: 1px 4px;">{{ riskr }}</span>
-          {% elif riskr in ["Baixo", "Baixa"] %}
-            <span class="risk-badge" style="background-color: #28a745; font-size: 7pt; padding: 1px 4px;">{{ riskr }}</span>
-          {% else %}
-            {{ riskr }}
-          {% endif %}
+          {{ risk_badge(riskr, small=True) }}
         </td>
       </tr>
       {% endfor %}
