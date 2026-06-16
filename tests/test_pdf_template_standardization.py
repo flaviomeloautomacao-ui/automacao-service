@@ -64,9 +64,11 @@ def test_dha_template_cover_footer_signature_and_images_are_standardized() -> No
     assert "CREA:" in html
     assert "CREA SP – 5060562076" in html
     assert "Konis Ex do Brasil Ltda." in html
-    assert "+55 (11) 3046 3648" in html
+    assert "Gomes de Carvalho, 1255, sobreloja, Vila Olímpia" in html
+    assert "São Paulo/SP - CEP 04547-005" in html
+    assert "+55 (11) 3046-3648" in html
     assert "flavio.cavalcante@konis.com.br" in html
-    assert "ENDERECO OFICIAL DA KONIS PENDENTE DE CONFIRMACAO" in html
+    assert "ENDERECO OFICIAL DA KONIS PENDENTE DE CONFIRMACAO" not in html
 
 
 def test_areas_template_uses_dha_visual_contract_and_signature() -> None:
@@ -136,9 +138,12 @@ def test_areas_template_uses_dha_visual_contract_and_signature() -> None:
     assert "Foto 1" not in html
     assert "Responsável Técnico:" in html
     assert "CREA:" in html
-    assert "assinatura.jpeg" in html
+    assert "assinatura.png" in html
     assert "ART nº ART-123" in html
     assert "Konis Ex do Brasil Ltda." in html
+    assert "Gomes de Carvalho, 1255, sobreloja, Vila Olímpia" in html
+    assert "São Paulo/SP - CEP 04547-005" in html
+    assert "+55 (11) 3046-3648" in html
     assert "flavio.cavalcante@konis.com.br" in html
 
 

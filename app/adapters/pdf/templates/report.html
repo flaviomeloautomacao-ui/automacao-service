@@ -26,8 +26,8 @@
 
 {% set responsavel_tecnico = metadata.responsavel | default(profile_config.responsavel_tecnico | default("Francisco Flávio Melo Cavalcante"), true) %}
 {% set registro_profissional = metadata.registro_profissional | default(profile_config.registro_profissional | default("CREA SP – 5060562076"), true) %}
-{% set rodape_endereco = metadata.rodape_endereco | default(profile_config.rodape_endereco | default("ENDERECO OFICIAL DA KONIS PENDENTE DE CONFIRMACAO"), true) %}
-{% set rodape_telefone = metadata.rodape_telefone | default(profile_config.rodape_telefone | default("+55 (11) 3046 3648"), true) %}
+{% set rodape_endereco = metadata.rodape_endereco | default(profile_config.rodape_endereco | default("Gomes de Carvalho, 1255, sobreloja, Vila Olímpia, São Paulo/SP - CEP 04547-005"), true) %}
+{% set rodape_telefone = metadata.rodape_telefone | default(profile_config.rodape_telefone | default("+55 (11) 3046-3648"), true) %}
 {% set rodape_email = metadata.rodape_email | default(profile_config.rodape_email | default("flavio.cavalcante@konis.com.br"), true) %}
 
 {# ====================================================================
@@ -1410,7 +1410,7 @@
   <p class="encerramento-city">São Paulo, {{ mes_ano }}.</p>
 
   <div class="encerramento-contact">
-    <img src="assinatura.jpeg" class="encerramento-assinatura" alt="Assinatura">
+    <img src="assinatura.png" class="encerramento-assinatura" alt="Assinatura">
     <p class="contact-name">{{ metadata.assinatura_nome | default(profile_config.assinatura_nome | default("Flávio Cavalcante")) }}</p>
     <p class="contact-role">{{ metadata.assinatura_cargo | default(profile_config.assinatura_cargo | default("Gerente técnico")) }}</p>
     {% if metadata.assinatura_registro or profile_config.assinatura_registro %}

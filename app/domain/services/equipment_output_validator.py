@@ -395,21 +395,6 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
     recs: list[RecomendacaoTecnica] = []
     justs: list[JustificativaTecnica] = []
 
-    # No path determinístico, geramos DUAS justificativas para satisfazer
-    # o min_length=2 do EquipmentLLMOutput:
-    #   1. Foco no risco (severidade + perigos identificados)
-    #   2. Foco nas consequências potenciais + referência normativa
-    just1_texto = (
-        f"Recomendações baseadas na análise de risco do equipamento "
-        f"{equip_name} (severidade {sev}, risco {risco}), "
-        f"considerando os perigos identificados: {perigos_resumo}."
-    )
-    just2_texto = (
-        f"A adoção das medidas preventivas é justificada pelas consequências "
-        f"potenciais: {consequencias_resumo}. "
-        f"As ações propostas estão alinhadas com os requisitos de {default_norma}."
-    )
-
     for i, medida in enumerate(items[:_MAX_RECS], start=1):
         # Distribuir norma por keyword heurístico
         norma = _match_norma_for_fallback(
@@ -425,10 +410,18 @@ def build_fallback(llm_input: EquipmentLLMInput) -> EquipmentLLMOutput:
                 trecho_normativo=None,
             )
         )
-
-    if recs:
-        justs.append(JustificativaTecnica(numero=1, texto=just1_texto))
-        justs.append(JustificativaTecnica(numero=2, texto=just2_texto))
+        justs.append(
+            JustificativaTecnica(
+                numero=i,
+                texto=(
+                    f"A recomendação técnica nº {i} é necessária para o equipamento "
+                    f"{equip_name}, pois os perigos identificados ({perigos_resumo}) "
+                    f"podem resultar em {consequencias_resumo}. Considerando a "
+                    f"severidade {sev} e o risco {risco}, a medida deve ser "
+                    f"implementada e acompanhada conforme {norma}."
+                ),
+            )
+        )
 
     logger.info(
         "Fallback determinístico gerado | equip={} | recs={}",

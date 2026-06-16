@@ -45,8 +45,11 @@ _KONIS_DEFAULTS: dict[str, str] = {
     "assinatura_celular": "+55 (11) 94572 0000",
     "assinatura_telefone": "+55 (11) 3046 3648",
     "assinatura_email": "flavio.cavalcante@konis.com.br",
-    "rodape_endereco": "ENDERECO OFICIAL DA KONIS PENDENTE DE CONFIRMACAO",
-    "rodape_telefone": "+55 (11) 3046 3648",
+    "rodape_endereco": (
+        "Gomes de Carvalho, 1255, sobreloja, Vila Olímpia, "
+        "São Paulo/SP - CEP 04547-005"
+    ),
+    "rodape_telefone": "+55 (11) 3046-3648",
     "rodape_email": "flavio.cavalcante@konis.com.br",
 }
 
