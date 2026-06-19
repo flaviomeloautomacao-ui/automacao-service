@@ -29,6 +29,49 @@ _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 _PARAGRAPH_SPLIT_RE = re.compile(r"\n\s*\n|\n(?=\s*\d+\s*[-–.\)])")
 _LIST_MARKER_RE = re.compile(r"^\s*(?:[-•]\s*|\d+\s*[-–.)]\s*)+")
 
+# Detecção de lista numerada inline: "texto introdutório: 1-item, 2-item, 3-item."
+_INLINE_LIST_RE = re.compile(r"^(.*?[;:]\s*)(\d+\s*[-–]\s*.+)$", re.DOTALL)
+# Aceita vírgula OU ponto-e-vírgula como separador entre itens inline
+_INLINE_ITEM_SPLIT_RE = re.compile(r"[,;]\s*(?=\d+\s*[-–])")
+_STRIP_NUM_PREFIX_RE = re.compile(r"^\d+\s*[-–]\s*")
+
+# Remove linhas "Ref.: ..." geradas pela LLM (referências normativas em itálico indesejadas)
+_REF_LINE_RE = re.compile(r"(?m)^\s*Ref\.:\s*[^\n]*(?:\n|$)")
+
+# Normalização de números emoji (ex: 1️⃣ → "1-") para compatibilidade com o split inline
+_EMOJI_DIGITS: dict[str, str] = {
+    "1️⃣": "1-", "2️⃣": "2-", "3️⃣": "3-", "4️⃣": "4-", "5️⃣": "5-",
+    "6️⃣": "6-", "7️⃣": "7-", "8️⃣": "8-", "9️⃣": "9-", "🔟": "10-",
+}
+_EMOJI_NORM_RE = re.compile("|".join(re.escape(k) for k in _EMOJI_DIGITS))
+
+
+def _normalize_emoji_numbers(text: str) -> str:
+    """Converte números emoji (1️⃣, 2️⃣...) para o formato padrão "1-", "2-"."""
+    return _EMOJI_NORM_RE.sub(lambda m: _EMOJI_DIGITS[m.group()], text)
+
+
+def _try_split_inline_list(text: str) -> tuple[str, list[str]] | None:
+    """Detecta padrão 'prefixo: 1-item, 2-item, 3-item' e divide em lista.
+
+    Retorna (prefixo, itens) se houver 2+ itens numerados inline, caso
+    contrário retorna None.
+    """
+    m = _INLINE_LIST_RE.match(text.strip())
+    if not m:
+        return None
+    prefix = m.group(1).rstrip(": \t")
+    items_raw = m.group(2)
+    raw_items = _INLINE_ITEM_SPLIT_RE.split(items_raw)
+    cleaned: list[str] = []
+    for item in raw_items:
+        item = _STRIP_NUM_PREFIX_RE.sub("", item.strip()).rstrip(".,;")
+        if item:
+            cleaned.append(item)
+    if len(cleaned) >= 2:
+        return prefix, cleaned
+    return None
+
 
 def _format_paragraphs(value: Any) -> Markup:
     """Converte texto com itens enumerados/quebras em parágrafos HTML.
@@ -38,23 +81,40 @@ def _format_paragraphs(value: Any) -> Markup:
         - Itens enumerados (``1-``, ``2 -``, ``3)``, ``4.``) separados por
           quebra de linha simples são promovidos a parágrafos independentes.
         - Parágrafos separados por ``\\n\\n`` também viram parágrafos.
+        - Listas numeradas inline (``prefixo: 1-item, 2-item``) são
+          convertidas em ``<ul>`` com itens separados.
 
     Args:
         value: Texto bruto (tipicamente vindo da LLM).
 
     Returns:
-        ``Markup`` seguro com cada bloco envolvido em ``<p>``.
+        ``Markup`` seguro com cada bloco envolvido em ``<p>`` ou ``<ul>``.
     """
     if value is None:
         return Markup("")
     text = str(value).strip()
     if not text:
         return Markup("")
+    text = _REF_LINE_RE.sub("", text).strip()
+    text = _normalize_emoji_numbers(text)
     blocks = _PARAGRAPH_SPLIT_RE.split(text)
-    parts = [escape(b.strip()) for b in blocks if b.strip()]
-    if not parts:
+    html_parts: list[str] = []
+    for block in blocks:
+        block = block.strip()
+        if not block:
+            continue
+        inline = _try_split_inline_list(block)
+        if inline:
+            prefix, items = inline
+            if prefix:
+                html_parts.append(f"<p>{escape(prefix)}:</p>")
+            items_html = "".join(f"<li>{escape(item)}</li>" for item in items)
+            html_parts.append(f"<ul class='detail-list'>{items_html}</ul>")
+        else:
+            html_parts.append(f"<p>{escape(block)}</p>")
+    if not html_parts:
         return Markup("")
-    return Markup("".join(f"<p>{p}</p>" for p in parts))
+    return Markup("".join(html_parts))
 
 
 def _clean_bullet_text(value: Any) -> str:

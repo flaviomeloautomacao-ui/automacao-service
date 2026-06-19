@@ -157,29 +157,39 @@
 
 
 {# ====================================================================
-   CONTROLE DE REVISÃO DO DOCUMENTO
+   TABELA DE CONTROLE DE VERSÃO
    Espaço vazio para preenchimento manual (correções futuras)
    ==================================================================== #}
 <div class="revision-control">
   <h2 style="border-bottom: none; text-align: center; font-size: 14pt; letter-spacing: 0.5px; margin-bottom: 1em;">
-    CONTROLE DE REVISÃO DO DOCUMENTO
+    TABELA DE CONTROLE DE VERSÃO
   </h2>
   <table class="revision-table">
     <thead>
       <tr>
-        <th style="width: 10%">Revisão</th>
-        <th style="width: 15%">Data</th>
-        <th style="width: 13%">Aprovação</th>
-        <th style="width: 27%">Responsável</th>
-        <th style="width: 35%">Descrição da Alteração</th>
+        <th style="width: 15%">Nº da versão</th>
+        <th style="width: 20%">Data de alteração</th>
+        <th style="width: 25%">Autor</th>
+        <th style="width: 40%">Modificações realizadas</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
-      <tr><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td><td class="revision-empty">&nbsp;</td></tr>
+      {% for rev in metadata.revisions | default([]) %}
+      <tr>
+        <td>{{ rev.version }}</td>
+        <td>{{ rev.date }}</td>
+        <td>{{ rev.author }}</td>
+        <td>{{ rev.description }}</td>
+      </tr>
+      {% endfor %}
+      {% if (metadata.revisions | default([]) | length) == 0 %}
+      <tr>
+        <td class="revision-empty">&nbsp;</td>
+        <td class="revision-empty">&nbsp;</td>
+        <td class="revision-empty">&nbsp;</td>
+        <td class="revision-empty">&nbsp;</td>
+      </tr>
+      {% endif %}
     </tbody>
   </table>
 </div>
@@ -245,7 +255,7 @@
     incluindo:
   </p>
   <ul class="detail-list">
-    <li>Alívio de explosão (painéis/ventos e, quando aplicável, soluções sem chama);</li>
+    <li>Alívio de explosão (painéis/vents e, quando aplicável, soluções sem chama);</li>
     <li>Isolamento de explosão (válvulas, barreiras e dispositivos de isolamento mecânico/ativo);</li>
     <li>Supressão de explosão (quando aplicável);</li>
     <li>Avaliação de interfaces com dutos e efeitos de propagação;</li>
@@ -778,7 +788,7 @@
   <h3 id="sec-metodo-1">{{ sec_metodo }}.1 Visão Geral do Método</h3>
   {% if llm_sections.metodologia %}
     <div class="llm-content">
-      {{ render_text(llm_sections.metodologia) }}
+      {{ llm_sections.metodologia | format_paragraphs }}
     </div>
   {% else %}
     <p>
@@ -887,19 +897,7 @@
         <tr>
           <td class="risk-label">Classificação do Risco:</td>
           <td>
-            {% set classif_txt = eq.classificacao | default(eq.risco | default("N/I")) %}
-            {% set classif_low = classif_txt | lower %}
-            {% if "muito alt" in classif_low %}
-              <span class="risk-badge" style="background-color: #dc3545;">{{ classif_txt }}</span>
-            {% elif "alt" in classif_low %}
-              <span class="risk-badge" style="background-color: #fd7e14;">{{ classif_txt }}</span>
-            {% elif "médi" in classif_low or "medi" in classif_low %}
-              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ classif_txt }}</span>
-            {% elif "baix" in classif_low %}
-              <span class="risk-badge" style="background-color: #28a745;">{{ classif_txt }}</span>
-            {% else %}
-              <span class="risk-value">{{ classif_txt }}</span>
-            {% endif %}
+            <span class="risk-value">{{ eq.classificacao | default(eq.risco | default("N/I")) }}</span>
           </td>
         </tr>
       </tbody>
@@ -913,57 +911,19 @@
         <tr>
           <td class="risk-label">Severidade Residual:</td>
           <td>
-            {% set sev_r = eq.severidade_residual or "N/I" %}
-            {% set sev_r_low = sev_r | lower %}
-            {% if "muito alt" in sev_r_low %}
-              <span class="risk-badge" style="background-color: #dc3545;">{{ sev_r }}</span>
-            {% elif "alta" in sev_r_low or "alto" in sev_r_low %}
-              <span class="risk-badge" style="background-color: #fd7e14;">{{ sev_r }}</span>
-            {% elif "média para alta" in sev_r_low or "media para alta" in sev_r_low %}
-              <span class="risk-badge" style="background-color: #fd7e14;">{{ sev_r }}</span>
-            {% elif "médi" in sev_r_low or "medi" in sev_r_low %}
-              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ sev_r }}</span>
-            {% elif "baix" in sev_r_low %}
-              <span class="risk-badge" style="background-color: #28a745;">{{ sev_r }}</span>
-            {% else %}
-              <span class="risk-value">{{ sev_r }}</span>
-            {% endif %}
+            <span class="risk-value">{{ eq.severidade_residual or "N/I" }}</span>
           </td>
         </tr>
         <tr>
           <td class="risk-label">Probabilidade Residual:</td>
           <td>
-            {% set prob_r = eq.probabilidade_residual or "N/I" %}
-            {% set prob_r_low = prob_r | lower %}
-            {% if "muito alt" in prob_r_low %}
-              <span class="risk-badge" style="background-color: #dc3545;">{{ prob_r }}</span>
-            {% elif "alt" in prob_r_low %}
-              <span class="risk-badge" style="background-color: #fd7e14;">{{ prob_r }}</span>
-            {% elif "médi" in prob_r_low or "medi" in prob_r_low %}
-              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ prob_r }}</span>
-            {% elif "baix" in prob_r_low %}
-              <span class="risk-badge" style="background-color: #28a745;">{{ prob_r }}</span>
-            {% else %}
-              <span class="risk-value">{{ prob_r }}</span>
-            {% endif %}
+            <span class="risk-value">{{ eq.probabilidade_residual or "N/I" }}</span>
           </td>
         </tr>
         <tr>
           <td class="risk-label">Classificação Residual:</td>
           <td>
-            {% set classif_r = eq.classificacao_residual or "N/I" %}
-            {% set classif_r_low = classif_r | lower %}
-            {% if "muito alt" in classif_r_low %}
-              <span class="risk-badge" style="background-color: #dc3545;">{{ classif_r }}</span>
-            {% elif "alt" in classif_r_low %}
-              <span class="risk-badge" style="background-color: #fd7e14;">{{ classif_r }}</span>
-            {% elif "médi" in classif_r_low or "medi" in classif_r_low %}
-              <span class="risk-badge" style="background-color: #ffc107; color: #333;">{{ classif_r }}</span>
-            {% elif "baix" in classif_r_low %}
-              <span class="risk-badge" style="background-color: #28a745;">{{ classif_r }}</span>
-            {% else %}
-              <span class="risk-value">{{ classif_r }}</span>
-            {% endif %}
+            <span class="risk-value">{{ eq.classificacao_residual or "N/I" }}</span>
           </td>
         </tr>
       </tbody>
@@ -981,9 +941,6 @@
       {% for rec in eq.recomendacoes_tecnicas %}
         <li value="{{ rec.numero }}">
           {{ rec.texto | format_paragraphs }}
-          {% if rec.norma_referencia %}
-            <br/><span class="norma-ref"><em>Ref.: {{ rec.norma_referencia }}</em></span>
-          {% endif %}
         </li>
       {% endfor %}
       </ol>
@@ -1026,7 +983,7 @@
 
     {# 4.x.11 Registro fotográfico (por último na seção do equipamento) #}
     {% if eq.images %}
-    <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset + 8 }} Registro fotográfico</h4>
+    <h4>{{ sec_equip }}.{{ eq.index }}.{{ sub_offset + 8 }} Registro fotográfico — {{ eq.nome }}</h4>
     {% set visible_images = (eq.images | sort(attribute='order_index', reverse=false))[:4] if eq.images and eq.images[0].order_index is defined else eq.images[:4] %}
     {% set img_count = visible_images | length %}
     <div class="equipment-images">

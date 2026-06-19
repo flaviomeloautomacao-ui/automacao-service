@@ -34,7 +34,7 @@
 .running-header-title {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 7pt;
-    color: #555;
+    color: #0f3460;
     text-align: center;
     flex: 1;
 }
@@ -42,7 +42,7 @@
 .running-header-rev {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 7pt;
-    color: #555;
+    color: #0f3460;
     text-align: right;
     white-space: nowrap;
 }
@@ -50,7 +50,7 @@
 .running-header-page {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 8pt;
-    color: #555;
+    color: #0f3460;
     text-align: right;
     white-space: nowrap;
     margin-left: 12px;
@@ -68,7 +68,7 @@
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 7pt;
     line-height: 1.25;
-    color: #555;
+    color: #0f3460;
     text-align: center;
 }
 
@@ -81,7 +81,7 @@
 
 @page {
     size: A4;
-    margin: 30mm 20mm 25mm 25mm;
+    margin: 24mm 20mm 25mm 25mm;
 
     @top-left {
         content: element(pageHeader);
@@ -125,7 +125,7 @@ body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 10pt;
     line-height: 1.55;
-    color: #222;
+    color: #0f3460;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -137,13 +137,37 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 { font-size: 22pt; }
-h2 { font-size: 14pt; margin-top: 1em; }
-h3 { font-size: 12pt; margin-top: 0.8em; }
-h4 { font-size: 10.5pt; margin-top: 0.6em; color: #333; }
+h2 { font-size: 14pt; margin-top: 2em; }
+h3 { font-size: 12pt; margin-top: 1.5em; }
+h4 { font-size: 10.5pt; margin-top: 1.1em; color: #0f3460; }
+h5, h6 { margin-top: 0.9em; }
 
 p {
     margin-bottom: 0.6em;
     text-align: justify;
+    text-indent: 1.25cm;
+}
+
+/* Sem recuo em contextos onde não faz sentido */
+table p,
+.cover p,
+.toc p,
+.revision-control p,
+.risk-distribution p,
+.equipment-info-table p,
+.encerramento-quote p,
+li p,
+p.text-muted,
+p.text-center,
+p.text-right,
+p.summary-count,
+p.encerramento-city,
+p.contact-name,
+p.contact-role,
+p.contact-phone,
+p.contact-link,
+p.contact-registro {
+    text-indent: 0;
 }
 
 strong { color: #0f3460; }
@@ -202,7 +226,7 @@ strong { color: #0f3460; }
 
 .cover-subtitle {
     font-size: 13pt;
-    color: #444;
+    color: #0f3460;
     font-weight: 400;
     margin-bottom: 0.5em;
 }
@@ -306,7 +330,8 @@ strong { color: #0f3460; }
     page-break-after: always;
 }
 
-.apresentacao-section h2 {
+.apresentacao-section > h2:first-of-type {
+    margin-top: 0;
     margin-bottom: 1em;
 }
 
@@ -321,7 +346,7 @@ strong { color: #0f3460; }
 
 .apresentacao-h4 {
     font-size: 10pt;
-    color: #333;
+    color: #0f3460;
     margin-top: 0.9em;
     margin-bottom: 0.3em;
     font-weight: 700;
@@ -329,7 +354,7 @@ strong { color: #0f3460; }
 
 .apresentacao-h5 {
     font-size: 9.5pt;
-    color: #444;
+    color: #0f3460;
     margin-top: 0.7em;
     margin-bottom: 0.25em;
     font-weight: 600;
@@ -390,9 +415,16 @@ table.risk-matrix-3x3 {
 .toc-title {
     text-align: center;
     border-bottom: none;
+    margin-top: 0;
     margin-bottom: 1em;
     font-size: 16pt;
     letter-spacing: 1px;
+}
+
+/* Títulos de abertura de seção (primeiros elementos de sua página) não herdam margin-top grande */
+.revision-control h2,
+.cover h2 {
+    margin-top: 0;
 }
 
 .toc-list {
@@ -405,14 +437,14 @@ table.risk-matrix-3x3 {
     border-bottom: 1px dotted #ccc;
     font-size: 10pt;
     font-weight: 600;
-    color: #222;
+    color: #0f3460;
 }
 
 .toc-list > li.toc-sub {
     padding-left: 2em;
     font-weight: 400;
     font-size: 9.5pt;
-    color: #444;
+    color: #0f3460;
 }
 
 .toc-number {
@@ -436,7 +468,7 @@ table.risk-matrix-3x3 {
     padding-left: 8px;
     flex-shrink: 0;
     font-weight: 400;
-    color: #555;
+    color: #0f3460;
 }
 
 
@@ -697,7 +729,7 @@ ol.detail-list {
 .norma-ref {
     display: inline-block;
     font-size: 0.88em;
-    color: #555;
+    color: #0f3460;
     margin-top: 0.15em;
 }
 
@@ -717,7 +749,7 @@ ol.detail-list {
 
 .risk-label {
     font-weight: 600;
-    color: #333;
+    color: #0f3460;
     white-space: nowrap;
 }
 
@@ -738,7 +770,7 @@ ol.detail-list {
 
 /* Risco residual (pós-implementação) */
 .residual-risk-title {
-    color: #555;
+    color: #0f3460;
     font-size: 9pt;
     margin-top: 8px;
     margin-bottom: 4px;
@@ -752,7 +784,7 @@ ol.detail-list {
 .summary-count {
     margin-top: 1em;
     font-size: 10pt;
-    color: #555;
+    color: #0f3460;
     page-break-before: avoid;
     break-before: avoid;
     page-break-inside: avoid;
@@ -941,13 +973,13 @@ table.inventory-table {
 
 .signature-role {
     font-size: 9pt;
-    color: #555;
+    color: #0f3460;
     text-align: center;
 }
 
 .signature-art {
     font-size: 8.5pt;
-    color: #555;
+    color: #0f3460;
     text-align: center;
     margin-top: 0.3em;
 }
@@ -961,14 +993,14 @@ table.inventory-table {
     align-items: center;
     justify-content: center;
     font-size: 7.5pt;
-    color: #aaa;
+    color: #0f3460;
 }
 
 /* Código do documento (Feature 5) */
 .document-code {
     margin-top: 30px;
     font-size: 9pt;
-    color: #6c757d;
+    color: #0f3460;
     text-align: center;
 }
 
@@ -1004,7 +1036,7 @@ table.inventory-table {
 .encerramento-contact p {
     margin: 0;
     font-size: 9.5pt;
-    color: #333;
+    color: #0f3460;
 }
 
 .encerramento-contact .contact-name {
@@ -1015,13 +1047,13 @@ table.inventory-table {
 
 .encerramento-contact .contact-role {
     font-size: 9.5pt;
-    color: #333;
+    color: #0f3460;
     margin-bottom: 0.3em;
 }
 
 .encerramento-contact .contact-phone {
     font-size: 9pt;
-    color: #333;
+    color: #0f3460;
 }
 
 .encerramento-contact .contact-link a {
@@ -1049,7 +1081,7 @@ table.inventory-table {
 
 .text-center { text-align: center; }
 .text-right  { text-align: right; }
-.text-muted  { color: #888; font-style: italic; }
+.text-muted  { color: #0f3460; font-style: italic; }
 .mt-1 { margin-top: 0.5em; }
 .mt-2 { margin-top: 1em; }
 .mb-1 { margin-bottom: 0.5em; }
