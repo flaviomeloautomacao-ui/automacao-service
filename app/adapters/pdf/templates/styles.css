@@ -220,7 +220,7 @@ strong { color: #0f3460; }
     font-size: 20pt;
     color: #0f3460;
     font-weight: 600;
-    font-style: italic;
+    font-style: normal;
     margin-bottom: 0.3em;
 }
 
@@ -338,8 +338,8 @@ strong { color: #0f3460; }
 .apresentacao-h3 {
     font-size: 11pt;
     color: #0f3460;
-    margin-top: 1.2em;
-    margin-bottom: 0.4em;
+    margin-top: 1.6em;
+    margin-bottom: 0.7em;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -347,18 +347,26 @@ strong { color: #0f3460; }
 .apresentacao-h4 {
     font-size: 10pt;
     color: #0f3460;
-    margin-top: 0.9em;
-    margin-bottom: 0.3em;
+    margin-top: 1.6em;
+    margin-bottom: 0.7em;
     font-weight: 700;
 }
 
 .apresentacao-h5 {
     font-size: 9.5pt;
     color: #0f3460;
-    margin-top: 0.7em;
-    margin-bottom: 0.25em;
-    font-weight: 600;
-    font-style: italic;
+    margin-top: 1.1em;
+    margin-bottom: 0.5em;
+    font-weight: 700;
+    font-style: normal;
+}
+
+/* Exceção ABNT: o primeiro título de um bloco que abre página não leva
+   margem superior — o espaçamento "conta apenas após o parágrafo". */
+.apresentacao-section > h3:first-child,
+.apresentacao-section > h4:first-child,
+.apresentacao-section > h5:first-child {
+    margin-top: 0;
 }
 
 
@@ -478,6 +486,12 @@ table.risk-matrix-3x3 {
 
 .section {
     page-break-before: auto;
+}
+
+/* ABNT — subtítulos de seção secundária (1.1, 3.1, 6.1 …) em CAIXA ALTA.
+   .equipment-title já tem o seu próprio text-transform e não é afetado. */
+.section > h3 {
+    text-transform: uppercase;
 }
 
 .section-number {
@@ -768,10 +782,20 @@ ol.detail-list {
     color: #fff;
 }
 
-/* Risco residual (pós-implementação) */
+/* Subtítulos do bloco de Classificação do Risco (situação atual e residual) —
+   tamanho/peso unificados para padronização visual. */
+.risk-block-subtitle {
+    color: #0f3460;
+    font-size: 9.5pt;
+    font-weight: 700;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    font-style: normal;
+}
+
+/* Risco residual (pós-implementação) — herda tamanho de .risk-block-subtitle */
 .residual-risk-title {
     color: #0f3460;
-    font-size: 9pt;
     margin-top: 8px;
     margin-bottom: 4px;
     font-style: normal;
@@ -1007,7 +1031,7 @@ table.inventory-table {
 /* ---------- Encerramento – novo layout (imagem referência) ---------- */
 
 .encerramento-quote {
-    font-style: italic;
+    font-style: normal;
     margin: 1.8em 1em 1.8em 1.5em;
     padding: 0;
     border: none;
@@ -1081,7 +1105,7 @@ table.inventory-table {
 
 .text-center { text-align: center; }
 .text-right  { text-align: right; }
-.text-muted  { color: #0f3460; font-style: italic; }
+.text-muted  { color: #0f3460; font-style: normal; }
 .mt-1 { margin-top: 0.5em; }
 .mt-2 { margin-top: 1em; }
 .mb-1 { margin-bottom: 0.5em; }

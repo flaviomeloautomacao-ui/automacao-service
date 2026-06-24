@@ -161,3 +161,58 @@ def test_pdf_templates_keep_single_blue_token_and_no_dead_cover_classes() -> Non
     assert "cover-footer" not in text
     assert "photo-caption" not in text
     assert "figcaption" not in text
+
+
+def test_dha_titles_follow_abnt_casing_and_no_italic() -> None:
+    """Apontamentos 'Afinamento da automação DHA': ABNT em títulos + sem itálico."""
+    templates_dir = Path(__file__).resolve().parents[1] / "app/adapters/pdf/templates"
+    styles = (templates_dir / "styles.css").read_text(encoding="utf-8")
+    report = (templates_dir / "report.html").read_text(encoding="utf-8")
+
+    # Itálico removido dos seletores do CSS e das citações do relatório de equipamentos
+    assert "font-style: italic" not in styles
+    assert "<em>" not in report
+
+    # Subtítulos de seção secundária (X.1) em CAIXA ALTA via CSS (apontamento 3)
+    assert ".section > h3" in styles
+
+    # Subtítulos nível 3 da apresentação em caixa de sentença (apontamento 2)
+    assert "3.3 Como interpretar os resultados na prática" in report
+    assert "1.4 Prevenção: controle de fontes de ignição" in report
+    assert "COMO INTERPRETAR OS RESULTADOS NA PRÁTICA" not in report
+
+    # Bloco de classificação de risco com subtítulos padronizados (apontamento 4)
+    assert "risk-block-subtitle" in styles
+    assert 'class="risk-block-subtitle"' in report
+    assert "risk-block-subtitle residual-risk-title" in report
+
+
+def test_post_process_renumbers_recommendations_contiguously() -> None:
+    """Apontamento 5: numero do LLM com lacunas vira 1..N contíguo, preservando
+    o pareamento recomendação↔justificativa, de forma idempotente."""
+    from app.application.services.equipment_post_processor import (
+        post_process_equipment,
+    )
+
+    eq = {
+        "recomendacoes_tecnicas": [
+            {"numero": 2, "texto": "Instalar sensor de temperatura", "norma_referencia": "NBR"},
+            {"numero": 5, "texto": "Aterrar o equipamento", "norma_referencia": "NBR"},
+            {"numero": 9, "texto": "Captar poeira no pe do elevador", "norma_referencia": "NBR"},
+        ],
+        "justificativas_tecnicas": [
+            {"numero": 2, "texto": "Reduz ignicao por superficie quente"},
+            {"numero": 5, "texto": "Evita eletricidade estatica"},
+            {"numero": 9, "texto": "Reduz formacao de nuvem de poeira"},
+        ],
+    }
+
+    out = post_process_equipment(eq)
+    assert [r["numero"] for r in out["recomendacoes_tecnicas"]] == [1, 2, 3]
+    # Justificativas remapeadas pelo mesmo mapa (2->1, 5->2, 9->3)
+    assert [j["numero"] for j in out["justificativas_tecnicas"]] == [1, 2, 3]
+
+    # Idempotente: rodar de novo não altera a numeração já contígua
+    out2 = post_process_equipment(out)
+    assert [r["numero"] for r in out2["recomendacoes_tecnicas"]] == [1, 2, 3]
+    assert [j["numero"] for j in out2["justificativas_tecnicas"]] == [1, 2, 3]
